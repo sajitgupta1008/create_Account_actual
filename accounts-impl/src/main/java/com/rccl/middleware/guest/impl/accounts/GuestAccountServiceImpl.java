@@ -4,14 +4,18 @@ import akka.japi.Pair;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.lightbend.lagom.javadsl.api.broker.Topic;
 import com.lightbend.lagom.javadsl.api.transport.ResponseHeader;
 import com.lightbend.lagom.javadsl.api.transport.TransportErrorCode;
+import com.lightbend.lagom.javadsl.broker.TopicProducer;
+import com.lightbend.lagom.javadsl.persistence.PersistentEntityRegistry;
 import com.lightbend.lagom.javadsl.server.HeaderServiceCall;
 import com.rccl.middleware.common.exceptions.MiddlewareTransportException;
 import com.rccl.middleware.common.hateoas.HATEOASLinks;
 import com.rccl.middleware.common.hateoas.Link;
 import com.rccl.middleware.guest.accounts.Guest;
 import com.rccl.middleware.guest.accounts.GuestAccountService;
+import com.rccl.middleware.guest.accounts.GuestEvent;
 import com.rccl.middleware.guest.accounts.SecurityQuestion;
 import com.rccl.middleware.guest.accounts.exceptions.ExistingGuestException;
 import com.rccl.middleware.guest.accounts.exceptions.GuestNotFoundException;
@@ -25,6 +29,7 @@ import play.Configuration;
 
 import javax.inject.Inject;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 public class GuestAccountServiceImpl implements GuestAccountService {
@@ -34,6 +39,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     private static final String UPDATE_GUEST_CONFIG_PATH = "update-account";
     
     private final GuestValidator guestValidator;
+    
+    private final PersistentEntityRegistry persistentEntityRegistry;
     
     private final PingFederateService pingFederateService;
     
@@ -45,10 +52,14 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     public GuestAccountServiceImpl(GuestValidator guestValidator,
                                    PingFederateService pingFederateService,
                                    SaviyntService saviyntService,
-                                   Configuration configuration) {
+                                   Configuration configuration,
+                                   PersistentEntityRegistry persistentEntityRegistry) {
         this.guestValidator = guestValidator;
         this.pingFederateService = pingFederateService;
         this.saviyntService = saviyntService;
+        
+        this.persistentEntityRegistry = persistentEntityRegistry;
+        persistentEntityRegistry.register(GuestAccountEntity.class);
         
         HATEOASLinks hateoasLinks = new HATEOASLinks(configuration);
         updateAccountLinks = hateoasLinks.getLinks(UPDATE_GUEST_CONFIG_PATH);
@@ -85,6 +96,9 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                     // Upon success of Saviynt, invoke the PingFederate service to "log" the user in,
                     // and return the reference ID.
                     .thenCompose(saviyntResponse -> {
+                        persistentEntityRegistry.refFor(GuestAccountEntity.class, guest.getEmail())
+                                .ask(new GuestAccountCommand.CreateGuest(guest));
+                        
                         PingFederateSubject pfs = PingFederateSubject.builder().subject(guest.getEmail()).build();
                         
                         return pingFederateService
@@ -144,6 +158,9 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
                     })
                     .thenApply(response -> {
+                        persistentEntityRegistry.refFor(GuestAccountEntity.class, email)
+                                .ask(new GuestAccountCommand.UpdateGuest(guest));
+                        
                         final ObjectNode objNode = OBJECT_MAPPER.createObjectNode();
                         updateAccountLinks.forEach(link -> link.substituteArguments(email));
                         objNode.putPOJO("_links", updateAccountLinks);
@@ -152,6 +169,26 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         return new Pair<>(responseHeader, objNode);
                     });
         };
+    }
+    
+    @Override
+    public Topic<GuestEvent> guestAccountsTopic() {
+        return TopicProducer.taggedStreamWithOffset(GuestAccountTag.GUEST_ACCOUNT_EVENT_TAG.allTags(), (tag, offset) ->
+                persistentEntityRegistry.eventStream(tag, offset)
+                        .mapAsync(1, eventOffset -> {
+                            GuestAccountEvent event = eventOffset.first();
+                            GuestEvent guestEvent;
+                            if (event instanceof GuestAccountEvent.GuestCreated) {
+                                GuestAccountEvent.GuestCreated eventInstance = (GuestAccountEvent.GuestCreated) event;
+                                guestEvent = new GuestEvent.AccountCreated(eventInstance.getGuest());
+                                
+                            } else {
+                                GuestAccountEvent.GuestUpdated eventInstance = (GuestAccountEvent.GuestUpdated) event;
+                                guestEvent = new GuestEvent.AccountUpdated(eventInstance.getGuest());
+                            }
+                            
+                            return CompletableFuture.completedFuture(new Pair<>(guestEvent, eventOffset.second()));
+                        }));
     }
     
     private SaviyntGuest.SaviyntGuestBuilder mapGuestToSaviyntGuest(Guest guest) {
