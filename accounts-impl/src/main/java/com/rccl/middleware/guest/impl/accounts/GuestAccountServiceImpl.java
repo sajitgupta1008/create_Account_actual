@@ -121,6 +121,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                     .azamaraWebShopperIds(partialGuest.getAzamaraWebShopperIds())
                     .celebrityWebShopperIds(partialGuest.getCelebrityWebShopperIds())
                     .royalWebShopperIds(partialGuest.getRoyalWebShopperIds())
+                    .termsAndConditionsAgreement(partialGuest.getTermsAndConditionsAgreement())
                     .build();
             
             guestValidator.validateGuestUpdateModel(guest);
@@ -187,6 +188,10 @@ public class GuestAccountServiceImpl implements GuestAccountService {
             builder
                     .securityquestion(sq.getQuestion())
                     .securityanswer(sq.getAnswer());
+        }
+        
+        if (guest.getTermsAndConditionsAgreement() != null) {
+            builder.termsAndConditionsVersion(guest.getTermsAndConditionsAgreement().getVersion());
         }
         
         return builder;

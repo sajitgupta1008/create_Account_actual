@@ -161,6 +161,14 @@ public class SaviyntGuest implements Jsonable {
     List<String> azamaraWebShopperIds;
     
     /**
+     * This is the Terms and Conditions version.
+     * <p>
+     * The lack of capitalization is intentional on Saviynt's part.
+     */
+    @JsonProperty("customproperty2")
+    String termsAndConditionsVersion;
+    
+    /**
      * Saviynt uses this property to determine how to "find" a user.
      * <p>
      * It should not have to be set.
