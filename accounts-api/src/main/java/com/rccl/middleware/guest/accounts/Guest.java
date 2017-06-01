@@ -57,7 +57,19 @@ public class Guest implements Jsonable {
     String consumerId;
     
     @NumericFormatList(groups = DefaultChecks.class)
-    List<String> loyaltyIds;
+    List<String> crownAndAnchorIds;
+    
+    @NumericFormatList(groups = DefaultChecks.class)
+    List<String> captainsClubIds;
+    
+    @NumericFormatList(groups = DefaultChecks.class)
+    List<String> azamaraLoyaltyIds;
+    
+    @NumericFormatList(groups = DefaultChecks.class)
+    List<String> clubRoyaleIds;
+    
+    @NumericFormatList(groups = DefaultChecks.class)
+    List<String> celebrityBlueChipIds;
     
     @NumericFormatList(groups = DefaultChecks.class)
     List<String> royalWebShopperIds;

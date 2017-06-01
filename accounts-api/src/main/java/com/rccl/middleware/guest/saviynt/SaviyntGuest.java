@@ -73,12 +73,44 @@ public class SaviyntGuest implements Jsonable {
     String consumerId;
     
     /**
-     * This is the list of loyalty ID by program type (program type 5)
+     * This is the list of Crown And Anchor loyalty Ids of program type 1.
+     * <p>
+     * The lack of capitalization is intentional on Saviynt's part.
+     */
+    @JsonProperty("loyaltyidsbyprogramtype1")
+    List<String> crownAndAnchorIds;
+    
+    /**
+     * This is the list of Captains Club loyalty Ids of program type 1.
+     * <p>
+     * The lack of capitalization is intentional on Saviynt's part.
+     */
+    @JsonProperty("loyaltyidsbyprogramtype2")
+    List<String> captainsClubIds;
+    
+    /**
+     * This is the list of Azamara loyalty Ids of program type 1.
+     * <p>
+     * The lack of capitalization is intentional on Saviynt's part.
+     */
+    @JsonProperty("loyaltyidsbyprogramtype3")
+    List<String> azamaraLoyaltyIds;
+    
+    /**
+     * This is the list of Club Royale loyalty Ids of program type 1.
+     * <p>
+     * The lack of capitalization is intentional on Saviynt's part.
+     */
+    @JsonProperty("loyaltyidsbyprogramtype4")
+    List<String> clubRoyaleIds;
+    
+    /**
+     * This is the list of Celebrity Blue Chip loyalty Ids of program type 1.
      * <p>
      * The lack of capitalization is intentional on Saviynt's part.
      */
     @JsonProperty("loyaltyidsbyprogramtype5")
-    List<String> loyaltyIds;
+    List<String> celebrityBlueChipIds;
     
     /**
      * This is the list of Royal booking IDs
