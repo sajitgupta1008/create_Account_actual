@@ -4,13 +4,17 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.lightbend.lagom.javadsl.api.Descriptor;
 import com.lightbend.lagom.javadsl.api.Service;
 import com.lightbend.lagom.javadsl.api.ServiceCall;
+import com.lightbend.lagom.javadsl.api.broker.Topic;
 
 import static com.lightbend.lagom.javadsl.api.Service.named;
 import static com.lightbend.lagom.javadsl.api.Service.restCall;
+import static com.lightbend.lagom.javadsl.api.Service.topic;
 import static com.lightbend.lagom.javadsl.api.transport.Method.POST;
 import static com.lightbend.lagom.javadsl.api.transport.Method.PUT;
 
 public interface GuestAccountService extends Service {
+    
+    String ACCOUNTS_PUBLISH_EVENT = "guest-accounts";
     
     /**
      * Create a guest account from the given {@link Guest} and get back the user ID
@@ -22,6 +26,8 @@ public interface GuestAccountService extends Service {
     
     ServiceCall<Guest, JsonNode> updateAccount(String email);
     
+    Topic<GuestEvent> guestAccountsTopic();
+    
     @Override
     default Descriptor descriptor() {
         return named("guestAccounts")
@@ -29,6 +35,9 @@ public interface GuestAccountService extends Service {
                         restCall(POST, "/v1/guestAccounts", this::createAccount),
                         restCall(POST, "/v1/guestAccounts/", this::createAccount),
                         restCall(PUT, "/v1/guestAccounts/:email", this::updateAccount)
+                )
+                .publishing(
+                        topic(ACCOUNTS_PUBLISH_EVENT, this::guestAccountsTopic)
                 )
                 .withAutoAcl(true);
     }

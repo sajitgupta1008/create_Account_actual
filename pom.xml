@@ -42,7 +42,7 @@
     <skip.unit.tests>false</skip.unit.tests>
     <skip.integration.tests>false</skip.integration.tests>
 
-    <cassandraendpoint>http://10.16.6.162:8042</cassandraendpoint>
+    <cassandraendpoint>http://127.0.0.1:9042</cassandraendpoint>
 
   </properties>
 
