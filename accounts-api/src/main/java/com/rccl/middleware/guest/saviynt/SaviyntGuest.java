@@ -161,6 +161,30 @@ public class SaviyntGuest implements Jsonable {
     List<String> azamaraWebShopperIds;
     
     /**
+     * This is the Royal primary booking ID
+     * <p>
+     * The lack of capitalization is intentional on Saviynt's part.
+     */
+    @JsonProperty("customproperty5")
+    String royalPrimaryBookingId;
+    
+    /**
+     * This is the Celebrity primary booking ID
+     * <p>
+     * The lack of capitalization is intentional on Saviynt's part.
+     */
+    @JsonProperty("customproperty4")
+    String celebrityPrimaryBookingId;
+    
+    /**
+     * This is the list of Azamara primary booking ID
+     * <p>
+     * The lack of capitalization is intentional on Saviynt's part.
+     */
+    @JsonProperty("customproperty3")
+    String azamaraPrimaryBookingId;
+    
+    /**
      * This is the Terms and Conditions version.
      * <p>
      * The lack of capitalization is intentional on Saviynt's part.

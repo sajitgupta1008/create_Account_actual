@@ -89,6 +89,15 @@ public class Guest implements Jsonable {
     @NumericFormatList(groups = DefaultChecks.class)
     List<String> azamaraBookingIds;
     
+    @Pattern(regexp = "\\d*", message = "Booking ID must be in numeric format.", groups = UpdateChecks.class)
+    String royalPrimaryBookingId;
+    
+    @Pattern(regexp = "\\d*", message = "Booking ID must be in numeric format.", groups = UpdateChecks.class)
+    String celebrityPrimaryBookingId;
+    
+    @Pattern(regexp = "\\d*", message = "Booking ID must be in numeric format.", groups = UpdateChecks.class)
+    String azamaraPrimaryBookingId;
+    
     public interface CreateChecks extends DefaultChecks {
         // Validation group interface.
     }

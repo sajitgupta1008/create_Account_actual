@@ -135,6 +135,9 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                     .azamaraWebShopperIds(partialGuest.getAzamaraWebShopperIds())
                     .celebrityWebShopperIds(partialGuest.getCelebrityWebShopperIds())
                     .royalWebShopperIds(partialGuest.getRoyalWebShopperIds())
+                    .royalPrimaryBookingId(partialGuest.getRoyalPrimaryBookingId())
+                    .celebrityPrimaryBookingId(partialGuest.getCelebrityPrimaryBookingId())
+                    .azamaraPrimaryBookingId(partialGuest.getAzamaraPrimaryBookingId())
                     .termsAndConditionsAgreement(partialGuest.getTermsAndConditionsAgreement())
                     .build();
             
@@ -215,7 +218,10 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                 .royalBookingIds(this.mapValuesToSaviyntStringFormat(guest.getRoyalBookingIds()))
                 .azamaraWebShopperIds(this.mapValuesToSaviyntStringFormat(guest.getAzamaraWebShopperIds()))
                 .celebrityWebShopperIds(this.mapValuesToSaviyntStringFormat(guest.getCelebrityWebShopperIds()))
-                .royalWebShopperIds(this.mapValuesToSaviyntStringFormat(guest.getRoyalWebShopperIds()));
+                .royalWebShopperIds(this.mapValuesToSaviyntStringFormat(guest.getRoyalWebShopperIds()))
+                .royalPrimaryBookingId(guest.getRoyalPrimaryBookingId())
+                .celebrityPrimaryBookingId(guest.getCelebrityPrimaryBookingId())
+                .azamaraPrimaryBookingId(guest.getAzamaraPrimaryBookingId());
         
         List<SecurityQuestion> securityQuestions = guest.getSecurityQuestions();
         
