@@ -34,7 +34,7 @@ import static play.inject.Bindings.bind;
 
 public class GuestAccountServiceTest {
     
-    private static TestServer testServer;
+    private static volatile TestServer testServer;
     
     private static GuestAccountService service;
     
