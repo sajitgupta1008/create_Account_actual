@@ -81,7 +81,7 @@ public class SaviyntGuest implements Jsonable {
     List<String> crownAndAnchorIds;
     
     /**
-     * This is the list of Captains Club loyalty Ids of program type 1.
+     * This is the list of Captains Club loyalty Ids of program type 2.
      * <p>
      * The lack of capitalization is intentional on Saviynt's part.
      */
@@ -89,7 +89,7 @@ public class SaviyntGuest implements Jsonable {
     List<String> captainsClubIds;
     
     /**
-     * This is the list of Azamara loyalty Ids of program type 1.
+     * This is the list of Azamara loyalty Ids of program type 3.
      * <p>
      * The lack of capitalization is intentional on Saviynt's part.
      */
@@ -97,7 +97,7 @@ public class SaviyntGuest implements Jsonable {
     List<String> azamaraLoyaltyIds;
     
     /**
-     * This is the list of Club Royale loyalty Ids of program type 1.
+     * This is the list of Club Royale loyalty Ids of program type 4.
      * <p>
      * The lack of capitalization is intentional on Saviynt's part.
      */
@@ -105,7 +105,7 @@ public class SaviyntGuest implements Jsonable {
     List<String> clubRoyaleIds;
     
     /**
-     * This is the list of Celebrity Blue Chip loyalty Ids of program type 1.
+     * This is the list of Celebrity Blue Chip loyalty Ids of program type 5.
      * <p>
      * The lack of capitalization is intentional on Saviynt's part.
      */
