@@ -9,14 +9,14 @@
     <version>1.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>accounts-impl</artifactId>
+  <artifactId>guest-accounts-impl</artifactId>
 
   <packaging>jar</packaging>
 
   <dependencies>
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>accounts-api</artifactId>
+      <artifactId>guest-accounts-api</artifactId>
       <version>${project.version}</version>
     </dependency>
 

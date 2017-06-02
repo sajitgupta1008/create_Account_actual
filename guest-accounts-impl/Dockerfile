@@ -5,6 +5,6 @@ RUN mkdir -p /usr/src/app
 
 WORKDIR /usr/src/app
 
-COPY ./target/accounts-impl-1.0-SNAPSHOT /usr/src/app
+COPY ./target/guest-accounts-impl-1.0-SNAPSHOT /usr/src/app
 
-CMD bash -C 'bin/accounts-impl';'bash'
+CMD bash -C 'bin/guest-accounts-impl';'bash'
