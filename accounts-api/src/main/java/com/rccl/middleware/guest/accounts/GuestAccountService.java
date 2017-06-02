@@ -1,5 +1,6 @@
 package com.rccl.middleware.guest.accounts;
 
+import akka.NotUsed;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.lightbend.lagom.javadsl.api.Descriptor;
 import com.lightbend.lagom.javadsl.api.Service;
@@ -9,6 +10,7 @@ import com.lightbend.lagom.javadsl.api.broker.Topic;
 import static com.lightbend.lagom.javadsl.api.Service.named;
 import static com.lightbend.lagom.javadsl.api.Service.restCall;
 import static com.lightbend.lagom.javadsl.api.Service.topic;
+import static com.lightbend.lagom.javadsl.api.transport.Method.GET;
 import static com.lightbend.lagom.javadsl.api.transport.Method.POST;
 import static com.lightbend.lagom.javadsl.api.transport.Method.PUT;
 
@@ -26,6 +28,8 @@ public interface GuestAccountService extends Service {
     
     ServiceCall<Guest, JsonNode> updateAccount(String email);
     
+    ServiceCall<NotUsed, String> healthCheck();
+    
     Topic<GuestEvent> guestAccountsTopic();
     
     @Override
@@ -34,7 +38,8 @@ public interface GuestAccountService extends Service {
                 .withCalls(
                         restCall(POST, "/v1/guestAccounts", this::createAccount),
                         restCall(POST, "/v1/guestAccounts/", this::createAccount),
-                        restCall(PUT, "/v1/guestAccounts/:email", this::updateAccount)
+                        restCall(PUT, "/v1/guestAccounts/:email", this::updateAccount),
+                        restCall(GET, "/v1/guestAccounts/health", this::healthCheck)
                 )
                 .publishing(
                         topic(ACCOUNTS_PUBLISH_EVENT, this::guestAccountsTopic)

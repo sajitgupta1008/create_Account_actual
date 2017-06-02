@@ -73,60 +73,94 @@ public class SaviyntGuest implements Jsonable {
     String consumerId;
     
     /**
-     * This is the list of loyalty ID by program type (program type 5)
-     * <p>
-     * The lack of capitalization is intentional on Saviynt's part.
+     * This is the list of Crown And Anchor loyalty Ids of program type 1.
+     */
+    @JsonProperty("loyaltyidsbyprogramtype1")
+    List<String> crownAndAnchorIds;
+    
+    /**
+     * This is the list of Captains Club loyalty Ids of program type 2.
+     */
+    @JsonProperty("loyaltyidsbyprogramtype2")
+    List<String> captainsClubIds;
+    
+    /**
+     * This is the list of Azamara loyalty Ids of program type 3.
+     */
+    @JsonProperty("loyaltyidsbyprogramtype3")
+    List<String> azamaraLoyaltyIds;
+    
+    /**
+     * This is the list of Club Royale loyalty Ids of program type 4.
+     */
+    @JsonProperty("loyaltyidsbyprogramtype4")
+    List<String> clubRoyaleIds;
+    
+    /**
+     * This is the list of Celebrity Blue Chip loyalty Ids of program type 5.
      */
     @JsonProperty("loyaltyidsbyprogramtype5")
-    List<String> loyaltyIds;
+    List<String> celebrityBlueChipIds;
     
     /**
      * This is the list of Royal booking IDs
-     * <p>
-     * The lack of capitalization is intentional on Saviynt's part.
      */
     @JsonProperty("bookingidsbybrandroyal")
     List<String> royalBookingIds;
     
     /**
      * This is the list of Celebrity booking IDs
-     * <p>
-     * The lack of capitalization is intentional on Saviynt's part.
      */
     @JsonProperty("bookingidsbybrandcelebrity")
     List<String> celebrityBookingIds;
     
     /**
      * This is the list of Azamara booking IDs
-     * <p>
-     * The lack of capitalization is intentional on Saviynt's part.
      */
     @JsonProperty("bookingidsbybrandazamara")
     List<String> azamaraBookingIds;
     
     /**
      * This is the list of Royal WebShopper IDs
-     * <p>
-     * The lack of capitalization is intentional on Saviynt's part.
      */
     @JsonProperty("shopperidsbybrandroyal")
     List<String> royalWebShopperIds;
     
     /**
      * This is the list of Celebrity WebShopper IDs
-     * <p>
-     * The lack of capitalization is intentional on Saviynt's part.
      */
     @JsonProperty("shopperidsbybrandcelebrity")
     List<String> celebrityWebShopperIds;
     
     /**
      * This is the list of Azamara WebShopper IDs
-     * <p>
-     * The lack of capitalization is intentional on Saviynt's part.
      */
     @JsonProperty("shopperidsbybrandazamara")
     List<String> azamaraWebShopperIds;
+    
+    /**
+     * This is the Royal primary booking ID
+     */
+    @JsonProperty("customproperty5")
+    String royalPrimaryBookingId;
+    
+    /**
+     * This is the Celebrity primary booking ID
+     */
+    @JsonProperty("customproperty4")
+    String celebrityPrimaryBookingId;
+    
+    /**
+     * This is the list of Azamara primary booking ID
+     */
+    @JsonProperty("customproperty3")
+    String azamaraPrimaryBookingId;
+    
+    /**
+     * This is the Terms and Conditions version.
+     */
+    @JsonProperty("customproperty2")
+    String termsAndConditionsVersion;
     
     /**
      * Saviynt uses this property to determine how to "find" a user.

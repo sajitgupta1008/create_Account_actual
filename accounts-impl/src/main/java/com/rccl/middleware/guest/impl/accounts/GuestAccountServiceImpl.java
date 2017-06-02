@@ -1,5 +1,6 @@
 package com.rccl.middleware.guest.impl.accounts;
 
+import akka.NotUsed;
 import akka.japi.Pair;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -124,13 +125,21 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                     .securityQuestions(partialGuest.getSecurityQuestions())
                     .brand(partialGuest.getBrand())
                     .consumerId(partialGuest.getConsumerId())
-                    .loyaltyIds(partialGuest.getLoyaltyIds())
+                    .crownAndAnchorIds(partialGuest.getCrownAndAnchorIds())
+                    .captainsClubIds(partialGuest.getCaptainsClubIds())
+                    .azamaraLoyaltyIds(partialGuest.getAzamaraLoyaltyIds())
+                    .clubRoyaleIds(partialGuest.getClubRoyaleIds())
+                    .celebrityBlueChipIds(partialGuest.getCelebrityBlueChipIds())
                     .azamaraBookingIds(partialGuest.getAzamaraBookingIds())
                     .celebrityBookingIds(partialGuest.getCelebrityBookingIds())
                     .royalBookingIds(partialGuest.getRoyalBookingIds())
                     .azamaraWebShopperIds(partialGuest.getAzamaraWebShopperIds())
                     .celebrityWebShopperIds(partialGuest.getCelebrityWebShopperIds())
                     .royalWebShopperIds(partialGuest.getRoyalWebShopperIds())
+                    .royalPrimaryBookingId(partialGuest.getRoyalPrimaryBookingId())
+                    .celebrityPrimaryBookingId(partialGuest.getCelebrityPrimaryBookingId())
+                    .azamaraPrimaryBookingId(partialGuest.getAzamaraPrimaryBookingId())
+                    .termsAndConditionsAgreement(partialGuest.getTermsAndConditionsAgreement())
                     .build();
             
             guestValidator.validateGuestUpdateModel(guest);
@@ -172,6 +181,18 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     }
     
     @Override
+    public HeaderServiceCall<NotUsed, String> healthCheck() {
+        return (requestHeader, request) -> {
+            String quote = "Here's to tall ships. "
+                    + "Here's to small ships. "
+                    + "Here's to all the ships on the sea. "
+                    + "But the best ships are friendships, so here's to you and me!";
+            
+            return CompletableFuture.completedFuture(new Pair<>(ResponseHeader.OK, quote));
+        };
+    }
+    
+    @Override
     public Topic<GuestEvent> guestAccountsTopic() {
         return TopicProducer.taggedStreamWithOffset(GuestAccountTag.GUEST_ACCOUNT_EVENT_TAG.allTags(), (tag, offset) ->
                 persistentEntityRegistry.eventStream(tag, offset)
@@ -200,13 +221,20 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                 .email(guest.getEmail())
                 .password(guest.getPassword())
                 .consumerId(guest.getConsumerId())
-                .loyaltyIds(this.mapValuesToSaviyntStringFormat(guest.getLoyaltyIds()))
+                .crownAndAnchorIds(this.mapValuesToSaviyntStringFormat(guest.getCrownAndAnchorIds()))
+                .captainsClubIds(this.mapValuesToSaviyntStringFormat(guest.getCaptainsClubIds()))
+                .azamaraLoyaltyIds(this.mapValuesToSaviyntStringFormat(guest.getAzamaraLoyaltyIds()))
+                .clubRoyaleIds(this.mapValuesToSaviyntStringFormat(guest.getClubRoyaleIds()))
+                .celebrityBlueChipIds(this.mapValuesToSaviyntStringFormat(guest.getCelebrityBlueChipIds()))
                 .azamaraBookingIds(this.mapValuesToSaviyntStringFormat(guest.getAzamaraBookingIds()))
                 .celebrityBookingIds(this.mapValuesToSaviyntStringFormat(guest.getCelebrityBookingIds()))
                 .royalBookingIds(this.mapValuesToSaviyntStringFormat(guest.getRoyalBookingIds()))
                 .azamaraWebShopperIds(this.mapValuesToSaviyntStringFormat(guest.getAzamaraWebShopperIds()))
                 .celebrityWebShopperIds(this.mapValuesToSaviyntStringFormat(guest.getCelebrityWebShopperIds()))
-                .royalWebShopperIds(this.mapValuesToSaviyntStringFormat(guest.getRoyalWebShopperIds()));
+                .royalWebShopperIds(this.mapValuesToSaviyntStringFormat(guest.getRoyalWebShopperIds()))
+                .royalPrimaryBookingId(guest.getRoyalPrimaryBookingId())
+                .celebrityPrimaryBookingId(guest.getCelebrityPrimaryBookingId())
+                .azamaraPrimaryBookingId(guest.getAzamaraPrimaryBookingId());
         
         List<SecurityQuestion> securityQuestions = guest.getSecurityQuestions();
         
@@ -216,6 +244,10 @@ public class GuestAccountServiceImpl implements GuestAccountService {
             builder
                     .securityquestion(sq.getQuestion())
                     .securityanswer(sq.getAnswer());
+        }
+        
+        if (guest.getTermsAndConditionsAgreement() != null) {
+            builder.termsAndConditionsVersion(guest.getTermsAndConditionsAgreement().getVersion());
         }
         
         return builder;
