@@ -10,8 +10,8 @@
   <packaging>pom</packaging>
 
   <modules>
-    <module>accounts-api</module>
-    <module>accounts-impl</module>
+    <module>guest-accounts-api</module>
+    <module>guest-accounts-impl</module>
   </modules>
 
   <properties>
