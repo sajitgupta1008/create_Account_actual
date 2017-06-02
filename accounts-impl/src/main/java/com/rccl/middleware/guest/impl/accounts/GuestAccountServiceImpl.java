@@ -1,5 +1,6 @@
 package com.rccl.middleware.guest.impl.accounts;
 
+import akka.NotUsed;
 import akka.japi.Pair;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -176,6 +177,18 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         
                         return new Pair<>(responseHeader, objNode);
                     });
+        };
+    }
+    
+    @Override
+    public HeaderServiceCall<NotUsed, String> healthCheck() {
+        return (requestHeader, request) -> {
+            String quote = "Here's to tall ships. "
+                    + "Here's to small ships. "
+                    + "Here's to all the ships on the sea. "
+                    + "But the best ships are friendships, so here's to you and me!";
+            
+            return CompletableFuture.completedFuture(new Pair<>(ResponseHeader.OK, quote));
         };
     }
     
