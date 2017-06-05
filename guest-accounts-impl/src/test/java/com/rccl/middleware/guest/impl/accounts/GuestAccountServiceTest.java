@@ -1,6 +1,7 @@
 package com.rccl.middleware.guest.impl.accounts;
 
 import akka.japi.Pair;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.lightbend.lagom.javadsl.api.transport.RequestHeader;
 import com.lightbend.lagom.javadsl.api.transport.ResponseHeader;
 import com.lightbend.lagom.javadsl.server.HeaderServiceCall;
@@ -36,7 +37,7 @@ public class GuestAccountServiceTest {
     
     private static GuestAccountService service;
     
-    private static HeaderServiceCall<Guest, String> createAccount;
+    private static HeaderServiceCall<Guest, TextNode> createAccount;
     
     @BeforeClass
     public static void beforeClass() {
@@ -49,7 +50,7 @@ public class GuestAccountServiceTest {
         );
         
         service = testServer.client(GuestAccountService.class);
-        createAccount = (HeaderServiceCall<Guest, String>) service.createAccount();
+        createAccount = (HeaderServiceCall<Guest, TextNode>) service.createAccount();
     }
     
     @AfterClass
@@ -68,10 +69,10 @@ public class GuestAccountServiceTest {
     public void testPostGuestAccount() throws Exception {
         Guest guest = createSampleGuest().build();
         
-        Pair<ResponseHeader, String> response = createAccount.invokeWithHeaders(RequestHeader.DEFAULT, guest).toCompletableFuture().get(5, SECONDS);
+        Pair<ResponseHeader, TextNode> response = createAccount.invokeWithHeaders(RequestHeader.DEFAULT, guest).toCompletableFuture().get(5, SECONDS);
         
         assertTrue("The status code for success should be 201 Created.", response.first().status() == 201);
-        assertEquals(guest.getEmail(), response.second());
+        assertEquals(guest.getEmail(), response.second().asText());
     }
     
     @Test
