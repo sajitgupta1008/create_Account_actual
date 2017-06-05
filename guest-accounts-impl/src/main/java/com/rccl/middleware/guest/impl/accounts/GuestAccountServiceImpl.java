@@ -22,9 +22,9 @@ import com.rccl.middleware.guest.accounts.SecurityQuestion;
 import com.rccl.middleware.guest.accounts.exceptions.ExistingGuestException;
 import com.rccl.middleware.guest.accounts.exceptions.GuestNotFoundException;
 import com.rccl.middleware.guest.accounts.exceptions.InvalidGuestException;
-import com.rccl.middleware.guest.saviynt.SaviyntGuest;
-import com.rccl.middleware.guest.saviynt.SaviyntService;
-import com.rccl.middleware.guest.saviynt.exceptions.SaviyntExceptionFactory;
+import com.rccl.middleware.saviynt.api.SaviyntGuest;
+import com.rccl.middleware.saviynt.api.SaviyntService;
+import com.rccl.middleware.saviynt.api.exceptions.SaviyntExceptionFactory;
 import play.Configuration;
 
 import javax.inject.Inject;
