@@ -15,8 +15,6 @@ import com.rccl.middleware.guest.accounts.GuestEvent;
 import com.rccl.middleware.guest.accounts.SecurityQuestion;
 import com.rccl.middleware.guest.accounts.TermsAndConditionsAgreement;
 import com.rccl.middleware.guest.impl.saviynt.SaviyntServiceImplStub;
-import com.rccl.middleware.guest.pingfederate.PingFederateService;
-import com.rccl.middleware.guest.pingfederate.PingFederateServiceImplStub;
 import com.rccl.middleware.guest.saviynt.SaviyntService;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -50,8 +48,7 @@ public class GuestAccountMessageBrokerTest {
     public static void setUp() {
         final ServiceTest.Setup setup = defaultSetup()
                 .configureBuilder(builder -> builder.overrides(
-                        bind(SaviyntService.class).to(SaviyntServiceImplStub.class),
-                        bind(PingFederateService.class).to(PingFederateServiceImplStub.class)
+                        bind(SaviyntService.class).to(SaviyntServiceImplStub.class)
                 ));
         
         testServer = startServer(setup.withCassandra(true));

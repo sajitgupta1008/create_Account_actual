@@ -42,8 +42,6 @@
     <skip.unit.tests>false</skip.unit.tests>
     <skip.integration.tests>false</skip.integration.tests>
 
-    <cassandraendpoint>http://127.0.0.1:9042</cassandraendpoint>
-
   </properties>
 
   <build>
@@ -60,9 +58,8 @@
         <version>${lagom.version}</version>
         <configuration>
           <unmanagedServices>
-            <cas_native>${cassandraendpoint}</cas_native>
-            <saviynt>http://10.16.5.31:8080</saviynt>
-            <pingfederate>http://10.16.6.134:8090/ping-federate</pingfederate>
+            <cas_native>http://127.0.0.1:9042</cas_native>
+            <saviynt>http://10.16.6.134:8090</saviynt>
           </unmanagedServices>
           <kafkaEnabled>false</kafkaEnabled>
           <cassandraEnabled>false</cassandraEnabled>

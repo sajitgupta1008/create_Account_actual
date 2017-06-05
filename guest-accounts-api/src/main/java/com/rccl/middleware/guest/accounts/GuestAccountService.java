@@ -2,6 +2,7 @@ package com.rccl.middleware.guest.accounts;
 
 import akka.NotUsed;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.lightbend.lagom.javadsl.api.Descriptor;
 import com.lightbend.lagom.javadsl.api.Service;
 import com.lightbend.lagom.javadsl.api.ServiceCall;
@@ -24,7 +25,7 @@ public interface GuestAccountService extends Service {
      *
      * @return {@code String}
      */
-    ServiceCall<Guest, String> createAccount();
+    ServiceCall<Guest, TextNode> createAccount();
     
     ServiceCall<Guest, JsonNode> updateAccount(String email);
     

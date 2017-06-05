@@ -4,7 +4,6 @@ import com.google.inject.AbstractModule;
 import com.lightbend.lagom.javadsl.server.ServiceGuiceSupport;
 import com.rccl.middleware.guest.accounts.GuestAccountService;
 import com.rccl.middleware.guest.impl.accounts.GuestAccountServiceImpl;
-import com.rccl.middleware.guest.pingfederate.PingFederateService;
 import com.rccl.middleware.guest.saviynt.SaviyntService;
 
 public class GuestAccountModule extends AbstractModule implements ServiceGuiceSupport {
@@ -13,6 +12,5 @@ public class GuestAccountModule extends AbstractModule implements ServiceGuiceSu
     protected void configure() {
         bindService(GuestAccountService.class, GuestAccountServiceImpl.class);
         bindClient(SaviyntService.class);
-        bindClient(PingFederateService.class);
     }
 }
