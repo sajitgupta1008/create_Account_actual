@@ -5,6 +5,7 @@ import akka.japi.Pair;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.lightbend.lagom.javadsl.api.broker.Topic;
 import com.lightbend.lagom.javadsl.api.transport.ResponseHeader;
 import com.lightbend.lagom.javadsl.api.transport.TransportErrorCode;
@@ -21,8 +22,6 @@ import com.rccl.middleware.guest.accounts.SecurityQuestion;
 import com.rccl.middleware.guest.accounts.exceptions.ExistingGuestException;
 import com.rccl.middleware.guest.accounts.exceptions.GuestNotFoundException;
 import com.rccl.middleware.guest.accounts.exceptions.InvalidGuestException;
-import com.rccl.middleware.guest.pingfederate.PingFederateService;
-import com.rccl.middleware.guest.pingfederate.PingFederateSubject;
 import com.rccl.middleware.guest.saviynt.SaviyntGuest;
 import com.rccl.middleware.guest.saviynt.SaviyntService;
 import com.rccl.middleware.guest.saviynt.exceptions.SaviyntExceptionFactory;
@@ -43,20 +42,16 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     
     private final PersistentEntityRegistry persistentEntityRegistry;
     
-    private final PingFederateService pingFederateService;
-    
     private final SaviyntService saviyntService;
     
     private final List<Link> updateAccountLinks;
     
     @Inject
     public GuestAccountServiceImpl(GuestValidator guestValidator,
-                                   PingFederateService pingFederateService,
                                    SaviyntService saviyntService,
                                    Configuration configuration,
                                    PersistentEntityRegistry persistentEntityRegistry) {
         this.guestValidator = guestValidator;
-        this.pingFederateService = pingFederateService;
         this.saviyntService = saviyntService;
         
         this.persistentEntityRegistry = persistentEntityRegistry;
@@ -67,13 +62,12 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     }
     
     @Override
-    public HeaderServiceCall<Guest, String> createAccount() {
+    public HeaderServiceCall<Guest, TextNode> createAccount() {
         return (requestHeader, guest) -> {
             guestValidator.validate(guest);
             
             final SaviyntGuest saviyntGuest = mapGuestToSaviyntGuest(guest).build();
             
-            // Begin by invoking the Saviynt create account service.
             return saviyntService
                     .postGuestAccount()
                     .invoke(saviyntGuest)
@@ -94,22 +88,11 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         
                         throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
                     })
-                    // Upon success of Saviynt, invoke the PingFederate service to "log" the user in,
-                    // and return the reference ID.
-                    .thenCompose(saviyntResponse -> {
+                    .thenApply(response -> {
                         persistentEntityRegistry.refFor(GuestAccountEntity.class, guest.getEmail())
                                 .ask(new GuestAccountCommand.CreateGuest(guest));
                         
-                        PingFederateSubject pfs = PingFederateSubject.builder().subject(guest.getEmail()).build();
-                        
-                        return pingFederateService
-                                .generateReferenceId()
-                                .invoke(pfs)
-                                .exceptionally(exception -> {
-                                    // TODO: Handle ConnectException for invalid SSL certificates.
-                                    throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
-                                })
-                                .thenApply(referenceId -> new Pair<>(ResponseHeader.OK.withStatus(201), referenceId.getValue()));
+                        return new Pair<>(ResponseHeader.OK.withStatus(201), TextNode.valueOf(guest.getEmail()));
                     });
         };
     }

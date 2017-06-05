@@ -11,8 +11,6 @@ import com.rccl.middleware.guest.accounts.SecurityQuestion;
 import com.rccl.middleware.guest.accounts.TermsAndConditionsAgreement;
 import com.rccl.middleware.guest.accounts.exceptions.InvalidGuestException;
 import com.rccl.middleware.guest.impl.saviynt.SaviyntServiceImplStub;
-import com.rccl.middleware.guest.pingfederate.PingFederateService;
-import com.rccl.middleware.guest.pingfederate.PingFederateServiceImplStub;
 import com.rccl.middleware.guest.saviynt.SaviyntService;
 import com.rccl.middleware.guest.saviynt.exceptions.SaviyntExceptionFactory;
 import org.junit.AfterClass;
@@ -46,7 +44,6 @@ public class GuestAccountServiceTest {
                 .withCassandra(true)
                 .configureBuilder(builder -> builder.overrides(
                         bind(SaviyntService.class).to(SaviyntServiceImplStub.class),
-                        bind(PingFederateService.class).to(PingFederateServiceImplStub.class),
                         bind(GuestAccountService.class).to(GuestAccountServiceImpl.class)
                 ))
         );
@@ -74,7 +71,7 @@ public class GuestAccountServiceTest {
         Pair<ResponseHeader, String> response = createAccount.invokeWithHeaders(RequestHeader.DEFAULT, guest).toCompletableFuture().get(5, SECONDS);
         
         assertTrue("The status code for success should be 201 Created.", response.first().status() == 201);
-        assertEquals(PingFederateServiceImplStub.REFERENCE_ID.getValue(), response.second());
+        assertEquals(guest.getEmail(), response.second());
     }
     
     @Test
