@@ -4,7 +4,7 @@ import com.google.inject.AbstractModule;
 import com.lightbend.lagom.javadsl.server.ServiceGuiceSupport;
 import com.rccl.middleware.guest.accounts.GuestAccountService;
 import com.rccl.middleware.guest.impl.accounts.GuestAccountServiceImpl;
-import com.rccl.middleware.guest.saviynt.SaviyntService;
+import com.rccl.middleware.saviynt.api.SaviyntService;
 
 public class GuestAccountModule extends AbstractModule implements ServiceGuiceSupport {
     

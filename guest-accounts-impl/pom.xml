@@ -80,6 +80,12 @@
       <groupId>com.rccl.middleware</groupId>
       <artifactId>middleware-common</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>com.rccl.middleware</groupId>
+      <artifactId>saviynt</artifactId>
+    </dependency>
+
   </dependencies>
 
   <build>
