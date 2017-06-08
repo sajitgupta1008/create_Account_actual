@@ -7,6 +7,7 @@ import com.lightbend.lagom.javadsl.api.Descriptor;
 import com.lightbend.lagom.javadsl.api.Service;
 import com.lightbend.lagom.javadsl.api.ServiceCall;
 import com.lightbend.lagom.javadsl.api.broker.Topic;
+import com.typesafe.config.ConfigFactory;
 
 import static com.lightbend.lagom.javadsl.api.Service.named;
 import static com.lightbend.lagom.javadsl.api.Service.restCall;
@@ -17,7 +18,7 @@ import static com.lightbend.lagom.javadsl.api.transport.Method.PUT;
 
 public interface GuestAccountService extends Service {
     
-    String ACCOUNTS_PUBLISH_EVENT = "guest-accounts";
+    String KAFKA_TOPIC_NAME = ConfigFactory.load().getString("kafka.topic.name");
     
     /**
      * Create a guest account from the given {@link Guest} and get back the user ID
@@ -43,7 +44,7 @@ public interface GuestAccountService extends Service {
                         restCall(GET, "/v1/guestAccounts/health", this::healthCheck)
                 )
                 .publishing(
-                        topic(ACCOUNTS_PUBLISH_EVENT, this::guestAccountsTopic)
+                        topic(KAFKA_TOPIC_NAME, this::guestAccountsTopic)
                 )
                 .withAutoAcl(true);
     }
