@@ -72,7 +72,7 @@ public class GuestAccountServiceTest {
         Pair<ResponseHeader, TextNode> response = createAccount.invokeWithHeaders(RequestHeader.DEFAULT, guest).toCompletableFuture().get(5, SECONDS);
         
         assertTrue("The status code for success should be 201 Created.", response.first().status() == 201);
-        assertEquals(guest.getEmail(), response.second().asText());
+        assertEquals("G3396535", response.second().asText());
     }
     
     @Test
@@ -191,6 +191,7 @@ public class GuestAccountServiceTest {
         builder.firstName("Brad")
                 .lastName("Pitt")
                 .email("lawn@order.com")
+                .dateOfBirth("19910101")
                 .password("Secret123".toCharArray())
                 .brand('R');
         
