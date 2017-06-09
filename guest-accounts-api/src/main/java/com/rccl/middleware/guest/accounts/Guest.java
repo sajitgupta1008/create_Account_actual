@@ -6,6 +6,7 @@ import com.rccl.middleware.guest.accounts.validation.Brand;
 import com.rccl.middleware.guest.accounts.validation.DateFormat;
 import com.rccl.middleware.guest.accounts.validation.GuestAccountPassword;
 import com.rccl.middleware.guest.accounts.validation.NumericFormatList;
+import com.rccl.middleware.guest.accounts.validation.OptinList;
 import lombok.Builder;
 import lombok.Value;
 import org.hibernate.validator.constraints.Email;
@@ -102,6 +103,9 @@ public class Guest implements Jsonable {
     
     @Pattern(regexp = "\\d*", message = "Booking ID must be in numeric format.", groups = UpdateChecks.class)
     String azamaraPrimaryBookingId;
+    
+    @OptinList(groups = DefaultChecks.class)
+    List<Optin> optins;
     
     public interface CreateChecks extends DefaultChecks {
         // Validation group interface.
