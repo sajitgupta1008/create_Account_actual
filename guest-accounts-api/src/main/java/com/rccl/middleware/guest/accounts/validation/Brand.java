@@ -16,7 +16,7 @@ public @interface Brand {
     
     Class<?>[] groups() default {};
     
-    String message() default "The brand must be one of the following characters: r (R), c (C), or a (A)";
+    String message() default "The brand must be one of the following characters: r (R), c (C), or z (Z)";
     
     Class<? extends Payload>[] payload() default {};
 }
