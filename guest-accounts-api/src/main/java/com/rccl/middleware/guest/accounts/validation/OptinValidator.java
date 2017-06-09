@@ -16,6 +16,9 @@ public class OptinValidator implements ConstraintValidator<OptinList, List<Optin
     
     @Override
     public boolean isValid(List<Optin> values, ConstraintValidatorContext context) {
+        if (values == null || values.isEmpty()) {
+            return true;
+        }
         
         try {
             values.forEach(optin -> OptinEnum.valueOf(optin.getType()));
