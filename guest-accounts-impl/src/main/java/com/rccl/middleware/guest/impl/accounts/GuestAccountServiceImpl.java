@@ -49,6 +49,10 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     
     private final List<Link> updateAccountLinks;
     
+    private final String CREATE_ACCOUNT = "create";
+    
+    private final String UPDATE_ACCOUNT = "update";
+    
     @Inject
     public GuestAccountServiceImpl(GuestValidator guestValidator,
                                    SaviyntService saviyntService,
@@ -69,7 +73,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
         return (requestHeader, guest) -> {
             guestValidator.validate(guest);
             
-            final SaviyntGuest saviyntGuest = mapGuestToSaviyntGuest(guest).build();
+            final SaviyntGuest saviyntGuest = mapGuestToSaviyntGuest(guest, CREATE_ACCOUNT).build();
             
             return saviyntService
                     .postGuestAccount()
@@ -138,7 +142,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
             
             guestValidator.validateGuestUpdateModel(guest);
             
-            final SaviyntGuest saviyntGuest = mapGuestToSaviyntGuest(guest).email(email).build();
+            final SaviyntGuest saviyntGuest = mapGuestToSaviyntGuest(guest, UPDATE_ACCOUNT).email(email).build();
             
             return saviyntService
                     .putGuestAccount()
@@ -206,12 +210,18 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         }));
     }
     
-    private SaviyntGuest.SaviyntGuestBuilder mapGuestToSaviyntGuest(Guest guest) {
+    /**
+     * Creates a builder which maps the appropriate {@link Guest} values into {@link SaviyntGuest} object based on the action taken.
+     *
+     * @param guest the {@link Guest} model
+     * @param action the request being taken whether it is create or update guest account
+     * @return {@link SaviyntGuest.SaviyntGuestBuilder}
+     */
+    private SaviyntGuest.SaviyntGuestBuilder mapGuestToSaviyntGuest(Guest guest, String action) {
         SaviyntGuest.SaviyntGuestBuilder builder = SaviyntGuest.builder()
                 .firstname(guest.getFirstName())
                 .lastname(guest.getLastName())
                 .displayname(guest.getFirstName() + " " + guest.getLastName())
-                .username(guest.getEmail())
                 .email(guest.getEmail())
                 .password(guest.getPassword())
                 .dateofBirth(guest.getDateOfBirth())
@@ -229,8 +239,13 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                 .royalWebShopperIds(this.mapValuesToSaviyntStringFormat(guest.getRoyalWebShopperIds()))
                 .royalPrimaryBookingId(guest.getRoyalPrimaryBookingId())
                 .celebrityPrimaryBookingId(guest.getCelebrityPrimaryBookingId())
-                .azamaraPrimaryBookingId(guest.getAzamaraPrimaryBookingId())
-                .userType(SaviyntUserType.Guest);
+                .azamaraPrimaryBookingId(guest.getAzamaraPrimaryBookingId());
+        
+        // only map the account creation specific attributes
+        if (action.equals(CREATE_ACCOUNT)) {
+            builder.username(guest.getEmail())
+                    .userType(SaviyntUserType.Guest);
+        }
         
         List<SecurityQuestion> securityQuestions = guest.getSecurityQuestions();
         
