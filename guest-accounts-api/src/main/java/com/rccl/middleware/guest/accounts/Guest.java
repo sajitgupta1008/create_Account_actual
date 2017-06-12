@@ -42,7 +42,7 @@ public class Guest implements Jsonable {
     @Size(min = 2, max = 100, message = "The last name must be at least two (2) characters.", groups = DefaultChecks.class)
     String lastName;
     
-    @NotNull(message = "A date of birth is required.", groups = CreateChecks.class)
+    @NotEmpty(message = "Date of birth is required.", groups = CreateChecks.class)
     @DateFormat(groups = DefaultChecks.class)
     String dateOfBirth;
     
