@@ -24,12 +24,15 @@ import com.rccl.middleware.guest.accounts.exceptions.GuestNotFoundException;
 import com.rccl.middleware.guest.accounts.exceptions.InvalidGuestException;
 import com.rccl.middleware.saviynt.api.SaviyntGuest;
 import com.rccl.middleware.saviynt.api.SaviyntService;
+import com.rccl.middleware.saviynt.api.SaviyntUserType;
 import com.rccl.middleware.saviynt.api.exceptions.SaviyntExceptionFactory;
 import play.Configuration;
 
 import javax.inject.Inject;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class GuestAccountServiceImpl implements GuestAccountService {
@@ -92,7 +95,14 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         persistentEntityRegistry.refFor(GuestAccountEntity.class, guest.getEmail())
                                 .ask(new GuestAccountCommand.CreateGuest(guest));
                         
-                        return new Pair<>(ResponseHeader.OK.withStatus(201), TextNode.valueOf(guest.getEmail()));
+                        //TODO replace this with the vdsId attribute when available
+                        String message = response.get("message").asText();
+                        Pattern pattern = Pattern.compile("vdsid=[a-zA-Z0-9]*");
+                        Matcher matcher = pattern.matcher(message);
+                        matcher.find();
+                        String vdsId = matcher.group(0).substring(6);
+                        
+                        return new Pair<>(ResponseHeader.OK.withStatus(201), TextNode.valueOf(vdsId));
                     });
         };
     }
@@ -105,6 +115,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                     .email(email)
                     .firstName(partialGuest.getFirstName())
                     .lastName(partialGuest.getLastName())
+                    .dateOfBirth(partialGuest.getDateOfBirth())
                     .securityQuestions(partialGuest.getSecurityQuestions())
                     .brand(partialGuest.getBrand())
                     .consumerId(partialGuest.getConsumerId())
@@ -203,6 +214,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                 .username(guest.getEmail())
                 .email(guest.getEmail())
                 .password(guest.getPassword())
+                .dateofBirth(guest.getDateOfBirth())
                 .consumerId(guest.getConsumerId())
                 .crownAndAnchorIds(this.mapValuesToSaviyntStringFormat(guest.getCrownAndAnchorIds()))
                 .captainsClubIds(this.mapValuesToSaviyntStringFormat(guest.getCaptainsClubIds()))
@@ -217,7 +229,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                 .royalWebShopperIds(this.mapValuesToSaviyntStringFormat(guest.getRoyalWebShopperIds()))
                 .royalPrimaryBookingId(guest.getRoyalPrimaryBookingId())
                 .celebrityPrimaryBookingId(guest.getCelebrityPrimaryBookingId())
-                .azamaraPrimaryBookingId(guest.getAzamaraPrimaryBookingId());
+                .azamaraPrimaryBookingId(guest.getAzamaraPrimaryBookingId())
+                .userType(SaviyntUserType.Guest);
         
         List<SecurityQuestion> securityQuestions = guest.getSecurityQuestions();
         

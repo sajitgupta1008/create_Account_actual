@@ -59,7 +59,7 @@
         <version>${lagom.version}</version>
         <configuration>
           <unmanagedServices>
-            <cas_native>http://127.0.0.1:9042</cas_native>
+            <cas_native>http://localhost:9042</cas_native>
             <saviynt>http://10.16.6.134:8090</saviynt>
           </unmanagedServices>
           <kafkaEnabled>false</kafkaEnabled>

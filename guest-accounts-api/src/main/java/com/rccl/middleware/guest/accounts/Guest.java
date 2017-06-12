@@ -3,8 +3,10 @@ package com.rccl.middleware.guest.accounts;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.lightbend.lagom.serialization.Jsonable;
 import com.rccl.middleware.guest.accounts.validation.Brand;
+import com.rccl.middleware.guest.accounts.validation.DateFormat;
 import com.rccl.middleware.guest.accounts.validation.GuestAccountPassword;
 import com.rccl.middleware.guest.accounts.validation.NumericFormatList;
+import com.rccl.middleware.guest.accounts.validation.OptinList;
 import lombok.Builder;
 import lombok.Value;
 import org.hibernate.validator.constraints.Email;
@@ -39,6 +41,10 @@ public class Guest implements Jsonable {
     @NotNull(message = "A last name is required.", groups = CreateChecks.class)
     @Size(min = 2, max = 100, message = "The last name must be at least two (2) characters.", groups = DefaultChecks.class)
     String lastName;
+    
+    @NotNull(message = "A date of birth is required.", groups = CreateChecks.class)
+    @DateFormat(groups = DefaultChecks.class)
+    String dateOfBirth;
     
     @NotNull(message = "A password is required.", groups = CreateChecks.class)
     @GuestAccountPassword(groups = DefaultChecks.class)
@@ -97,6 +103,9 @@ public class Guest implements Jsonable {
     
     @Pattern(regexp = "\\d*", message = "Booking ID must be in numeric format.", groups = UpdateChecks.class)
     String azamaraPrimaryBookingId;
+    
+    @OptinList(groups = DefaultChecks.class)
+    List<Optin> optins;
     
     public interface CreateChecks extends DefaultChecks {
         // Validation group interface.

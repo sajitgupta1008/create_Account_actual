@@ -10,13 +10,15 @@ import java.lang.annotation.Target;
 
 @Target({ElementType.METHOD, ElementType.FIELD, ElementType.ANNOTATION_TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@Constraint(validatedBy = BrandValidator.class)
+@Constraint(validatedBy = DateFormatValidator.class)
 @Documented
-public @interface Brand {
+public @interface DateFormat {
     
     Class<?>[] groups() default {};
     
-    String message() default "The brand must be one of the following characters: r (R), c (C), or z (Z)";
+    String message() default "The date must follow ISO-8601 format (yyyyMMdd).";
+    
+    String format() default "yyyyMMdd";
     
     Class<? extends Payload>[] payload() default {};
 }

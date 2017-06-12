@@ -146,6 +146,7 @@ public class GuestAccountMessageBrokerTest {
                 .brand('r')
                 .consumerId("123456789")
                 .password("pass123!".toCharArray())
+                .dateOfBirth("19910101")
                 .securityQuestions(Arrays.asList(SecurityQuestion.builder().question("what?").answer("yes").build()))
                 .termsAndConditionsAgreement(TermsAndConditionsAgreement.builder().acceptTime(1490108091640L).version("1.0").build())
                 .build();

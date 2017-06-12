@@ -10,13 +10,13 @@ import java.lang.annotation.Target;
 
 @Target({ElementType.METHOD, ElementType.FIELD, ElementType.ANNOTATION_TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@Constraint(validatedBy = BrandValidator.class)
+@Constraint(validatedBy = OptinValidator.class)
 @Documented
-public @interface Brand {
+public @interface OptinList {
     
     Class<?>[] groups() default {};
     
-    String message() default "The brand must be one of the following characters: r (R), c (C), or z (Z)";
+    String message() default "A value specified is not a valid optin.";
     
     Class<? extends Payload>[] payload() default {};
 }
