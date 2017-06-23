@@ -76,7 +76,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
             final SaviyntGuest saviyntGuest = mapGuestToSaviyntGuest(guest, CREATE_ACCOUNT).build();
             
             return saviyntService
-                    .postGuestAccount()
+                    .createGuestAccount()
                     .invoke(saviyntGuest)
                     .exceptionally(exception -> {
                         Throwable cause = exception.getCause();
@@ -145,7 +145,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
             final SaviyntGuest saviyntGuest = mapGuestToSaviyntGuest(guest, UPDATE_ACCOUNT).email(email).build();
             
             return saviyntService
-                    .putGuestAccount()
+                    .updateGuestAccount()
                     .invoke(saviyntGuest)
                     .exceptionally(exception -> {
                         Throwable cause = exception.getCause();
@@ -239,7 +239,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                 .royalWebShopperIds(this.mapValuesToSaviyntStringFormat(guest.getRoyalWebShopperIds()))
                 .royalPrimaryBookingId(guest.getRoyalPrimaryBookingId())
                 .celebrityPrimaryBookingId(guest.getCelebrityPrimaryBookingId())
-                .azamaraPrimaryBookingId(guest.getAzamaraPrimaryBookingId());
+                .azamaraPrimaryBookingId(guest.getAzamaraPrimaryBookingId())
+                .propertytosearch("email");
         
         // only map the account creation specific attributes
         if (action.equals(CREATE_ACCOUNT)) {
