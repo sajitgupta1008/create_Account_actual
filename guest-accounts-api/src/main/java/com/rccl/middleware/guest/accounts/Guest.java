@@ -2,7 +2,6 @@ package com.rccl.middleware.guest.accounts;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.lightbend.lagom.serialization.Jsonable;
-import com.rccl.middleware.guest.accounts.validation.Brand;
 import com.rccl.middleware.guest.accounts.validation.DateFormat;
 import com.rccl.middleware.guest.accounts.validation.GuestAccountPassword;
 import com.rccl.middleware.guest.accounts.validation.NumericFormatList;
@@ -23,10 +22,6 @@ import java.util.List;
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Guest implements Jsonable {
-    
-    @NotNull(message = "A brand char is required.", groups = CreateChecks.class)
-    @Brand(groups = DefaultChecks.class)
-    Character brand;
     
     @NotBlank(message = "An email is required.", groups = DefaultChecks.class)
     @Email(regexp = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$",

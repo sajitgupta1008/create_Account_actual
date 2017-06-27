@@ -143,7 +143,6 @@ public class GuestAccountMessageBrokerTest {
                 .email("sample@email.com")
                 .firstName("John")
                 .lastName("Downs")
-                .brand('r')
                 .consumerId("123456789")
                 .password("pass123!".toCharArray())
                 .dateOfBirth("19910101")

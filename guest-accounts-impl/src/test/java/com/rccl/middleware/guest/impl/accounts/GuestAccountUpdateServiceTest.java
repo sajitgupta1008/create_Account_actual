@@ -114,7 +114,6 @@ public class GuestAccountUpdateServiceTest {
                 .dateOfBirth("19910101")
                 .password("pass345!".toCharArray())
                 .securityQuestions(securityQuestionList)
-                .brand('R')
                 .build();
         
         try {
@@ -148,7 +147,6 @@ public class GuestAccountUpdateServiceTest {
                 .dateOfBirth("19910101")
                 .password("345".toCharArray())
                 .securityQuestions(securityQuestionList)
-                .brand('R')
                 .build();
         
         try {

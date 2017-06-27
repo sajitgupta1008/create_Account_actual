@@ -121,7 +121,6 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                     .lastName(partialGuest.getLastName())
                     .dateOfBirth(partialGuest.getDateOfBirth())
                     .securityQuestions(partialGuest.getSecurityQuestions())
-                    .brand(partialGuest.getBrand())
                     .consumerId(partialGuest.getConsumerId())
                     .crownAndAnchorIds(partialGuest.getCrownAndAnchorIds())
                     .captainsClubIds(partialGuest.getCaptainsClubIds())
