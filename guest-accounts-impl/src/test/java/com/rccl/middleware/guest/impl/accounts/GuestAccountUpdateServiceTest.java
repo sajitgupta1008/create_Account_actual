@@ -67,7 +67,7 @@ public class GuestAccountUpdateServiceTest {
                 .email(emailID)
                 .firstName("John")
                 .lastName("Dale")
-                .dateOfBirth("19910101")
+                .birthdate("19910101")
                 .password("pass123".toCharArray())
                 .securityQuestions(securityQuestionList)
                 .crownAndAnchorIds(Arrays.asList("12345678", "12345678"))
@@ -111,10 +111,9 @@ public class GuestAccountUpdateServiceTest {
                 .email(emailID)
                 .firstName("John")
                 .lastName("Dale")
-                .dateOfBirth("19910101")
+                .birthdate("19910101")
                 .password("pass345!".toCharArray())
                 .securityQuestions(securityQuestionList)
-                .brand('R')
                 .build();
         
         try {
@@ -145,10 +144,9 @@ public class GuestAccountUpdateServiceTest {
                 .email(emailID)
                 .firstName("J")
                 .lastName("D")
-                .dateOfBirth("19910101")
+                .birthdate("19910101")
                 .password("345".toCharArray())
                 .securityQuestions(securityQuestionList)
-                .brand('R')
                 .build();
         
         try {
@@ -179,7 +177,7 @@ public class GuestAccountUpdateServiceTest {
                 .email(emailID)
                 .firstName("John")
                 .lastName("Dale")
-                .dateOfBirth("19910101")
+                .birthdate("19910101")
                 .password("pass123!".toCharArray())
                 .securityQuestions(securityQuestionList)
                 .crownAndAnchorIds(Arrays.asList("asdd", "12345678"))
