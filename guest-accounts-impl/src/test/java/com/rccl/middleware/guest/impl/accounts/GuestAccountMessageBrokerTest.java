@@ -145,9 +145,9 @@ public class GuestAccountMessageBrokerTest {
                 .lastName("Downs")
                 .consumerId("123456789")
                 .password("pass123!".toCharArray())
-                .dateOfBirth("19910101")
+                .birthdate("19910101")
                 .securityQuestions(Arrays.asList(SecurityQuestion.builder().question("what?").answer("yes").build()))
-                .termsAndConditionsAgreement(TermsAndConditionsAgreement.builder().acceptTime(1490108091640L).version("1.0").build())
+                .termsAndConditionsAgreement(TermsAndConditionsAgreement.builder().acceptTime("20170627033735PM").version("1.0").build())
                 .build();
     }
 }

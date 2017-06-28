@@ -39,7 +39,7 @@ public class Guest implements Jsonable {
     
     @NotEmpty(message = "Date of birth is required.", groups = CreateChecks.class)
     @DateFormat(groups = DefaultChecks.class)
-    String dateOfBirth;
+    String birthdate;
     
     @NotNull(message = "A password is required.", groups = CreateChecks.class)
     @GuestAccountPassword(groups = DefaultChecks.class)

@@ -132,7 +132,7 @@ public class GuestAccountServiceTest {
         shorthandInvokeExpectingWithValidationExceptionMessage(nullTACA);
         
         // Test missing agreement version.
-        TermsAndConditionsAgreement emptyVersion = TermsAndConditionsAgreement.builder().acceptTime(0L).build();
+        TermsAndConditionsAgreement emptyVersion = TermsAndConditionsAgreement.builder().acceptTime("").build();
         Guest emptyVersionGuest = createSampleGuest().termsAndConditionsAgreement(emptyVersion).build();
         shorthandInvokeExpectingWithValidationExceptionMessage(emptyVersionGuest);
         
@@ -191,11 +191,11 @@ public class GuestAccountServiceTest {
         builder.firstName("Brad")
                 .lastName("Pitt")
                 .email("lawn@order.com")
-                .dateOfBirth("19910101")
+                .birthdate("19910101")
                 .password("Secret123".toCharArray());
         
         TermsAndConditionsAgreement tca = TermsAndConditionsAgreement.builder()
-                .acceptTime(1490108091640L)
+                .acceptTime("20170627033735PM")
                 .version("1.0")
                 .build();
         
