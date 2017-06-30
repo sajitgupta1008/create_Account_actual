@@ -15,12 +15,15 @@ import com.lightbend.lagom.javadsl.server.HeaderServiceCall;
 import com.rccl.middleware.common.exceptions.MiddlewareTransportException;
 import com.rccl.middleware.common.hateoas.HATEOASLinks;
 import com.rccl.middleware.common.hateoas.Link;
+import com.rccl.middleware.common.validation.MiddlewareValidation;
+import com.rccl.middleware.guest.accounts.AccountStatusEnum;
 import com.rccl.middleware.guest.accounts.Guest;
 import com.rccl.middleware.guest.accounts.GuestAccountService;
 import com.rccl.middleware.guest.accounts.GuestEvent;
 import com.rccl.middleware.guest.accounts.SecurityQuestion;
 import com.rccl.middleware.guest.accounts.exceptions.ExistingGuestException;
 import com.rccl.middleware.guest.accounts.exceptions.GuestNotFoundException;
+import com.rccl.middleware.guest.accounts.exceptions.InvalidEmailFormatException;
 import com.rccl.middleware.guest.accounts.exceptions.InvalidGuestException;
 import com.rccl.middleware.saviynt.api.SaviyntGuest;
 import com.rccl.middleware.saviynt.api.SaviyntService;
@@ -30,6 +33,7 @@ import play.Configuration;
 
 import javax.inject.Inject;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -40,8 +44,6 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     
     private static final String UPDATE_GUEST_CONFIG_PATH = "update-account";
-    
-    private final GuestValidator guestValidator;
     
     private final PersistentEntityRegistry persistentEntityRegistry;
     
@@ -54,11 +56,9 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     private final String UPDATE_ACCOUNT = "update";
     
     @Inject
-    public GuestAccountServiceImpl(GuestValidator guestValidator,
-                                   SaviyntService saviyntService,
+    public GuestAccountServiceImpl(SaviyntService saviyntService,
                                    Configuration configuration,
                                    PersistentEntityRegistry persistentEntityRegistry) {
-        this.guestValidator = guestValidator;
         this.saviyntService = saviyntService;
         
         this.persistentEntityRegistry = persistentEntityRegistry;
@@ -71,7 +71,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     @Override
     public HeaderServiceCall<Guest, TextNode> createAccount() {
         return (requestHeader, guest) -> {
-            guestValidator.validate(guest);
+            MiddlewareValidation.validateWithGroups(guest, Guest.CreateChecks.class);
             
             final SaviyntGuest saviyntGuest = mapGuestToSaviyntGuest(guest, CREATE_ACCOUNT).build();
             
@@ -139,7 +139,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                     .termsAndConditionsAgreement(partialGuest.getTermsAndConditionsAgreement())
                     .build();
             
-            guestValidator.validateGuestUpdateModel(guest);
+            MiddlewareValidation.validateWithGroups(guest, Guest.UpdateChecks.class);
             
             final SaviyntGuest saviyntGuest = mapGuestToSaviyntGuest(guest, UPDATE_ACCOUNT).email(email).build();
             
@@ -173,6 +173,57 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         ResponseHeader responseHeader = ResponseHeader.OK.withStatus(200);
                         
                         return new Pair<>(responseHeader, objNode);
+                    });
+        };
+    }
+    
+    @Override
+    public HeaderServiceCall<NotUsed, JsonNode> validateEmail(String email) {
+        return (requestHeader, notUsed) -> {
+            
+            String emailPattern = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@"
+                    + "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
+            Pattern pattern = Pattern.compile(emailPattern);
+            Matcher matcher = pattern.matcher(email);
+            
+            if (!matcher.matches()) {
+                throw new InvalidEmailFormatException();
+            }
+            
+            return saviyntService.getGuestAccount("email", Optional.of(email), Optional.empty())
+                    .invoke()
+                    .exceptionally(exception -> {
+                        Throwable cause = exception.getCause();
+                        
+                        if (cause instanceof SaviyntExceptionFactory.ExistingGuestException
+                                || cause instanceof SaviyntExceptionFactory.NoSuchGuestException) {
+                            ObjectNode errorJson = OBJECT_MAPPER.createObjectNode();
+                            errorJson.put("status", AccountStatusEnum.DOESTNOTEXIST.value());
+                            return errorJson;
+                        }
+                        
+                        if (cause instanceof SaviyntExceptionFactory.InvalidEmailFormatException) {
+                            throw new InvalidEmailFormatException();
+                        }
+                        
+                        throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
+                    })
+                    .thenApply(response -> {
+                        ObjectNode jsonResponse = OBJECT_MAPPER.createObjectNode();
+                        
+                        //return response from exceptionally block if present.
+                        if (response.get("status") != null) {
+                            jsonResponse = response.deepCopy();
+                        } else {
+                            if (response.get("SavCode") != null && response.get("SavCode").asText().contains("Sav000")) {
+                                jsonResponse.put("status", AccountStatusEnum.EXISTING.value());
+                            } else {
+                                jsonResponse.put("status", AccountStatusEnum.NEEDSTOBEMIGRATED.value());
+                            }
+                        }
+                        
+                        ResponseHeader responseHeader = ResponseHeader.OK.withStatus(200);
+                        return new Pair<>(responseHeader, jsonResponse);
                     });
         };
     }
@@ -212,7 +263,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     /**
      * Creates a builder which maps the appropriate {@link Guest} values into {@link SaviyntGuest} object based on the action taken.
      *
-     * @param guest the {@link Guest} model
+     * @param guest  the {@link Guest} model
      * @param action the request being taken whether it is create or update guest account
      * @return {@link SaviyntGuest.SaviyntGuestBuilder}
      */
