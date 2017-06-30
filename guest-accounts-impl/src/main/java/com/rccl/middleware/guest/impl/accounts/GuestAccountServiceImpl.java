@@ -149,7 +149,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                     .exceptionally(exception -> {
                         Throwable cause = exception.getCause();
                         
-                        if (cause instanceof SaviyntExceptionFactory.NoSuchGuestException) {
+                        if (cause instanceof SaviyntExceptionFactory.NoSuchGuestException
+                                || cause instanceof SaviyntExceptionFactory.ExistingGuestException) {
                             throw new GuestNotFoundException();
                         }
                         
