@@ -6,11 +6,11 @@ import com.lightbend.lagom.javadsl.api.transport.RequestHeader;
 import com.lightbend.lagom.javadsl.api.transport.ResponseHeader;
 import com.lightbend.lagom.javadsl.server.HeaderServiceCall;
 import com.lightbend.lagom.javadsl.testkit.ServiceTest.TestServer;
+import com.rccl.middleware.common.validation.MiddlewareValidationException;
 import com.rccl.middleware.guest.accounts.Guest;
 import com.rccl.middleware.guest.accounts.GuestAccountService;
 import com.rccl.middleware.guest.accounts.SecurityQuestion;
 import com.rccl.middleware.guest.accounts.TermsAndConditionsAgreement;
-import com.rccl.middleware.guest.accounts.exceptions.InvalidGuestException;
 import com.rccl.middleware.saviynt.api.SaviyntService;
 import com.rccl.middleware.saviynt.api.SaviyntServiceImplStub;
 import com.rccl.middleware.saviynt.api.exceptions.SaviyntExceptionFactory;
@@ -167,9 +167,9 @@ public class GuestAccountServiceTest {
         try {
             createAccount.invokeWithHeaders(RequestHeader.DEFAULT, guest);
         } catch (Exception e) {
-            assertTrue("The exception should be of type InvalidGuestException.", e instanceof InvalidGuestException);
+            assertTrue("The exception should be of type InvalidGuestException.", e instanceof MiddlewareValidationException);
             
-            InvalidGuestException ige = (InvalidGuestException) e;
+            MiddlewareValidationException ige = (MiddlewareValidationException) e;
             
             assertTrue("The exception's status code should be 422.", ige.exceptionMessage().getStatusCode() == 422);
             
