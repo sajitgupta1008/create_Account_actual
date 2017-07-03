@@ -7,10 +7,10 @@ import com.lightbend.lagom.javadsl.api.transport.ResponseHeader;
 import com.lightbend.lagom.javadsl.server.HeaderServiceCall;
 import com.lightbend.lagom.javadsl.testkit.ServiceTest;
 import com.rccl.middleware.common.exceptions.MiddlewareTransportException;
+import com.rccl.middleware.common.validation.MiddlewareValidationException;
 import com.rccl.middleware.guest.accounts.Guest;
 import com.rccl.middleware.guest.accounts.GuestAccountService;
 import com.rccl.middleware.guest.accounts.SecurityQuestion;
-import com.rccl.middleware.guest.accounts.exceptions.InvalidGuestException;
 import com.rccl.middleware.saviynt.api.SaviyntService;
 import com.rccl.middleware.saviynt.api.SaviyntServiceImplStub;
 import com.rccl.middleware.saviynt.api.exceptions.SaviyntExceptionFactory;
@@ -131,8 +131,8 @@ public class GuestAccountUpdateServiceTest {
         }
     }
     
-    @Test
-    public void shouldFailUpdateWithInvalidFields() {
+    @Test(expected = MiddlewareValidationException.class)
+    public void shouldFailUpdateWithInvalidFields() throws Exception {
         String emailID = "willfail@domain.com";
         
         List<SecurityQuestion> securityQuestionList = new ArrayList<>();
@@ -149,23 +149,18 @@ public class GuestAccountUpdateServiceTest {
                 .securityQuestions(securityQuestionList)
                 .build();
         
-        try {
-            HeaderServiceCall<Guest, JsonNode> updateAccount = (HeaderServiceCall<Guest, JsonNode>) guestAccountService.updateAccount(emailID);
-            
-            Pair<ResponseHeader, JsonNode> response = updateAccount
-                    .invokeWithHeaders(RequestHeader.DEFAULT, guest)
-                    .toCompletableFuture()
-                    .get(5, TimeUnit.SECONDS);
-            
-            assertTrue(response != null);
-            
-        } catch (Exception e) {
-            assertTrue("Exception must be an instance of InvalidGuestException.", e instanceof InvalidGuestException);
-        }
+        HeaderServiceCall<Guest, JsonNode> updateAccount = (HeaderServiceCall<Guest, JsonNode>) guestAccountService.updateAccount(emailID);
+        
+        Pair<ResponseHeader, JsonNode> response = updateAccount
+                .invokeWithHeaders(RequestHeader.DEFAULT, guest)
+                .toCompletableFuture()
+                .get(5, TimeUnit.SECONDS);
+        
+        assertTrue(response != null);
     }
     
-    @Test
-    public void shouldFailUpdateWithInvalidCollectionValues() {
+    @Test(expected = MiddlewareValidationException.class)
+    public void shouldFailUpdateWithInvalidCollectionValues() throws Exception {
         String emailID = "something@domain.com";
         
         List<SecurityQuestion> securityQuestionList = new ArrayList<>();
@@ -196,18 +191,13 @@ public class GuestAccountUpdateServiceTest {
                 .azamaraPrimaryBookingId("asdsadasd")
                 .build();
         
-        try {
-            HeaderServiceCall<Guest, JsonNode> updateAccount = (HeaderServiceCall<Guest, JsonNode>) guestAccountService.updateAccount(emailID);
-            
-            Pair<ResponseHeader, JsonNode> response = updateAccount
-                    .invokeWithHeaders(RequestHeader.DEFAULT, guest)
-                    .toCompletableFuture()
-                    .get(5, TimeUnit.SECONDS);
-            
-            assertTrue("This should fail instead.", response != null);
-            
-        } catch (Exception e) {
-            assertTrue("Exception must be an instance of InvalidGuestException.", e instanceof InvalidGuestException);
-        }
+        HeaderServiceCall<Guest, JsonNode> updateAccount = (HeaderServiceCall<Guest, JsonNode>) guestAccountService.updateAccount(emailID);
+        
+        Pair<ResponseHeader, JsonNode> response = updateAccount
+                .invokeWithHeaders(RequestHeader.DEFAULT, guest)
+                .toCompletableFuture()
+                .get(5, TimeUnit.SECONDS);
+        
+        assertTrue("This should fail instead.", response != null);
     }
 }
