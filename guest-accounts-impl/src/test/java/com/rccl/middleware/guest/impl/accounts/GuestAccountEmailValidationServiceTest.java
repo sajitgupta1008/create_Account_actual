@@ -26,7 +26,6 @@ public class GuestAccountEmailValidationServiceTest {
     
     @BeforeClass
     public static void setUp() {
-        //stub SaviyntService with SaviyntServiceTest
         final ServiceTest.Setup setup = defaultSetup()
                 .configureBuilder(builder -> builder.overrides(
                         bind(SaviyntService.class).to(SaviyntServiceImplStub.class)
