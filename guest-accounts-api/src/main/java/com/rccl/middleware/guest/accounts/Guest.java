@@ -2,9 +2,9 @@ package com.rccl.middleware.guest.accounts;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.lightbend.lagom.serialization.Jsonable;
-import com.rccl.middleware.guest.accounts.validation.DateFormat;
-import com.rccl.middleware.guest.accounts.validation.GuestAccountPassword;
-import com.rccl.middleware.guest.accounts.validation.NumericFormatList;
+import com.rccl.middleware.common.validation.validator.DateFormat;
+import com.rccl.middleware.common.validation.validator.GuestAccountPassword;
+import com.rccl.middleware.common.validation.validator.NumericFormatList;
 import com.rccl.middleware.guest.accounts.validation.OptinList;
 import lombok.Builder;
 import lombok.Value;
@@ -101,6 +101,7 @@ public class Guest implements Jsonable {
     String azamaraPrimaryBookingId;
     
     @OptinList(groups = DefaultChecks.class)
+    @Valid
     List<Optin> optins;
     
     public interface CreateChecks extends DefaultChecks {
