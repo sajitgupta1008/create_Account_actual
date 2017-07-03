@@ -133,7 +133,7 @@ public class GuestAccountUpdateServiceTest {
     
     @Test(expected = MiddlewareValidationException.class)
     public void shouldFailUpdateWithInvalidFields() throws Exception {
-        String emailID = "willfail@domain.com";
+        String emailID = "successful@domain.com";
         
         List<SecurityQuestion> securityQuestionList = new ArrayList<>();
         SecurityQuestion securityQuestion = SecurityQuestion.builder()
@@ -144,8 +144,7 @@ public class GuestAccountUpdateServiceTest {
                 .email(emailID)
                 .firstName("J")
                 .lastName("D")
-                .birthdate("19910101")
-                .password("345".toCharArray())
+                .birthdate("January 01, 1991")
                 .securityQuestions(securityQuestionList)
                 .build();
         
