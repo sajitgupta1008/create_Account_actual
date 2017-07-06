@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
-import com.lightbend.lagom.javadsl.api.ServiceCall;
 import com.lightbend.lagom.javadsl.api.broker.Topic;
 import com.lightbend.lagom.javadsl.api.transport.ResponseHeader;
 import com.lightbend.lagom.javadsl.api.transport.TransportErrorCode;
@@ -60,10 +59,6 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     
     private final List<Link> updateAccountLinks;
     
-    private final String CREATE_ACCOUNT = "create";
-    
-    private final String UPDATE_ACCOUNT = "update";
-    
     @Inject
     public GuestAccountServiceImpl(SaviyntService saviyntService,
                                    Configuration configuration,
@@ -85,7 +80,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
         return (requestHeader, guest) -> {
             MiddlewareValidation.validateWithGroups(guest, Guest.CreateChecks.class);
             
-            final SaviyntGuest saviyntGuest = mapGuestToSaviyntGuest(guest, CREATE_ACCOUNT).build();
+            final SaviyntGuest saviyntGuest = mapGuestToSaviyntGuest(guest, true).build();
             
             return saviyntService
                     .createGuestAccount()
@@ -110,6 +105,11 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                     .thenApply(response -> {
                         persistentEntityRegistry.refFor(GuestAccountEntity.class, guest.getEmail())
                                 .ask(new GuestAccountCommand.CreateGuest(guest));
+                        
+                        // trigger optin service to store the optins into Cassandra
+                        guestProfileOptinService.createOptins(guest.getEmail())
+                                .invoke(this.generateCreateOptinsRequest(guest))
+                                .toCompletableFuture().complete(NotUsed.getInstance());
                         
                         //TODO replace this with the vdsId attribute when available
                         String message = response.get("message").asText();
@@ -153,7 +153,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
             
             MiddlewareValidation.validateWithGroups(guest, Guest.UpdateChecks.class);
             
-            final SaviyntGuest saviyntGuest = mapGuestToSaviyntGuest(guest, UPDATE_ACCOUNT).email(email).build();
+            final SaviyntGuest saviyntGuest = mapGuestToSaviyntGuest(guest, false).email(email).build();
             
             return saviyntService
                     .updateGuestAccount()
@@ -242,16 +242,6 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     }
     
     @Override
-    public ServiceCall<NotUsed, JsonNode> getOptins(String email) {
-        return request ->
-                guestProfileOptinService.getOptins(email).invoke()
-                        .exceptionally(throwable -> {
-                            throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), throwable);
-                        })
-                        .thenApply(jsonNode -> jsonNode);
-    }
-    
-    @Override
     public HeaderServiceCall<NotUsed, String> healthCheck() {
         return (requestHeader, request) -> {
             String quote = "Here's to tall ships. "
@@ -286,11 +276,11 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     /**
      * Creates a builder which maps the appropriate {@link Guest} values into {@link SaviyntGuest} object based on the action taken.
      *
-     * @param guest  the {@link Guest} model
-     * @param action the request being taken whether it is create or update guest account
+     * @param guest    the {@link Guest} model
+     * @param isCreate determines the request being taken whether it is create or update guest account
      * @return {@link SaviyntGuest.SaviyntGuestBuilder}
      */
-    private SaviyntGuest.SaviyntGuestBuilder mapGuestToSaviyntGuest(Guest guest, String action) {
+    private SaviyntGuest.SaviyntGuestBuilder mapGuestToSaviyntGuest(Guest guest, boolean isCreate) {
         SaviyntGuest.SaviyntGuestBuilder builder = SaviyntGuest.builder()
                 .firstname(guest.getFirstName())
                 .lastname(guest.getLastName())
@@ -316,7 +306,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                 .propertytosearch("email");
         
         // only map the account creation specific attributes
-        if (action.equals(CREATE_ACCOUNT)) {
+        if (isCreate) {
             builder.username(guest.getEmail())
                     .userType(SaviyntUserType.Guest);
         }
@@ -339,19 +329,16 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     }
     
     private Optins generateCreateOptinsRequest(Guest guest) {
-        
         List<OptinType> optinTypeList = new ArrayList<>();
-        guest.getOptins().forEach(optin -> {
-            optinTypeList.add(OptinType.builder()
-                    .type(optin.getType())
-                    .acceptTime(optin.getAcceptTime())
-                    .flag(true)
-                    .build());
-        });
-        
-        List<Optin> optinList = new ArrayList<>();
+        guest.getOptins().forEach(optin ->
+                optinTypeList.add(OptinType.builder()
+                        .type(optin.getType())
+                        .acceptTime(optin.getAcceptTime())
+                        .flag(true)
+                        .build()));
         
         // enroll the guest to all brands and categories.
+        List<Optin> optinList = new ArrayList<>();
         Arrays.asList('R', 'C', 'Z').forEach(brand ->
                 Arrays.asList("marketing", "operational").forEach(category ->
                         optinList.add(Optin.builder()
