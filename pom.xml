@@ -27,7 +27,7 @@
     <junit.version>4.12</junit.version>
     <lombok.version>1.16.16</lombok.version>
     <lagom.version>1.3.4</lagom.version>
-    <middleware.common.version>1.2.1</middleware.common.version>
+    <middleware.common.version>1.3.1</middleware.common.version>
     <middleware.saviynt.version>1.0-SNAPSHOT</middleware.saviynt.version>
     <org.json.version>20160810</org.json.version>
     <play.version>2.5.14</play.version>
