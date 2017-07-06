@@ -100,6 +100,7 @@ public class Guest implements Jsonable {
     @Pattern(regexp = "\\d*", message = "Booking ID must be in numeric format.", groups = UpdateChecks.class)
     String azamaraPrimaryBookingId;
     
+    @NotNull(message = "At least one optin is required.", groups = CreateChecks.class)
     @OptinList(groups = DefaultChecks.class)
     @Valid
     List<Optin> optins;
