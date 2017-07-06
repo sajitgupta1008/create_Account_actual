@@ -86,6 +86,11 @@
       <artifactId>saviynt</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>com.rccl.middleware.guest.optin</groupId>
+      <artifactId>guest-profiles-optins-api</artifactId>
+    </dependency>
+
   </dependencies>
 
   <build>
