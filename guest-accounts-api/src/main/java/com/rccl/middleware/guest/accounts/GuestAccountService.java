@@ -32,6 +32,8 @@ public interface GuestAccountService extends Service {
     
     ServiceCall<NotUsed, JsonNode> validateEmail(String email);
     
+    ServiceCall<NotUsed, JsonNode> getOptins(String email);
+    
     ServiceCall<NotUsed, String> healthCheck();
     
     Topic<GuestEvent> guestAccountsTopic();
@@ -44,6 +46,7 @@ public interface GuestAccountService extends Service {
                         restCall(POST, "/v1/guestAccounts/", this::createAccount),
                         restCall(PUT, "/v1/guestAccounts/:email", this::updateAccount),
                         restCall(GET, "/v1/guestAccounts/:email/validation", this::validateEmail),
+                        restCall(GET, "/v1/guestAccounts/:email/optins", this::getOptins),
                         restCall(GET, "/v1/guestAccounts/health", this::healthCheck)
                 )
                 .publishing(

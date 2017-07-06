@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
+import com.lightbend.lagom.javadsl.api.ServiceCall;
 import com.lightbend.lagom.javadsl.api.broker.Topic;
 import com.lightbend.lagom.javadsl.api.transport.ResponseHeader;
 import com.lightbend.lagom.javadsl.api.transport.TransportErrorCode;
@@ -25,6 +26,10 @@ import com.rccl.middleware.guest.accounts.exceptions.ExistingGuestException;
 import com.rccl.middleware.guest.accounts.exceptions.GuestNotFoundException;
 import com.rccl.middleware.guest.accounts.exceptions.InvalidEmailFormatException;
 import com.rccl.middleware.guest.accounts.exceptions.InvalidGuestException;
+import com.rccl.middleware.guest.optin.GuestProfileOptinService;
+import com.rccl.middleware.guest.optin.Optin;
+import com.rccl.middleware.guest.optin.OptinType;
+import com.rccl.middleware.guest.optin.Optins;
 import com.rccl.middleware.saviynt.api.SaviyntGuest;
 import com.rccl.middleware.saviynt.api.SaviyntService;
 import com.rccl.middleware.saviynt.api.SaviyntUserType;
@@ -32,6 +37,8 @@ import com.rccl.middleware.saviynt.api.exceptions.SaviyntExceptionFactory;
 import play.Configuration;
 
 import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -49,6 +56,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     
     private final SaviyntService saviyntService;
     
+    private final GuestProfileOptinService guestProfileOptinService;
+    
     private final List<Link> updateAccountLinks;
     
     private final String CREATE_ACCOUNT = "create";
@@ -58,8 +67,11 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     @Inject
     public GuestAccountServiceImpl(SaviyntService saviyntService,
                                    Configuration configuration,
-                                   PersistentEntityRegistry persistentEntityRegistry) {
+                                   PersistentEntityRegistry persistentEntityRegistry,
+                                   GuestProfileOptinService guestProfileOptinService) {
         this.saviyntService = saviyntService;
+        
+        this.guestProfileOptinService = guestProfileOptinService;
         
         this.persistentEntityRegistry = persistentEntityRegistry;
         persistentEntityRegistry.register(GuestAccountEntity.class);
@@ -230,6 +242,16 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     }
     
     @Override
+    public ServiceCall<NotUsed, JsonNode> getOptins(String email) {
+        return request ->
+                guestProfileOptinService.getOptins(email).invoke()
+                        .exceptionally(throwable -> {
+                            throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), throwable);
+                        })
+                        .thenApply(jsonNode -> jsonNode);
+    }
+    
+    @Override
     public HeaderServiceCall<NotUsed, String> healthCheck() {
         return (requestHeader, request) -> {
             String quote = "Here's to tall ships. "
@@ -314,6 +336,36 @@ public class GuestAccountServiceImpl implements GuestAccountService {
         }
         
         return builder;
+    }
+    
+    private Optins generateCreateOptinsRequest(Guest guest) {
+        
+        List<OptinType> optinTypeList = new ArrayList<>();
+        guest.getOptins().forEach(optin -> {
+            optinTypeList.add(OptinType.builder()
+                    .type(optin.getType())
+                    .acceptTime(optin.getAcceptTime())
+                    .flag(true)
+                    .build());
+        });
+        
+        List<Optin> optinList = new ArrayList<>();
+        
+        // enroll the guest to all brands and categories.
+        Arrays.asList('R', 'C', 'Z').forEach(brand ->
+                Arrays.asList("marketing", "operational").forEach(category ->
+                        optinList.add(Optin.builder()
+                                .brand(brand)
+                                .category(category)
+                                .types(optinTypeList)
+                                .build())
+                )
+        );
+        
+        return Optins.builder()
+                .email(guest.getEmail())
+                .optins(optinList)
+                .build();
     }
     
     /**
