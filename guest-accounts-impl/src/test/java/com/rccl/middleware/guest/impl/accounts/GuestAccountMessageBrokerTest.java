@@ -12,8 +12,11 @@ import com.lightbend.lagom.javadsl.testkit.ServiceTest;
 import com.rccl.middleware.guest.accounts.Guest;
 import com.rccl.middleware.guest.accounts.GuestAccountService;
 import com.rccl.middleware.guest.accounts.GuestEvent;
+import com.rccl.middleware.guest.accounts.Optin;
 import com.rccl.middleware.guest.accounts.SecurityQuestion;
 import com.rccl.middleware.guest.accounts.TermsAndConditionsAgreement;
+import com.rccl.middleware.guest.optin.GuestProfileOptinService;
+import com.rccl.middleware.guest.optin.GuestProfileOptinsStub;
 import com.rccl.middleware.saviynt.api.SaviyntService;
 import com.rccl.middleware.saviynt.api.SaviyntServiceImplStub;
 import org.junit.AfterClass;
@@ -48,7 +51,8 @@ public class GuestAccountMessageBrokerTest {
     public static void setUp() {
         final ServiceTest.Setup setup = defaultSetup()
                 .configureBuilder(builder -> builder.overrides(
-                        bind(SaviyntService.class).to(SaviyntServiceImplStub.class)
+                        bind(SaviyntService.class).to(SaviyntServiceImplStub.class),
+                        bind(GuestProfileOptinService.class).to(GuestProfileOptinsStub.class)
                 ));
         
         testServer = startServer(setup.withCassandra(true));
@@ -148,6 +152,7 @@ public class GuestAccountMessageBrokerTest {
                 .birthdate("19910101")
                 .securityQuestions(Arrays.asList(SecurityQuestion.builder().question("what?").answer("yes").build()))
                 .termsAndConditionsAgreement(TermsAndConditionsAgreement.builder().acceptTime("20170627033735PM").version("1.0").build())
+                .optins(Arrays.asList(Optin.builder().type("EMAIL").flag(true).acceptTime("20170706022122PM").build()))
                 .build();
     }
 }
