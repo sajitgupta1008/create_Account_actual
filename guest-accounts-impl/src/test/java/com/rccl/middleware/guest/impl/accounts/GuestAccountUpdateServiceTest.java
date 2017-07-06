@@ -68,7 +68,7 @@ public class GuestAccountUpdateServiceTest {
                 .firstName("John")
                 .lastName("Dale")
                 .birthdate("19910101")
-                .password("pass123".toCharArray())
+                .password("password!".toCharArray())
                 .securityQuestions(securityQuestionList)
                 .crownAndAnchorIds(Arrays.asList("12345678", "12345678"))
                 .azamaraBookingIds(Arrays.asList("123456", "123457"))
