@@ -192,7 +192,7 @@ public class GuestAccountServiceTest {
                 .lastName("Pitt")
                 .email("lawn@order.com")
                 .birthdate("19910101")
-                .password("Secret123".toCharArray());
+                .password("secretpass!".toCharArray());
         
         TermsAndConditionsAgreement tca = TermsAndConditionsAgreement.builder()
                 .acceptTime("20170627033735PM")
