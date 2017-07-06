@@ -15,8 +15,8 @@ public class InvalidGuestException extends MiddlewareTransportException {
     
     static {
         Map<String, String> passwordError = new HashMap<>();
-        passwordError.put("password", "The password must be between 8 and 32 characters, inclusive, " +
-                "with at least seven (7) letters and one (1) special character or a number.");
+        passwordError.put("password", "The password must be between 7 and 32 characters, inclusive, " +
+                "with at least seven (6) letters and one (1) special character or a number.");
         INVALID_PASSWORD = new InvalidGuestException(passwordError);
     }
     
