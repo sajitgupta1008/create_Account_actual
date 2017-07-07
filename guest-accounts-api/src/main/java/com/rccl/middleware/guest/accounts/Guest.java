@@ -25,7 +25,7 @@ public class Guest implements Jsonable {
     
     @NotBlank(message = "An email is required.", groups = DefaultChecks.class)
     @Size(max = 100, message = "The email can only have up to 100 characters.", groups = DefaultChecks.class)
-    @Email(regexp = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$",
+    @Email(regexp = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9-]+((\\.[A-Za-z0-9]+)){1,2}$",
             message = "The email is invalidly formatted.",
             groups = DefaultChecks.class)
     String email;
