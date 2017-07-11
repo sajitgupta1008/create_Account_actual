@@ -202,7 +202,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     public HeaderServiceCall<NotUsed, JsonNode> validateEmail(String email) {
         return (requestHeader, notUsed) -> {
             
-            String emailPattern = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9-]+((\\.[A-Za-z0-9]+)){1,2}$";
+            String emailPattern = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
             Pattern pattern = Pattern.compile(emailPattern);
             Matcher matcher = pattern.matcher(email);
             
