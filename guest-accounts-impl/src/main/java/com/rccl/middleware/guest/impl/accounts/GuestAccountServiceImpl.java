@@ -385,6 +385,13 @@ public class GuestAccountServiceImpl implements GuestAccountService {
         
     }
     
+    /**
+     * Populates {@link Optins} to register the guest email to all brands and all categories of optins specified in
+     * create account request.
+     *
+     * @param guest the {@link Guest} model
+     * @return {@link Optins} with enrollment to all brands and all optin categories.
+     */
     private Optins generateCreateOptinsRequest(Guest guest) {
         List<OptinType> optinTypeList = new ArrayList<>();
         guest.getOptins().forEach(optin ->
