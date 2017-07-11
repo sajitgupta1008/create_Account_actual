@@ -135,6 +135,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
         return (requestHeader, partialGuest) -> {
             
             final Guest guest = Guest.builder()
+                    .header(partialGuest.getHeader())
                     .email(email)
                     .firstName(partialGuest.getFirstName())
                     .lastName(partialGuest.getLastName())
@@ -348,7 +349,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                 .build();
         
         // TODO get the proper value for channel
-        if (guest.getHeader().getChannel().equals("web")) {
+        if ("web".equals(guest.getHeader().getChannel())) {
             return forgeRockService.authenticateWebUser()
                     .invoke(forgeRockCredentials)
                     .exceptionally(exception -> {

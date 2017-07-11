@@ -9,6 +9,9 @@ import akka.testkit.JavaTestKit;
 import com.lightbend.lagom.javadsl.testkit.PersistentEntityTestDriver;
 import com.lightbend.lagom.javadsl.testkit.PersistentEntityTestDriver.Outcome;
 import com.lightbend.lagom.javadsl.testkit.ServiceTest;
+import com.rccl.middleware.common.header.Header;
+import com.rccl.middleware.forgerock.api.ForgeRockService;
+import com.rccl.middleware.forgerock.api.ForgeRockServiceImplStub;
 import com.rccl.middleware.guest.accounts.Guest;
 import com.rccl.middleware.guest.accounts.GuestAccountService;
 import com.rccl.middleware.guest.accounts.GuestEvent;
@@ -52,6 +55,7 @@ public class GuestAccountMessageBrokerTest {
         final ServiceTest.Setup setup = defaultSetup()
                 .configureBuilder(builder -> builder.overrides(
                         bind(SaviyntService.class).to(SaviyntServiceImplStub.class),
+                        bind(ForgeRockService.class).to(ForgeRockServiceImplStub.class),
                         bind(GuestProfileOptinService.class).to(GuestProfileOptinsStub.class)
                 ));
         
@@ -144,7 +148,12 @@ public class GuestAccountMessageBrokerTest {
     
     private Guest createSampleGuest() {
         return Guest.builder()
-                .email("sample@email.com")
+                .header(Header.builder()
+                        .channel("web")
+                        .brand("R")
+                        .locale("en_US")
+                        .build())
+                .email("successful@domain.com")
                 .firstName("John")
                 .lastName("Downs")
                 .consumerId("123456789")

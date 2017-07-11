@@ -7,6 +7,7 @@ import com.lightbend.lagom.javadsl.api.transport.ResponseHeader;
 import com.lightbend.lagom.javadsl.server.HeaderServiceCall;
 import com.lightbend.lagom.javadsl.testkit.ServiceTest;
 import com.rccl.middleware.common.exceptions.MiddlewareTransportException;
+import com.rccl.middleware.common.header.Header;
 import com.rccl.middleware.common.validation.MiddlewareValidationException;
 import com.rccl.middleware.guest.accounts.Guest;
 import com.rccl.middleware.guest.accounts.GuestAccountService;
@@ -64,6 +65,11 @@ public class GuestAccountUpdateServiceTest {
         securityQuestionList.add(securityQuestion);
         
         Guest guest = Guest.builder()
+                .header(Header.builder()
+                        .channel("web")
+                        .brand("R")
+                        .locale("en_US")
+                        .build())
                 .email(emailID)
                 .firstName("John")
                 .lastName("Dale")
@@ -108,6 +114,11 @@ public class GuestAccountUpdateServiceTest {
         securityQuestionList.add(securityQuestion);
         
         Guest guest = Guest.builder()
+                .header(Header.builder()
+                        .channel("web")
+                        .brand("R")
+                        .locale("en_US")
+                        .build())
                 .email(emailID)
                 .firstName("John")
                 .lastName("Dale")
@@ -141,6 +152,11 @@ public class GuestAccountUpdateServiceTest {
         securityQuestionList.add(securityQuestion);
         
         Guest guest = Guest.builder()
+                .header(Header.builder()
+                        .channel("web")
+                        .brand("R")
+                        .locale("en_US")
+                        .build())
                 .email(emailID)
                 .firstName("J")
                 .lastName("D")
@@ -168,6 +184,11 @@ public class GuestAccountUpdateServiceTest {
         securityQuestionList.add(securityQuestion);
         
         Guest guest = Guest.builder()
+                .header(Header.builder()
+                        .channel("web")
+                        .brand("R")
+                        .locale("en_US")
+                        .build())
                 .email(emailID)
                 .firstName("John")
                 .lastName("Dale")
