@@ -2,6 +2,7 @@ package com.rccl.middleware.guest.accounts;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.lightbend.lagom.serialization.Jsonable;
+import com.rccl.middleware.common.header.Header;
 import com.rccl.middleware.common.validation.validator.DateFormat;
 import com.rccl.middleware.common.validation.validator.GuestAccountPassword;
 import com.rccl.middleware.common.validation.validator.NumericFormatList;
@@ -22,6 +23,9 @@ import java.util.List;
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Guest implements Jsonable {
+    
+    @Valid
+    Header header;
     
     @NotBlank(message = "An email is required.", groups = DefaultChecks.class)
     @Size(min = 5, max = 100, message = "The email can only have up to 100 characters.", groups = DefaultChecks.class)
