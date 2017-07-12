@@ -28,6 +28,7 @@ import org.junit.Test;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import static com.lightbend.lagom.javadsl.testkit.ServiceTest.defaultSetup;
@@ -150,8 +151,8 @@ public class GuestAccountMessageBrokerTest {
         return Guest.builder()
                 .header(Header.builder()
                         .channel("web")
-                        .brand("R")
-                        .locale("en_US")
+                        .brand('R')
+                        .locale(Locale.US)
                         .build())
                 .email("successful@domain.com")
                 .firstName("John")

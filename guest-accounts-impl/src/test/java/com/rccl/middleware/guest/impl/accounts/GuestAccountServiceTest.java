@@ -26,6 +26,7 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Map;
 
 import static com.lightbend.lagom.javadsl.testkit.ServiceTest.defaultSetup;
@@ -81,7 +82,14 @@ public class GuestAccountServiceTest {
         
         assertTrue("The status code for success should be 201 Created.", response.first().status() == 201);
         assertEquals("G3396535", response.second().get("vdsId").asText());
-        assertTrue(response.second().get("tokenId") != null);
+        
+        if ("web".equals(guest.getHeader().getChannel())) {
+            assertTrue(response.second().get("ssoToken") != null);
+        } else {
+            assertTrue(response.second().get("accessToken") != null);
+            assertTrue(response.second().get("openIdToken") != null);
+            assertTrue(response.second().get("refreshToken") != null);
+        }
     }
     
     @Test
@@ -199,13 +207,13 @@ public class GuestAccountServiceTest {
         
         builder.header(Header.builder()
                 .channel("web")
-                .brand("R")
-                .locale("en_US")
+                .brand('R')
+                .locale(Locale.US)
                 .build());
         
         builder.firstName("Brad")
                 .lastName("Pitt")
-                .email("validuser@domain.com")
+                .email("successful@domain.com")
                 .birthdate("19910101")
                 .password("secretpass!".toCharArray());
         
