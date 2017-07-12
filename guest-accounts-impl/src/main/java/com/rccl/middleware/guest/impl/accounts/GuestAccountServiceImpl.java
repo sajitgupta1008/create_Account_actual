@@ -12,17 +12,19 @@ import com.lightbend.lagom.javadsl.broker.TopicProducer;
 import com.lightbend.lagom.javadsl.persistence.PersistentEntityRegistry;
 import com.lightbend.lagom.javadsl.server.HeaderServiceCall;
 import com.rccl.middleware.common.exceptions.MiddlewareTransportException;
-import com.rccl.middleware.common.hateoas.HATEOASLinks;
-import com.rccl.middleware.common.hateoas.Link;
 import com.rccl.middleware.common.validation.MiddlewareValidation;
 import com.rccl.middleware.forgerock.api.ForgeRockCredentials;
 import com.rccl.middleware.forgerock.api.ForgeRockService;
+import com.rccl.middleware.forgerock.api.exceptions.ForgeRockExceptionFactory;
+import com.rccl.middleware.guest.accounts.AccountCredentials;
 import com.rccl.middleware.guest.accounts.AccountStatusEnum;
 import com.rccl.middleware.guest.accounts.Guest;
 import com.rccl.middleware.guest.accounts.GuestAccountService;
 import com.rccl.middleware.guest.accounts.GuestEvent;
+import com.rccl.middleware.guest.accounts.LoginStatusEnum;
 import com.rccl.middleware.guest.accounts.SecurityQuestion;
 import com.rccl.middleware.guest.accounts.exceptions.ExistingGuestException;
+import com.rccl.middleware.guest.accounts.exceptions.GuestAuthenticationException;
 import com.rccl.middleware.guest.accounts.exceptions.GuestNotFoundException;
 import com.rccl.middleware.guest.accounts.exceptions.InvalidEmailFormatException;
 import com.rccl.middleware.guest.accounts.exceptions.InvalidGuestException;
@@ -34,7 +36,6 @@ import com.rccl.middleware.saviynt.api.SaviyntGuest;
 import com.rccl.middleware.saviynt.api.SaviyntService;
 import com.rccl.middleware.saviynt.api.SaviyntUserType;
 import com.rccl.middleware.saviynt.api.exceptions.SaviyntExceptionFactory;
-import play.Configuration;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
@@ -42,7 +43,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -50,8 +50,6 @@ import java.util.stream.Collectors;
 public class GuestAccountServiceImpl implements GuestAccountService {
     
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-    
-    private static final String UPDATE_GUEST_CONFIG_PATH = "update-account";
     
     private final PersistentEntityRegistry persistentEntityRegistry;
     
@@ -61,12 +59,9 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     
     private final GuestProfileOptinService guestProfileOptinService;
     
-    private final List<Link> updateAccountLinks;
-    
     @Inject
     public GuestAccountServiceImpl(SaviyntService saviyntService,
                                    ForgeRockService forgeRockService,
-                                   Configuration configuration,
                                    PersistentEntityRegistry persistentEntityRegistry,
                                    GuestProfileOptinService guestProfileOptinService) {
         this.saviyntService = saviyntService;
@@ -76,9 +71,6 @@ public class GuestAccountServiceImpl implements GuestAccountService {
         
         this.persistentEntityRegistry = persistentEntityRegistry;
         persistentEntityRegistry.register(GuestAccountEntity.class);
-        
-        HATEOASLinks hateoasLinks = new HATEOASLinks(configuration);
-        updateAccountLinks = hateoasLinks.getLinks(UPDATE_GUEST_CONFIG_PATH);
     }
     
     @Override
@@ -125,13 +117,26 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         matcher.find();
                         String vdsId = matcher.group(0).substring(6);
                         
-                        return this.authenticateUser(guest, vdsId);
+                        // automatically authenticate user and include vdsId in the response.
+                        AccountCredentials credentials = AccountCredentials.builder()
+                                .header(guest.getHeader())
+                                .username(guest.getEmail())
+                                .password(guest.getPassword())
+                                .build();
+                        
+                        return this.authenticateUser()
+                                .invokeWithHeaders(requestHeader, credentials)
+                                .thenApply(jsonPair -> {
+                                    ObjectNode objNode = jsonPair.second().deepCopy();
+                                    objNode.put("vdsId", vdsId);
+                                    return Pair.create(ResponseHeader.OK.withStatus(201), objNode);
+                                });
                     });
         };
     }
     
     @Override
-    public HeaderServiceCall<Guest, JsonNode> updateAccount(String email) {
+    public HeaderServiceCall<Guest, NotUsed> updateAccount(String email) {
         return (requestHeader, partialGuest) -> {
             
             final Guest guest = Guest.builder()
@@ -188,13 +193,75 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         persistentEntityRegistry.refFor(GuestAccountEntity.class, email)
                                 .ask(new GuestAccountCommand.UpdateGuest(guest));
                         
-                        final ObjectNode objNode = OBJECT_MAPPER.createObjectNode();
-                        updateAccountLinks.forEach(link -> link.substituteArguments(email));
-                        objNode.putPOJO("_links", updateAccountLinks);
-                        ResponseHeader responseHeader = ResponseHeader.OK.withStatus(200);
-                        
-                        return new Pair<>(responseHeader, objNode);
+                        return new Pair<>(ResponseHeader.OK, NotUsed.getInstance());
                     });
+        };
+    }
+    
+    @Override
+    public HeaderServiceCall<AccountCredentials, JsonNode> authenticateUser() {
+        return (requestHeader, request) -> {
+            
+            MiddlewareValidation.validate(request);
+            
+            ForgeRockCredentials forgeRockCredentials = ForgeRockCredentials.builder()
+                    .username(request.getUsername())
+                    .password(request.getPassword())
+                    .build();
+            
+            // TODO remove this once the migration scenarios are finalized.
+            if ("legacyuser@rccl.com".equalsIgnoreCase(request.getUsername())) {
+                ObjectNode jsonResponse = OBJECT_MAPPER.createObjectNode();
+                jsonResponse.put("accountLoginStatus", LoginStatusEnum.LEGACY_ACCOUNT_VERIFIED.value());
+                return CompletableFuture.completedFuture(Pair.create(ResponseHeader.OK, jsonResponse));
+            }
+            
+            if ("web".equals(request.getHeader().getChannel())) {
+                return forgeRockService.authenticateWebUser()
+                        .invoke(forgeRockCredentials)
+                        .exceptionally(exception -> {
+                            Throwable cause = exception.getCause();
+                            
+                            if (cause instanceof ForgeRockExceptionFactory.AuthenticationException) {
+                                ForgeRockExceptionFactory.AuthenticationException ex =
+                                        (ForgeRockExceptionFactory.AuthenticationException) cause;
+                                throw new GuestAuthenticationException(401, ex.getErrorDescription());
+                            }
+                            
+                            throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
+                        })
+                        .thenApply(jsonNode -> {
+                            ObjectNode jsonResponse = OBJECT_MAPPER.createObjectNode();
+                            jsonResponse.put("accountLoginStatus", LoginStatusEnum.NEW_ACCOUNT_AUTHENTICATED.value());
+                            jsonResponse.put("ssoToken", jsonNode.get("tokenId").asText());
+                            
+                            return Pair.create(ResponseHeader.OK.withStatus(200), jsonResponse);
+                        });
+            } else {
+                return forgeRockService.authenticateMobileUser()
+                        .invoke(forgeRockCredentials)
+                        .exceptionally(exception -> {
+                            Throwable cause = exception.getCause();
+                            
+                            if (cause instanceof ForgeRockExceptionFactory.AuthenticationException) {
+                                ForgeRockExceptionFactory.AuthenticationException ex =
+                                        (ForgeRockExceptionFactory.AuthenticationException) cause;
+                                throw new GuestAuthenticationException(401, ex.getErrorDescription());
+                            }
+                            
+                            throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
+                        })
+                        .thenApply(jsonNode -> {
+                            ObjectNode jsonResponse = OBJECT_MAPPER.createObjectNode();
+                            jsonResponse.put("accountLoginStatus", LoginStatusEnum.NEW_ACCOUNT_AUTHENTICATED.value());
+                            jsonResponse.put("accessToken", jsonNode.get("access_token").asText());
+                            jsonResponse.put("refreshToken", jsonNode.get("refresh_token").asText());
+                            jsonResponse.put("openIdToken", jsonNode.get("id_token").asText());
+                            jsonResponse.put("tokenExpiration", jsonNode.get("expires_in").asText());
+                            
+                            return Pair.create(ResponseHeader.OK.withStatus(200), jsonResponse);
+                        });
+            }
         };
     }
     
@@ -333,56 +400,6 @@ public class GuestAccountServiceImpl implements GuestAccountService {
         }
         
         return builder;
-    }
-    
-    /**
-     * Triggers ForgeRock authentication for either mobile or web depending on the channel provided from the header.
-     *
-     * @param guest the {@link Guest} model.
-     * @param vdsId the vdsId from Saviynt's create account response.
-     * @return {@link CompletionStage}
-     */
-    private CompletionStage<Pair<ResponseHeader, JsonNode>> authenticateUser(Guest guest, String vdsId) {
-        ForgeRockCredentials forgeRockCredentials = ForgeRockCredentials.builder()
-                .username(guest.getEmail())
-                .password(guest.getPassword())
-                .build();
-        
-        // TODO get the proper value for channel
-        if ("web".equals(guest.getHeader().getChannel())) {
-            return forgeRockService.authenticateWebUser()
-                    .invoke(forgeRockCredentials)
-                    .exceptionally(exception -> {
-                        // how to handle exception here if something happens?
-                        throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
-                    })
-                    .thenApply(jsonNode -> {
-                        ObjectNode jsonResponse = OBJECT_MAPPER.createObjectNode();
-                        jsonResponse.put("vdsId", vdsId);
-                        jsonResponse.put("tokenId", jsonNode.get("tokenId").asText());
-                        
-                        return Pair.create(ResponseHeader.OK.withStatus(201), jsonResponse);
-                    });
-        } else {
-            return forgeRockService.authenticateMobileUser()
-                    .invoke(forgeRockCredentials)
-                    .exceptionally(exception -> {
-                        // how to handle exception here if something happens?
-                        throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
-                    })
-                    .thenApply(jsonNode -> {
-                        ObjectNode jsonResponse = OBJECT_MAPPER.createObjectNode();
-                        jsonResponse.put("vdsId", vdsId);
-                        jsonResponse.put("accessToken", jsonNode.get("access_token").asText());
-                        jsonResponse.put("refreshToken", jsonNode.get("refresh_token").asText());
-                        jsonResponse.put("tokenId", jsonNode.get("id_token").asText());
-                        jsonResponse.put("tokenExpiration", jsonNode.get("expires_in").asText());
-                        
-                        return Pair.create(ResponseHeader.OK.withStatus(201), jsonResponse);
-                    });
-        }
-        
-        
     }
     
     /**
