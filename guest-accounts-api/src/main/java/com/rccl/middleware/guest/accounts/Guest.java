@@ -17,6 +17,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
+import javax.validation.groups.Default;
 import java.util.List;
 
 @Value
@@ -118,7 +119,7 @@ public class Guest implements Jsonable {
         // Validation group interface.
     }
     
-    interface DefaultChecks {
+    interface DefaultChecks extends Default {
         // Validation group interface.
     }
 }
