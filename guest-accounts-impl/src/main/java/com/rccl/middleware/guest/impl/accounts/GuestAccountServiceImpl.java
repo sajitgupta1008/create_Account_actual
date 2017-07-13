@@ -209,11 +209,14 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                     .password(request.getPassword())
                     .build();
             
-            // TODO remove this once the migration scenarios are finalized.
+            // TODO remove these once the migration scenarios are finalized.
+            ObjectNode mockResponse = OBJECT_MAPPER.createObjectNode();
             if ("legacyuser@rccl.com".equalsIgnoreCase(request.getUsername())) {
-                ObjectNode jsonResponse = OBJECT_MAPPER.createObjectNode();
-                jsonResponse.put("accountLoginStatus", LoginStatusEnum.LEGACY_ACCOUNT_VERIFIED.value());
-                return CompletableFuture.completedFuture(Pair.create(ResponseHeader.OK, jsonResponse));
+                mockResponse.put("accountLoginStatus", LoginStatusEnum.LEGACY_ACCOUNT_VERIFIED.value());
+                return CompletableFuture.completedFuture(Pair.create(ResponseHeader.OK, mockResponse));
+            } else if ("temporarypassword@rccl.com".equalsIgnoreCase(request.getUsername())) {
+                mockResponse.put("accountLoginStatus", LoginStatusEnum.NEW_ACCOUNT_TEMPORARY_PASSWORD.value());
+                return CompletableFuture.completedFuture(Pair.create(ResponseHeader.OK, mockResponse));
             }
             
             if ("web".equals(request.getHeader().getChannel())) {
@@ -225,7 +228,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                             if (cause instanceof ForgeRockExceptionFactory.AuthenticationException) {
                                 ForgeRockExceptionFactory.AuthenticationException ex =
                                         (ForgeRockExceptionFactory.AuthenticationException) cause;
-                                throw new GuestAuthenticationException(401, ex.getErrorDescription());
+                                throw new GuestAuthenticationException(ex.getErrorDescription());
                             }
                             
                             throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
@@ -246,7 +249,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                             if (cause instanceof ForgeRockExceptionFactory.AuthenticationException) {
                                 ForgeRockExceptionFactory.AuthenticationException ex =
                                         (ForgeRockExceptionFactory.AuthenticationException) cause;
-                                throw new GuestAuthenticationException(401, ex.getErrorDescription());
+                                throw new GuestAuthenticationException(ex.getErrorDescription());
                             }
                             
                             throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);

@@ -6,13 +6,13 @@ import com.rccl.middleware.common.exceptions.MiddlewareTransportException;
 
 public class GuestAuthenticationException extends MiddlewareTransportException {
     
-    private static final String DEFAULT_MESSAGE = "An existing user was found with these details.";
+    private static final String DEFAULT_MESSAGE = "Authentication failed with the credentials provided.";
     
     public GuestAuthenticationException() {
-        super(TransportErrorCode.fromHttp(422), new MiddlewareExceptionMessage(DEFAULT_MESSAGE));
+        super(TransportErrorCode.fromHttp(401), new MiddlewareExceptionMessage(DEFAULT_MESSAGE));
     }
     
-    public GuestAuthenticationException(int errorCode, String message) {
-        super(TransportErrorCode.fromHttp(errorCode), new MiddlewareExceptionMessage(message));
+    public GuestAuthenticationException(String message) {
+        super(TransportErrorCode.fromHttp(401), new MiddlewareExceptionMessage(message));
     }
 }
