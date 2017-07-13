@@ -2,6 +2,7 @@ package com.rccl.middleware.guest.accounts;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.lightbend.lagom.serialization.Jsonable;
+import com.rccl.middleware.common.header.Header;
 import com.rccl.middleware.common.validation.validator.DateFormat;
 import com.rccl.middleware.common.validation.validator.GuestAccountPassword;
 import com.rccl.middleware.common.validation.validator.NumericFormatList;
@@ -16,6 +17,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
+import javax.validation.groups.Default;
 import java.util.List;
 
 @Value
@@ -23,9 +25,13 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Guest implements Jsonable {
     
+    @NotNull(message = "A header is required.", groups = DefaultChecks.class)
+    @Valid
+    Header header;
+    
     @NotBlank(message = "An email is required.", groups = DefaultChecks.class)
     @Size(min = 5, max = 100, message = "The email can only have up to 100 characters.", groups = DefaultChecks.class)
-    @Email(regexp = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9-]+((\\.[A-Za-z0-9]+)){1,2}$",
+    @Email(regexp = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$",
             message = "The email is invalidly formatted.",
             groups = DefaultChecks.class)
     String email;
@@ -113,7 +119,7 @@ public class Guest implements Jsonable {
         // Validation group interface.
     }
     
-    interface DefaultChecks {
+    interface DefaultChecks extends Default {
         // Validation group interface.
     }
 }

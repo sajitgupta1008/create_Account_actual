@@ -1,12 +1,15 @@
 package com.rccl.middleware.guest.impl.accounts;
 
 import akka.japi.Pair;
-import com.fasterxml.jackson.databind.node.TextNode;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.lightbend.lagom.javadsl.api.transport.RequestHeader;
 import com.lightbend.lagom.javadsl.api.transport.ResponseHeader;
 import com.lightbend.lagom.javadsl.server.HeaderServiceCall;
 import com.lightbend.lagom.javadsl.testkit.ServiceTest.TestServer;
+import com.rccl.middleware.common.header.Header;
 import com.rccl.middleware.common.validation.MiddlewareValidationException;
+import com.rccl.middleware.forgerock.api.ForgeRockService;
+import com.rccl.middleware.forgerock.api.ForgeRockServiceImplStub;
 import com.rccl.middleware.guest.accounts.Guest;
 import com.rccl.middleware.guest.accounts.GuestAccountService;
 import com.rccl.middleware.guest.accounts.Optin;
@@ -23,6 +26,7 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Map;
 
 import static com.lightbend.lagom.javadsl.testkit.ServiceTest.defaultSetup;
@@ -40,7 +44,7 @@ public class GuestAccountServiceTest {
     
     private static GuestAccountService service;
     
-    private static HeaderServiceCall<Guest, TextNode> createAccount;
+    private static HeaderServiceCall<Guest, JsonNode> createAccount;
     
     @BeforeClass
     public static void beforeClass() {
@@ -48,13 +52,14 @@ public class GuestAccountServiceTest {
                 .withCassandra(true)
                 .configureBuilder(builder -> builder.overrides(
                         bind(SaviyntService.class).to(SaviyntServiceImplStub.class),
+                        bind(ForgeRockService.class).to(ForgeRockServiceImplStub.class),
                         bind(GuestAccountService.class).to(GuestAccountServiceImpl.class),
                         bind(GuestProfileOptinService.class).to(GuestProfileOptinsStub.class)
                 ))
         );
         
         service = testServer.client(GuestAccountService.class);
-        createAccount = (HeaderServiceCall<Guest, TextNode>) service.createAccount();
+        createAccount = (HeaderServiceCall<Guest, JsonNode>) service.createAccount();
     }
     
     @AfterClass
@@ -73,10 +78,18 @@ public class GuestAccountServiceTest {
     public void testPostGuestAccount() throws Exception {
         Guest guest = createSampleGuest().build();
         
-        Pair<ResponseHeader, TextNode> response = createAccount.invokeWithHeaders(RequestHeader.DEFAULT, guest).toCompletableFuture().get(5, SECONDS);
+        Pair<ResponseHeader, JsonNode> response = createAccount.invokeWithHeaders(RequestHeader.DEFAULT, guest).toCompletableFuture().get(5, SECONDS);
         
         assertTrue("The status code for success should be 201 Created.", response.first().status() == 201);
-        assertEquals("G3396535", response.second().asText());
+        assertEquals("G3396535", response.second().get("vdsId").asText());
+        
+        if ("web".equals(guest.getHeader().getChannel())) {
+            assertTrue(response.second().get("ssoToken") != null);
+        } else {
+            assertTrue(response.second().get("accessToken") != null);
+            assertTrue(response.second().get("openIdToken") != null);
+            assertTrue(response.second().get("refreshToken") != null);
+        }
     }
     
     @Test
@@ -192,9 +205,15 @@ public class GuestAccountServiceTest {
     private Guest.GuestBuilder createSampleGuest() {
         Guest.GuestBuilder builder = Guest.builder();
         
+        builder.header(Header.builder()
+                .channel("web")
+                .brand('R')
+                .locale(Locale.US)
+                .build());
+        
         builder.firstName("Brad")
                 .lastName("Pitt")
-                .email("lawn@order.com")
+                .email("successful@domain.com")
                 .birthdate("19910101")
                 .password("secretpass!".toCharArray());
         

@@ -1,12 +1,13 @@
 package com.rccl.middleware.guest.impl.accounts;
 
+import akka.NotUsed;
 import akka.japi.Pair;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.lightbend.lagom.javadsl.api.transport.RequestHeader;
 import com.lightbend.lagom.javadsl.api.transport.ResponseHeader;
 import com.lightbend.lagom.javadsl.server.HeaderServiceCall;
 import com.lightbend.lagom.javadsl.testkit.ServiceTest;
 import com.rccl.middleware.common.exceptions.MiddlewareTransportException;
+import com.rccl.middleware.common.header.Header;
 import com.rccl.middleware.common.validation.MiddlewareValidationException;
 import com.rccl.middleware.guest.accounts.Guest;
 import com.rccl.middleware.guest.accounts.GuestAccountService;
@@ -21,6 +22,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import static com.lightbend.lagom.javadsl.testkit.ServiceTest.defaultSetup;
@@ -64,6 +66,11 @@ public class GuestAccountUpdateServiceTest {
         securityQuestionList.add(securityQuestion);
         
         Guest guest = Guest.builder()
+                .header(Header.builder()
+                        .channel("web")
+                        .brand('R')
+                        .locale(Locale.US)
+                        .build())
                 .email(emailID)
                 .firstName("John")
                 .lastName("Dale")
@@ -83,9 +90,9 @@ public class GuestAccountUpdateServiceTest {
                 .build();
         
         try {
-            HeaderServiceCall<Guest, JsonNode> updateAccount = (HeaderServiceCall<Guest, JsonNode>) guestAccountService.updateAccount(emailID);
+            HeaderServiceCall<Guest, NotUsed> updateAccount = (HeaderServiceCall<Guest, NotUsed>) guestAccountService.updateAccount(emailID);
             
-            Pair<ResponseHeader, JsonNode> response = updateAccount
+            Pair<ResponseHeader, NotUsed> response = updateAccount
                     .invokeWithHeaders(RequestHeader.DEFAULT, guest)
                     .toCompletableFuture()
                     .get(5, TimeUnit.SECONDS);
@@ -108,6 +115,11 @@ public class GuestAccountUpdateServiceTest {
         securityQuestionList.add(securityQuestion);
         
         Guest guest = Guest.builder()
+                .header(Header.builder()
+                        .channel("web")
+                        .brand('R')
+                        .locale(Locale.US)
+                        .build())
                 .email(emailID)
                 .firstName("John")
                 .lastName("Dale")
@@ -117,9 +129,9 @@ public class GuestAccountUpdateServiceTest {
                 .build();
         
         try {
-            HeaderServiceCall<Guest, JsonNode> updateAccount = (HeaderServiceCall<Guest, JsonNode>) guestAccountService.updateAccount(emailID);
+            HeaderServiceCall<Guest, NotUsed> updateAccount = (HeaderServiceCall<Guest, NotUsed>) guestAccountService.updateAccount(emailID);
             
-            Pair<ResponseHeader, JsonNode> response = updateAccount
+            Pair<ResponseHeader, NotUsed> response = updateAccount
                     .invokeWithHeaders(RequestHeader.DEFAULT, guest)
                     .toCompletableFuture()
                     .get(5, TimeUnit.SECONDS);
@@ -141,6 +153,11 @@ public class GuestAccountUpdateServiceTest {
         securityQuestionList.add(securityQuestion);
         
         Guest guest = Guest.builder()
+                .header(Header.builder()
+                        .channel("web")
+                        .brand('R')
+                        .locale(Locale.US)
+                        .build())
                 .email(emailID)
                 .firstName("J")
                 .lastName("D")
@@ -148,9 +165,9 @@ public class GuestAccountUpdateServiceTest {
                 .securityQuestions(securityQuestionList)
                 .build();
         
-        HeaderServiceCall<Guest, JsonNode> updateAccount = (HeaderServiceCall<Guest, JsonNode>) guestAccountService.updateAccount(emailID);
+        HeaderServiceCall<Guest, NotUsed> updateAccount = (HeaderServiceCall<Guest, NotUsed>) guestAccountService.updateAccount(emailID);
         
-        Pair<ResponseHeader, JsonNode> response = updateAccount
+        Pair<ResponseHeader, NotUsed> response = updateAccount
                 .invokeWithHeaders(RequestHeader.DEFAULT, guest)
                 .toCompletableFuture()
                 .get(5, TimeUnit.SECONDS);
@@ -168,6 +185,11 @@ public class GuestAccountUpdateServiceTest {
         securityQuestionList.add(securityQuestion);
         
         Guest guest = Guest.builder()
+                .header(Header.builder()
+                        .channel("web")
+                        .brand('R')
+                        .locale(Locale.US)
+                        .build())
                 .email(emailID)
                 .firstName("John")
                 .lastName("Dale")
@@ -190,9 +212,9 @@ public class GuestAccountUpdateServiceTest {
                 .azamaraPrimaryBookingId("asdsadasd")
                 .build();
         
-        HeaderServiceCall<Guest, JsonNode> updateAccount = (HeaderServiceCall<Guest, JsonNode>) guestAccountService.updateAccount(emailID);
+        HeaderServiceCall<Guest, NotUsed> updateAccount = (HeaderServiceCall<Guest, NotUsed>) guestAccountService.updateAccount(emailID);
         
-        Pair<ResponseHeader, JsonNode> response = updateAccount
+        Pair<ResponseHeader, NotUsed> response = updateAccount
                 .invokeWithHeaders(RequestHeader.DEFAULT, guest)
                 .toCompletableFuture()
                 .get(5, TimeUnit.SECONDS);

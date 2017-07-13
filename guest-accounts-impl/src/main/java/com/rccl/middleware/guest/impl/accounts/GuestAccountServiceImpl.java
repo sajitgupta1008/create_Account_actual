@@ -5,7 +5,6 @@ import akka.japi.Pair;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.TextNode;
 import com.lightbend.lagom.javadsl.api.broker.Topic;
 import com.lightbend.lagom.javadsl.api.transport.ResponseHeader;
 import com.lightbend.lagom.javadsl.api.transport.TransportErrorCode;
@@ -13,15 +12,19 @@ import com.lightbend.lagom.javadsl.broker.TopicProducer;
 import com.lightbend.lagom.javadsl.persistence.PersistentEntityRegistry;
 import com.lightbend.lagom.javadsl.server.HeaderServiceCall;
 import com.rccl.middleware.common.exceptions.MiddlewareTransportException;
-import com.rccl.middleware.common.hateoas.HATEOASLinks;
-import com.rccl.middleware.common.hateoas.Link;
 import com.rccl.middleware.common.validation.MiddlewareValidation;
+import com.rccl.middleware.forgerock.api.ForgeRockCredentials;
+import com.rccl.middleware.forgerock.api.ForgeRockService;
+import com.rccl.middleware.forgerock.api.exceptions.ForgeRockExceptionFactory;
+import com.rccl.middleware.guest.accounts.AccountCredentials;
 import com.rccl.middleware.guest.accounts.AccountStatusEnum;
 import com.rccl.middleware.guest.accounts.Guest;
 import com.rccl.middleware.guest.accounts.GuestAccountService;
 import com.rccl.middleware.guest.accounts.GuestEvent;
+import com.rccl.middleware.guest.accounts.LoginStatusEnum;
 import com.rccl.middleware.guest.accounts.SecurityQuestion;
 import com.rccl.middleware.guest.accounts.exceptions.ExistingGuestException;
+import com.rccl.middleware.guest.accounts.exceptions.GuestAuthenticationException;
 import com.rccl.middleware.guest.accounts.exceptions.GuestNotFoundException;
 import com.rccl.middleware.guest.accounts.exceptions.InvalidEmailFormatException;
 import com.rccl.middleware.guest.accounts.exceptions.InvalidGuestException;
@@ -33,7 +36,6 @@ import com.rccl.middleware.saviynt.api.SaviyntGuest;
 import com.rccl.middleware.saviynt.api.SaviyntService;
 import com.rccl.middleware.saviynt.api.SaviyntUserType;
 import com.rccl.middleware.saviynt.api.exceptions.SaviyntExceptionFactory;
-import play.Configuration;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
@@ -49,34 +51,30 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     
-    private static final String UPDATE_GUEST_CONFIG_PATH = "update-account";
-    
     private final PersistentEntityRegistry persistentEntityRegistry;
     
     private final SaviyntService saviyntService;
     
-    private final GuestProfileOptinService guestProfileOptinService;
+    private final ForgeRockService forgeRockService;
     
-    private final List<Link> updateAccountLinks;
+    private final GuestProfileOptinService guestProfileOptinService;
     
     @Inject
     public GuestAccountServiceImpl(SaviyntService saviyntService,
-                                   Configuration configuration,
+                                   ForgeRockService forgeRockService,
                                    PersistentEntityRegistry persistentEntityRegistry,
                                    GuestProfileOptinService guestProfileOptinService) {
         this.saviyntService = saviyntService;
+        this.forgeRockService = forgeRockService;
         
         this.guestProfileOptinService = guestProfileOptinService;
         
         this.persistentEntityRegistry = persistentEntityRegistry;
         persistentEntityRegistry.register(GuestAccountEntity.class);
-        
-        HATEOASLinks hateoasLinks = new HATEOASLinks(configuration);
-        updateAccountLinks = hateoasLinks.getLinks(UPDATE_GUEST_CONFIG_PATH);
     }
     
     @Override
-    public HeaderServiceCall<Guest, TextNode> createAccount() {
+    public HeaderServiceCall<Guest, JsonNode> createAccount() {
         return (requestHeader, guest) -> {
             MiddlewareValidation.validateWithGroups(guest, Guest.CreateChecks.class);
             
@@ -102,7 +100,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         
                         throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
                     })
-                    .thenApply(response -> {
+                    .thenCompose(response -> {
+                        
                         persistentEntityRegistry.refFor(GuestAccountEntity.class, guest.getEmail())
                                 .ask(new GuestAccountCommand.CreateGuest(guest));
                         
@@ -118,16 +117,30 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         matcher.find();
                         String vdsId = matcher.group(0).substring(6);
                         
-                        return new Pair<>(ResponseHeader.OK.withStatus(201), TextNode.valueOf(vdsId));
+                        // automatically authenticate user and include vdsId in the response.
+                        AccountCredentials credentials = AccountCredentials.builder()
+                                .header(guest.getHeader())
+                                .username(guest.getEmail())
+                                .password(guest.getPassword())
+                                .build();
+                        
+                        return this.authenticateUser()
+                                .invokeWithHeaders(requestHeader, credentials)
+                                .thenApply(jsonPair -> {
+                                    ObjectNode objNode = jsonPair.second().deepCopy();
+                                    objNode.put("vdsId", vdsId);
+                                    return Pair.create(ResponseHeader.OK.withStatus(201), objNode);
+                                });
                     });
         };
     }
     
     @Override
-    public HeaderServiceCall<Guest, JsonNode> updateAccount(String email) {
+    public HeaderServiceCall<Guest, NotUsed> updateAccount(String email) {
         return (requestHeader, partialGuest) -> {
             
             final Guest guest = Guest.builder()
+                    .header(partialGuest.getHeader())
                     .email(email)
                     .firstName(partialGuest.getFirstName())
                     .lastName(partialGuest.getLastName())
@@ -180,13 +193,78 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         persistentEntityRegistry.refFor(GuestAccountEntity.class, email)
                                 .ask(new GuestAccountCommand.UpdateGuest(guest));
                         
-                        final ObjectNode objNode = OBJECT_MAPPER.createObjectNode();
-                        updateAccountLinks.forEach(link -> link.substituteArguments(email));
-                        objNode.putPOJO("_links", updateAccountLinks);
-                        ResponseHeader responseHeader = ResponseHeader.OK.withStatus(200);
-                        
-                        return new Pair<>(responseHeader, objNode);
+                        return new Pair<>(ResponseHeader.OK, NotUsed.getInstance());
                     });
+        };
+    }
+    
+    @Override
+    public HeaderServiceCall<AccountCredentials, JsonNode> authenticateUser() {
+        return (requestHeader, request) -> {
+            
+            MiddlewareValidation.validate(request);
+            
+            ForgeRockCredentials forgeRockCredentials = ForgeRockCredentials.builder()
+                    .username(request.getUsername())
+                    .password(request.getPassword())
+                    .build();
+            
+            // TODO remove these once the migration scenarios are finalized.
+            ObjectNode mockResponse = OBJECT_MAPPER.createObjectNode();
+            if ("legacyuser@rccl.com".equalsIgnoreCase(request.getUsername())) {
+                mockResponse.put("accountLoginStatus", LoginStatusEnum.LEGACY_ACCOUNT_VERIFIED.value());
+                return CompletableFuture.completedFuture(Pair.create(ResponseHeader.OK, mockResponse));
+            } else if ("temporarypassword@rccl.com".equalsIgnoreCase(request.getUsername())) {
+                mockResponse.put("accountLoginStatus", LoginStatusEnum.NEW_ACCOUNT_TEMPORARY_PASSWORD.value());
+                return CompletableFuture.completedFuture(Pair.create(ResponseHeader.OK, mockResponse));
+            }
+            
+            if ("web".equals(request.getHeader().getChannel())) {
+                return forgeRockService.authenticateWebUser()
+                        .invoke(forgeRockCredentials)
+                        .exceptionally(exception -> {
+                            Throwable cause = exception.getCause();
+                            
+                            if (cause instanceof ForgeRockExceptionFactory.AuthenticationException) {
+                                ForgeRockExceptionFactory.AuthenticationException ex =
+                                        (ForgeRockExceptionFactory.AuthenticationException) cause;
+                                throw new GuestAuthenticationException(ex.getErrorDescription());
+                            }
+                            
+                            throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
+                        })
+                        .thenApply(jsonNode -> {
+                            ObjectNode jsonResponse = OBJECT_MAPPER.createObjectNode();
+                            jsonResponse.put("accountLoginStatus", LoginStatusEnum.NEW_ACCOUNT_AUTHENTICATED.value());
+                            jsonResponse.put("ssoToken", jsonNode.get("tokenId").asText());
+                            
+                            return Pair.create(ResponseHeader.OK.withStatus(200), jsonResponse);
+                        });
+            } else {
+                return forgeRockService.authenticateMobileUser()
+                        .invoke(forgeRockCredentials)
+                        .exceptionally(exception -> {
+                            Throwable cause = exception.getCause();
+                            
+                            if (cause instanceof ForgeRockExceptionFactory.AuthenticationException) {
+                                ForgeRockExceptionFactory.AuthenticationException ex =
+                                        (ForgeRockExceptionFactory.AuthenticationException) cause;
+                                throw new GuestAuthenticationException(ex.getErrorDescription());
+                            }
+                            
+                            throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
+                        })
+                        .thenApply(jsonNode -> {
+                            ObjectNode jsonResponse = OBJECT_MAPPER.createObjectNode();
+                            jsonResponse.put("accountLoginStatus", LoginStatusEnum.NEW_ACCOUNT_AUTHENTICATED.value());
+                            jsonResponse.put("accessToken", jsonNode.get("access_token").asText());
+                            jsonResponse.put("refreshToken", jsonNode.get("refresh_token").asText());
+                            jsonResponse.put("openIdToken", jsonNode.get("id_token").asText());
+                            jsonResponse.put("tokenExpiration", jsonNode.get("expires_in").asText());
+                            
+                            return Pair.create(ResponseHeader.OK.withStatus(200), jsonResponse);
+                        });
+            }
         };
     }
     
@@ -194,7 +272,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     public HeaderServiceCall<NotUsed, JsonNode> validateEmail(String email) {
         return (requestHeader, notUsed) -> {
             
-            String emailPattern = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9-]+((\\.[A-Za-z0-9]+)){1,2}$";
+            String emailPattern = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
             Pattern pattern = Pattern.compile(emailPattern);
             Matcher matcher = pattern.matcher(email);
             
@@ -327,6 +405,13 @@ public class GuestAccountServiceImpl implements GuestAccountService {
         return builder;
     }
     
+    /**
+     * Populates {@link Optins} to register the guest email to all brands and all categories of optins specified in
+     * create account request.
+     *
+     * @param guest the {@link Guest} model
+     * @return {@link Optins} with enrollment to all brands and all optin categories.
+     */
     private Optins generateCreateOptinsRequest(Guest guest) {
         List<OptinType> optinTypeList = new ArrayList<>();
         guest.getOptins().forEach(optin ->

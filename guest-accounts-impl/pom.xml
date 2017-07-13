@@ -87,6 +87,11 @@
     </dependency>
 
     <dependency>
+      <groupId>com.rccl.middleware</groupId>
+      <artifactId>forgerock</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>com.rccl.middleware.guest.optin</groupId>
       <artifactId>guest-profiles-optins-api</artifactId>
     </dependency>
