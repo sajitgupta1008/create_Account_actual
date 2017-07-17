@@ -16,6 +16,7 @@ public interface GuestAccountEvent extends Jsonable, AggregateEvent<GuestAccount
     
     @Value
     final class GuestCreated implements GuestAccountEvent {
+        
         public final Guest guest;
         
         @JsonCreator
@@ -30,6 +31,17 @@ public interface GuestAccountEvent extends Jsonable, AggregateEvent<GuestAccount
         
         @JsonCreator
         public GuestUpdated(Guest guest) {
+            this.guest = guest;
+        }
+    }
+    
+    @Value
+    final class LinkLoyalty implements GuestAccountEvent {
+        
+        public final Guest guest;
+        
+        @JsonCreator
+        public LinkLoyalty(Guest guest) {
             this.guest = guest;
         }
     }

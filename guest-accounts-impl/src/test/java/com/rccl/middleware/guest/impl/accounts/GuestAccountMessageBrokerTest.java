@@ -88,7 +88,8 @@ public class GuestAccountMessageBrokerTest {
                 .build());
         
         assertThat(outcome.events().get(0), is(instanceOf(GuestAccountEvent.GuestCreated.class)));
-        assertThat(outcome.events().size(), is(equalTo(1)));
+        assertThat(outcome.events().get(1), is(instanceOf(GuestAccountEvent.LinkLoyalty.class)));
+        assertThat(outcome.events().size(), is(equalTo(2)));
         assertThat(outcome.state().getGuest(), is(equalTo(sampleGuest)));
         assertThat(outcome.state().getEvent(), is(equalTo(GuestEventStatus.CREATE)));
         assertThat(outcome.getReplies().get(0), is(equalTo(Done.getInstance())));
