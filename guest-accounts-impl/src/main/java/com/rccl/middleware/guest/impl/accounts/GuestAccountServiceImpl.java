@@ -22,7 +22,6 @@ import com.rccl.middleware.guest.accounts.Guest;
 import com.rccl.middleware.guest.accounts.GuestAccountService;
 import com.rccl.middleware.guest.accounts.GuestEvent;
 import com.rccl.middleware.guest.accounts.LoginStatusEnum;
-import com.rccl.middleware.guest.accounts.SecurityQuestion;
 import com.rccl.middleware.guest.accounts.exceptions.ExistingGuestException;
 import com.rccl.middleware.guest.accounts.exceptions.GuestAuthenticationException;
 import com.rccl.middleware.guest.accounts.exceptions.GuestNotFoundException;
@@ -34,7 +33,6 @@ import com.rccl.middleware.guest.optin.OptinType;
 import com.rccl.middleware.guest.optin.Optins;
 import com.rccl.middleware.saviynt.api.SaviyntGuest;
 import com.rccl.middleware.saviynt.api.SaviyntService;
-import com.rccl.middleware.saviynt.api.SaviyntUserType;
 import com.rccl.middleware.saviynt.api.exceptions.SaviyntExceptionFactory;
 
 import javax.inject.Inject;
@@ -45,7 +43,6 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class GuestAccountServiceImpl implements GuestAccountService {
     
@@ -78,7 +75,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
         return (requestHeader, guest) -> {
             MiddlewareValidation.validateWithGroups(guest, Guest.CreateChecks.class);
             
-            final SaviyntGuest saviyntGuest = mapGuestToSaviyntGuest(guest, true).build();
+            final SaviyntGuest saviyntGuest = Mapper.mapGuestToSaviyntGuest(guest, true).build();
             
             return saviyntService
                     .createGuestAccount()
@@ -102,20 +99,20 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                     })
                     .thenCompose(response -> {
                         
-                        persistentEntityRegistry.refFor(GuestAccountEntity.class, guest.getEmail())
-                                .ask(new GuestAccountCommand.CreateGuest(guest));
-                        
-                        // trigger optin service to store the optins into Cassandra
-                        guestProfileOptinService.createOptins(guest.getEmail())
-                                .invoke(this.generateCreateOptinsRequest(guest))
-                                .toCompletableFuture().complete(NotUsed.getInstance());
-                        
                         //TODO replace this with the vdsId attribute when available
                         String message = response.get("message").asText();
                         Pattern pattern = Pattern.compile("vdsid=[a-zA-Z0-9]*");
                         Matcher matcher = pattern.matcher(message);
                         matcher.find();
                         String vdsId = matcher.group(0).substring(6);
+                        
+                        persistentEntityRegistry.refFor(GuestAccountEntity.class, guest.getEmail())
+                                .ask(new GuestAccountCommand.CreateGuest(Mapper.mapVdsIdWithGuest(vdsId, guest)));
+                        
+                        // trigger optin service to store the optins into Cassandra
+                        guestProfileOptinService.createOptins(guest.getEmail())
+                                .invoke(this.generateCreateOptinsRequest(guest))
+                                .toCompletableFuture().complete(NotUsed.getInstance());
                         
                         // automatically authenticate user and include vdsId in the response.
                         AccountCredentials credentials = AccountCredentials.builder()
@@ -139,34 +136,11 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     public HeaderServiceCall<Guest, NotUsed> updateAccount(String email) {
         return (requestHeader, partialGuest) -> {
             
-            final Guest guest = Guest.builder()
-                    .header(partialGuest.getHeader())
-                    .email(email)
-                    .firstName(partialGuest.getFirstName())
-                    .lastName(partialGuest.getLastName())
-                    .birthdate(partialGuest.getBirthdate())
-                    .securityQuestions(partialGuest.getSecurityQuestions())
-                    .consumerId(partialGuest.getConsumerId())
-                    .crownAndAnchorIds(partialGuest.getCrownAndAnchorIds())
-                    .captainsClubIds(partialGuest.getCaptainsClubIds())
-                    .azamaraLoyaltyIds(partialGuest.getAzamaraLoyaltyIds())
-                    .clubRoyaleIds(partialGuest.getClubRoyaleIds())
-                    .celebrityBlueChipIds(partialGuest.getCelebrityBlueChipIds())
-                    .azamaraBookingIds(partialGuest.getAzamaraBookingIds())
-                    .celebrityBookingIds(partialGuest.getCelebrityBookingIds())
-                    .royalBookingIds(partialGuest.getRoyalBookingIds())
-                    .azamaraWebShopperIds(partialGuest.getAzamaraWebShopperIds())
-                    .celebrityWebShopperIds(partialGuest.getCelebrityWebShopperIds())
-                    .royalWebShopperIds(partialGuest.getRoyalWebShopperIds())
-                    .royalPrimaryBookingId(partialGuest.getRoyalPrimaryBookingId())
-                    .celebrityPrimaryBookingId(partialGuest.getCelebrityPrimaryBookingId())
-                    .azamaraPrimaryBookingId(partialGuest.getAzamaraPrimaryBookingId())
-                    .termsAndConditionsAgreement(partialGuest.getTermsAndConditionsAgreement())
-                    .build();
+            final Guest guest = Mapper.mapEmailWithGuest(email, partialGuest);
             
             MiddlewareValidation.validateWithGroups(guest, Guest.UpdateChecks.class);
             
-            final SaviyntGuest saviyntGuest = mapGuestToSaviyntGuest(guest, false).email(email).build();
+            final SaviyntGuest saviyntGuest = Mapper.mapGuestToSaviyntGuest(guest, false).email(email).build();
             
             return saviyntService
                     .updateGuestAccount()
@@ -334,6 +308,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     public Topic<GuestEvent> guestAccountsTopic() {
         return TopicProducer.taggedStreamWithOffset(GuestAccountTag.GUEST_ACCOUNT_EVENT_TAG.allTags(), (tag, offset) ->
                 persistentEntityRegistry.eventStream(tag, offset)
+                        .filter(param -> param.first() instanceof GuestAccountEvent.GuestCreated
+                                || param.first() instanceof GuestAccountEvent.GuestUpdated)
                         .mapAsync(1, eventOffset -> {
                             GuestAccountEvent event = eventOffset.first();
                             GuestEvent guestEvent;
@@ -350,60 +326,19 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         }));
     }
     
-    /**
-     * Creates a builder which maps the appropriate {@link Guest} values into {@link SaviyntGuest} object based on the action taken.
-     *
-     * @param guest    the {@link Guest} model
-     * @param isCreate determines the request being taken whether it is create or update guest account
-     * @return {@link SaviyntGuest.SaviyntGuestBuilder}
-     */
-    private SaviyntGuest.SaviyntGuestBuilder mapGuestToSaviyntGuest(Guest guest, boolean isCreate) {
-        SaviyntGuest.SaviyntGuestBuilder builder = SaviyntGuest.builder()
-                .firstname(guest.getFirstName())
-                .lastname(guest.getLastName())
-                .displayname(guest.getFirstName() + " " + guest.getLastName())
-                .email(guest.getEmail())
-                .password(guest.getPassword())
-                .dateofBirth(guest.getBirthdate())
-                .consumerId(guest.getConsumerId())
-                .crownAndAnchorIds(this.mapValuesToSaviyntStringFormat(guest.getCrownAndAnchorIds()))
-                .captainsClubIds(this.mapValuesToSaviyntStringFormat(guest.getCaptainsClubIds()))
-                .azamaraLoyaltyIds(this.mapValuesToSaviyntStringFormat(guest.getAzamaraLoyaltyIds()))
-                .clubRoyaleIds(this.mapValuesToSaviyntStringFormat(guest.getClubRoyaleIds()))
-                .celebrityBlueChipIds(this.mapValuesToSaviyntStringFormat(guest.getCelebrityBlueChipIds()))
-                .azamaraBookingIds(this.mapValuesToSaviyntStringFormat(guest.getAzamaraBookingIds()))
-                .celebrityBookingIds(this.mapValuesToSaviyntStringFormat(guest.getCelebrityBookingIds()))
-                .royalBookingIds(this.mapValuesToSaviyntStringFormat(guest.getRoyalBookingIds()))
-                .azamaraWebShopperIds(this.mapValuesToSaviyntStringFormat(guest.getAzamaraWebShopperIds()))
-                .celebrityWebShopperIds(this.mapValuesToSaviyntStringFormat(guest.getCelebrityWebShopperIds()))
-                .royalWebShopperIds(this.mapValuesToSaviyntStringFormat(guest.getRoyalWebShopperIds()))
-                .royalPrimaryBookingId(guest.getRoyalPrimaryBookingId())
-                .celebrityPrimaryBookingId(guest.getCelebrityPrimaryBookingId())
-                .azamaraPrimaryBookingId(guest.getAzamaraPrimaryBookingId())
-                .propertytosearch("email");
-        
-        // only map the account creation specific attributes
-        if (isCreate) {
-            builder.username(guest.getEmail())
-                    .userType(SaviyntUserType.Guest);
-        }
-        
-        List<SecurityQuestion> securityQuestions = guest.getSecurityQuestions();
-        
-        if (securityQuestions != null && !securityQuestions.isEmpty()) {
-            SecurityQuestion sq = securityQuestions.get(0);
-            
-            builder
-                    .securityquestion(sq.getQuestion())
-                    .securityanswer(sq.getAnswer());
-        }
-        
-        if (guest.getTermsAndConditionsAgreement() != null) {
-            builder.termsAndConditionsVersion(guest.getTermsAndConditionsAgreement().getVersion());
-        }
-        
-        return builder;
+    @Override
+    public Topic<Guest> linkLoyaltyTopic() {
+        return TopicProducer.taggedStreamWithOffset(GuestAccountTag.GUEST_ACCOUNT_EVENT_TAG.allTags(), (tag, offset) ->
+                persistentEntityRegistry.eventStream(tag, offset)
+                        .filter(param -> param.first() instanceof GuestAccountEvent.LinkLoyalty)
+                        .mapAsync(1, eventOffset -> {
+                            GuestAccountEvent event = eventOffset.first();
+                            GuestAccountEvent.LinkLoyalty loyalty = (GuestAccountEvent.LinkLoyalty) event;
+                            
+                            return CompletableFuture.completedFuture(new Pair<>(loyalty.getGuest(), eventOffset.second()));
+                        }));
     }
+    
     
     /**
      * Populates {@link Optins} to register the guest email to all brands and all categories of optins specified in
@@ -418,7 +353,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                 optinTypeList.add(OptinType.builder()
                         .type(optin.getType())
                         .acceptTime(optin.getAcceptTime())
-                        .flag(true)
+                        .flag(optin.isFlag())
                         .build()));
         
         // enroll the guest to all brands and categories.
@@ -437,22 +372,5 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                 .email(guest.getEmail())
                 .optins(optinList)
                 .build();
-    }
-    
-    /**
-     * Wraps each {@link List} value with quotation marks to satisfy Saviynt's requirement.
-     *
-     * @param attributeList {@code List<String>}
-     * @return {@code List<String>}
-     */
-    private List<String> mapValuesToSaviyntStringFormat(List<String> attributeList) {
-        if (attributeList != null && !attributeList.isEmpty()) {
-            return attributeList
-                    .stream()
-                    .map(val -> "\"" + val + "\"")
-                    .collect(Collectors.toList());
-        }
-        
-        return null;
     }
 }

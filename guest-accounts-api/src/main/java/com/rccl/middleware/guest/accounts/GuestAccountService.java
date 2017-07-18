@@ -17,7 +17,9 @@ import static com.lightbend.lagom.javadsl.api.transport.Method.PUT;
 
 public interface GuestAccountService extends Service {
     
-    String KAFKA_TOPIC_NAME = ConfigFactory.load().getString("kafka.topic.name");
+    String GUEST_ACCOUNTS_KAFKA_TOPIC = ConfigFactory.load().getString("kafka.guest-accounts.topic.name");
+    
+    String LINK_LOYALTY_KAFKA_TOPIC = ConfigFactory.load().getString("kafka.link-loyalty.topic.name");
     
     /**
      * Create a guest account from the given {@link Guest} and get back the user ID
@@ -37,6 +39,8 @@ public interface GuestAccountService extends Service {
     
     Topic<GuestEvent> guestAccountsTopic();
     
+    Topic<Guest> linkLoyaltyTopic();
+    
     @Override
     default Descriptor descriptor() {
         return named("guestAccounts")
@@ -49,7 +53,8 @@ public interface GuestAccountService extends Service {
                         restCall(GET, "/v1/guestAccounts/health", this::healthCheck)
                 )
                 .publishing(
-                        topic(KAFKA_TOPIC_NAME, this::guestAccountsTopic)
+                        topic(GUEST_ACCOUNTS_KAFKA_TOPIC, this::guestAccountsTopic),
+                        topic(LINK_LOYALTY_KAFKA_TOPIC, this::linkLoyaltyTopic)
                 )
                 .withAutoAcl(true);
     }

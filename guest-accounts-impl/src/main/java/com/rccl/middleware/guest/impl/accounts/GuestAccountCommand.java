@@ -13,12 +13,14 @@ public interface GuestAccountCommand extends Jsonable {
     @Builder
     @Value
     final class CreateGuest implements GuestAccountCommand, CompressedJsonable, PersistentEntity.ReplyType<Done> {
+        
         final Guest guest;
     }
     
     @Builder
     @Value
     final class UpdateGuest implements GuestAccountCommand, CompressedJsonable, PersistentEntity.ReplyType<Done> {
+        
         final Guest guest;
     }
     
