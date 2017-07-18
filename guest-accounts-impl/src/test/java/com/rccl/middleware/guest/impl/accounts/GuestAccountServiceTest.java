@@ -215,7 +215,7 @@ public class GuestAccountServiceTest {
                 .lastName("Pitt")
                 .email("successful@domain.com")
                 .birthdate("19910101")
-                .password("secretpass!".toCharArray());
+                .password("secretpass1".toCharArray());
         
         TermsAndConditionsAgreement tca = TermsAndConditionsAgreement.builder()
                 .acceptTime("20170627033735PM")

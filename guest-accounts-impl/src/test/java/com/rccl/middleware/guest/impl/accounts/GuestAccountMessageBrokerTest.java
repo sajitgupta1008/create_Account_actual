@@ -159,7 +159,7 @@ public class GuestAccountMessageBrokerTest {
                 .firstName("John")
                 .lastName("Downs")
                 .consumerId("123456789")
-                .password("password!".toCharArray())
+                .password("password1".toCharArray())
                 .birthdate("19910101")
                 .securityQuestions(Arrays.asList(SecurityQuestion.builder().question("what?").answer("yes").build()))
                 .termsAndConditionsAgreement(TermsAndConditionsAgreement.builder().acceptTime("20170627033735PM").version("1.0").build())
