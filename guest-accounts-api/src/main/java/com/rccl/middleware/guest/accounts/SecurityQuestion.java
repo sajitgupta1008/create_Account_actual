@@ -15,7 +15,7 @@ public class SecurityQuestion implements Jsonable {
      * The provided answer to the security question.
      */
     @NotNull(message = "An answer to the security question is required.", groups = Guest.DefaultChecks.class)
-    @Size(min = 3, max = 256, message = "The answer should be at least three (3) characters.", groups = Guest.DefaultChecks.class)
+    @Size(min = 3, max = 100, message = "The answer should be at least three (3) characters and must not exceed one hundred (100) characters.", groups = Guest.DefaultChecks.class)
     String answer;
     
     /**
@@ -29,6 +29,6 @@ public class SecurityQuestion implements Jsonable {
      * The content text for the question.
      */
     @NotNull(message = "A question in security question is required.", groups = Guest.DefaultChecks.class)
-    @Size(min = 3, max = 256, message = "The question should be at least three (3) characters.", groups = Guest.DefaultChecks.class)
+    @Size(min = 3, message = "The question should be at least three (3) characters.", groups = Guest.DefaultChecks.class)
     String question;
 }

@@ -43,11 +43,11 @@ public class Guest implements Jsonable {
     String vdsId;
     
     @NotNull(message = "A first name is required.", groups = CreateChecks.class)
-    @Size(min = 1, max = 100, message = "The first name must be at least one (1) character.", groups = DefaultChecks.class)
+    @Size(min = 1, max = 50, message = "The first name must be at least one (1) character and maximum of fifty (50) characters.", groups = DefaultChecks.class)
     String firstName;
     
     @NotNull(message = "A last name is required.", groups = CreateChecks.class)
-    @Size(min = 1, max = 100, message = "The last name must be at least one (1) character.", groups = DefaultChecks.class)
+    @Size(min = 2, max = 50, message = "The last name must be at least two (2) characters and maximum of fifty (50) characters.", groups = DefaultChecks.class)
     String lastName;
     
     @NotEmpty(message = "Date of birth is required.", groups = CreateChecks.class)
