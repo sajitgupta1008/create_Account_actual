@@ -57,7 +57,7 @@ public class Guest implements Jsonable {
     
     @NotEmpty(message = "A phone number is required.", groups = CreateChecks.class)
     @Size(min = 7, max = 30, message = "The phone number must be at least seven (7) characters"
-            + " and maximum of thirty (30) characters.")
+            + " and maximum of thirty (30) characters.", groups = DefaultChecks.class)
     @Pattern(regexp = "[0-9+()-]*", message = "The phone number is invalidly formatted", groups = DefaultChecks.class)
     String phoneNumber;
     
