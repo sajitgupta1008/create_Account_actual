@@ -41,8 +41,14 @@
     </dependency>
 
     <dependency>
+      <groupId>com.rccl.middleware.guest.optin</groupId>
+      <artifactId>guest-profiles-optins-api</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
     </dependency>
+
   </dependencies>
 </project>
