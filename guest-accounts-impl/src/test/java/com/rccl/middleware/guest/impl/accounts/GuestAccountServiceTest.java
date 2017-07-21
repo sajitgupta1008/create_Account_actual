@@ -215,6 +215,7 @@ public class GuestAccountServiceTest {
                 .lastName("Pitt")
                 .email("successful@domain.com")
                 .birthdate("19910101")
+                .phoneNumber("+1(123)-234-9867")
                 .password("secretpass1".toCharArray());
         
         TermsAndConditionsAgreement tca = TermsAndConditionsAgreement.builder()
