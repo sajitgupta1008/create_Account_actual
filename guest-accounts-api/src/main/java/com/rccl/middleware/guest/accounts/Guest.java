@@ -3,10 +3,9 @@ package com.rccl.middleware.guest.accounts;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.lightbend.lagom.serialization.Jsonable;
 import com.rccl.middleware.common.header.Header;
-import com.rccl.middleware.common.validation.validator.DateFormat;
+import com.rccl.middleware.common.validation.validator.DateOfBirth;
 import com.rccl.middleware.common.validation.validator.GuestAccountPassword;
 import com.rccl.middleware.common.validation.validator.NumericFormatList;
-import com.rccl.middleware.guest.accounts.validation.OptinList;
 import lombok.Builder;
 import lombok.Value;
 import org.hibernate.validator.constraints.Email;
@@ -43,15 +42,17 @@ public class Guest implements Jsonable {
     String vdsId;
     
     @NotNull(message = "A first name is required.", groups = CreateChecks.class)
-    @Size(min = 1, max = 50, message = "The first name must be at least one (1) character and maximum of fifty (50) characters.", groups = DefaultChecks.class)
+    @Size(min = 1, max = 50, message = "The first name must be at least one (1) character"
+            + " and maximum of fifty (50) characters.", groups = DefaultChecks.class)
     String firstName;
     
     @NotNull(message = "A last name is required.", groups = CreateChecks.class)
-    @Size(min = 2, max = 50, message = "The last name must be at least two (2) characters and maximum of fifty (50) characters.", groups = DefaultChecks.class)
+    @Size(min = 2, max = 50, message = "The last name must be at least two (2) characters"
+            + " and maximum of fifty (50) characters.", groups = DefaultChecks.class)
     String lastName;
     
     @NotEmpty(message = "Date of birth is required.", groups = CreateChecks.class)
-    @DateFormat(groups = DefaultChecks.class)
+    @DateOfBirth(groups = DefaultChecks.class)
     String birthdate;
     
     @NotNull(message = "A password is required.", groups = CreateChecks.class)
@@ -113,7 +114,6 @@ public class Guest implements Jsonable {
     String azamaraPrimaryBookingId;
     
     @NotNull(message = "At least one optin is required.", groups = CreateChecks.class)
-    @OptinList(groups = DefaultChecks.class)
     @Valid
     List<Optin> optins;
     
