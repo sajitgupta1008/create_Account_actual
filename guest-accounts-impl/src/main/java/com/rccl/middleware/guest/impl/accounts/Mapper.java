@@ -99,6 +99,7 @@ public class Mapper {
                 .email(guest.getEmail())
                 .password(guest.getPassword())
                 .dateofBirth(guest.getBirthdate())
+                .phoneNumber(guest.getPhoneNumber())
                 .consumerId(guest.getConsumerId())
                 .crownAndAnchorIds(mapValuesToSaviyntStringFormat(guest.getCrownAndAnchorIds()))
                 .captainsClubIds(mapValuesToSaviyntStringFormat(guest.getCaptainsClubIds()))
