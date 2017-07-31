@@ -373,6 +373,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
         );
         
         return Optins.builder()
+                .header(guest.getHeader())
                 .email(guest.getEmail())
                 .optins(optinList)
                 .build();
