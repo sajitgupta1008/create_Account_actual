@@ -45,7 +45,7 @@ public class GuestAccountEmailValidationServiceTest {
     
     @Test
     public void shouldReturnStatusAccountExists() throws Exception {
-        String validEmail = "abc.xyz@domain123.com";
+        String validEmail = "successful@domain.com";
         JsonNode response = guestAccountEmailValidationService.validateEmail(validEmail)
                 .invoke().toCompletableFuture().get(5, TimeUnit.SECONDS);
         
