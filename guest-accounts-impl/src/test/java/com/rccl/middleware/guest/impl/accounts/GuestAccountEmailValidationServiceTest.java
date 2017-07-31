@@ -10,6 +10,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static com.lightbend.lagom.javadsl.testkit.ServiceTest.defaultSetup;
@@ -45,8 +46,7 @@ public class GuestAccountEmailValidationServiceTest {
     
     @Test
     public void shouldReturnStatusAccountExists() throws Exception {
-        String validEmail = "abc.xyz@domain123.com";
-        JsonNode response = guestAccountEmailValidationService.validateEmail(validEmail)
+        JsonNode response = guestAccountEmailValidationService.validateEmail("successful@domain.com")
                 .invoke().toCompletableFuture().get(5, TimeUnit.SECONDS);
         
         assertNotNull(response);
@@ -56,8 +56,7 @@ public class GuestAccountEmailValidationServiceTest {
     
     @Test
     public void shouldReturnStatusAccountNonExisting() throws Exception {
-        String validEmail = "notexisting@domain.com";
-        JsonNode response = guestAccountEmailValidationService.validateEmail(validEmail)
+        JsonNode response = guestAccountEmailValidationService.validateEmail("notexisting@domain.com")
                 .invoke().toCompletableFuture().get(5, TimeUnit.SECONDS);
         
         assertNotNull(response);
@@ -65,15 +64,10 @@ public class GuestAccountEmailValidationServiceTest {
         assertTrue(response.get("status").asText().equals(AccountStatusEnum.DOESTNOTEXIST.value()));
     }
     
-    @Test
+    @Test(expected = ExecutionException.class)
     public void shouldReturnInvalidEmailFailureResponse() throws Exception {
-        String invalidEmail = "this.is.@invalidemail";
+        guestAccountEmailValidationService.validateEmail("this.is.@invalidemail")
+                .invoke().toCompletableFuture().get(5, TimeUnit.SECONDS);
         
-        try {
-            guestAccountEmailValidationService.validateEmail(invalidEmail)
-                    .invoke().toCompletableFuture().get(5, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            assertNotNull(e.getMessage().contains("error"));
-        }
     }
 }
