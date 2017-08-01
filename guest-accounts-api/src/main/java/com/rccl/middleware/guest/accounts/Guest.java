@@ -9,6 +9,7 @@ import com.rccl.middleware.common.validation.validator.NumericFormatList;
 import com.rccl.middleware.common.validation.validator.ValidatorConstants;
 import lombok.Builder;
 import lombok.Value;
+import org.hibernate.validator.constraints.Email;
 import org.hibernate.validator.constraints.NotBlank;
 import org.hibernate.validator.constraints.NotEmpty;
 
@@ -29,7 +30,9 @@ public class Guest implements Jsonable {
     Header header;
     
     @NotBlank(message = "An email is required.", groups = DefaultChecks.class)
-    @Size(min = 5, max = 256, message = ValidatorConstants.EMAIL_REGEXP, groups = DefaultChecks.class)
+    @Size(min = 5, max = 256, message = "The email can only have up to 256 characters.", groups = DefaultChecks.class)
+    @Email(regexp = ValidatorConstants.EMAIL_REGEXP, message = "The email is invalidly formatted.",
+            groups = DefaultChecks.class)
     String email;
     
     String vdsId;
