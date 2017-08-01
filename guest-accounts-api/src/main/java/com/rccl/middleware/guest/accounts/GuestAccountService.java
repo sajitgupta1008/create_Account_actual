@@ -52,7 +52,7 @@ public interface GuestAccountService extends Service {
                         restCall(GET, "/v1/guestAccounts/:email/validation", this::validateEmail),
                         restCall(GET, "/v1/guestAccounts/health", this::healthCheck)
                 )
-                .publishing(
+                .withTopics(
                         topic(GUEST_ACCOUNTS_KAFKA_TOPIC, this::guestAccountsTopic),
                         topic(LINK_LOYALTY_KAFKA_TOPIC, this::linkLoyaltyTopic)
                 )
