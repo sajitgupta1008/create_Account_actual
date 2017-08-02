@@ -3,7 +3,7 @@ package com.rccl.middleware.guest.accounts;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.lightbend.lagom.serialization.Jsonable;
 import com.rccl.middleware.common.header.Header;
-import com.rccl.middleware.common.validation.validator.DateOfBirth;
+import com.rccl.middleware.common.validation.validator.Birthdate;
 import com.rccl.middleware.common.validation.validator.GuestAccountPassword;
 import com.rccl.middleware.common.validation.validator.NumericFormatList;
 import com.rccl.middleware.common.validation.validator.ValidatorConstants;
@@ -48,7 +48,7 @@ public class Guest implements Jsonable {
     String lastName;
     
     @NotEmpty(message = "Date of birth is required.", groups = CreateChecks.class)
-    @DateOfBirth(groups = DefaultChecks.class)
+    @Birthdate(groups = DefaultChecks.class)
     String birthdate;
     
     @Size(min = 7, max = 30, message = "The phone number must be at least seven (7) characters"
