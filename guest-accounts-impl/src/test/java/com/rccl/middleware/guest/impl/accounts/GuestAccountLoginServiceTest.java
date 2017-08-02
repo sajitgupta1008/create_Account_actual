@@ -57,24 +57,17 @@ public class GuestAccountLoginServiceTest {
         }
     }
     
-    @Test
-    public void testSuccessfulWebAuthentication() {
+    @Test(expected = ExecutionException.class)
+    public void testWebAuthentication() throws Exception {
         AccountCredentials credentials = AccountCredentials.builder()
                 .header(Header.builder().brand('R').channel("web").locale(Locale.US).build())
                 .username("successful@domain.com")
                 .password("password!".toCharArray())
                 .build();
         
-        try {
-            JsonNode response = service.authenticateUser().invoke(credentials)
-                    .toCompletableFuture().get(5, TimeUnit.SECONDS);
-            
-            assertTrue("Account login status must not be null", response.get("accountLoginStatus") != null);
-            assertTrue("SSO Token must not be null", response.get("ssoToken") != null);
-            
-        } catch (Exception e) {
-            assertFalse("Must return successful login instead.", e == null);
-        }
+        service.authenticateUser().invoke(credentials)
+                .toCompletableFuture().get(5, TimeUnit.SECONDS);
+        
     }
     
     @Test
