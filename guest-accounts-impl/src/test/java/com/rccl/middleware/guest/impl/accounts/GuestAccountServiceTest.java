@@ -83,13 +83,9 @@ public class GuestAccountServiceTest {
         assertTrue("The status code for success should be 201 Created.", response.first().status() == 201);
         assertEquals("G3396535", response.second().get("vdsId").asText());
         
-        if ("web".equals(guest.getHeader().getChannel())) {
-            assertTrue(response.second().get("ssoToken") != null);
-        } else {
-            assertTrue(response.second().get("accessToken") != null);
-            assertTrue(response.second().get("openIdToken") != null);
-            assertTrue(response.second().get("refreshToken") != null);
-        }
+        assertTrue(response.second().get("accessToken") != null);
+        assertTrue(response.second().get("openIdToken") != null);
+        assertTrue(response.second().get("refreshToken") != null);
     }
     
     @Test
@@ -206,7 +202,7 @@ public class GuestAccountServiceTest {
         Guest.GuestBuilder builder = Guest.builder();
         
         builder.header(Header.builder()
-                .channel("web")
+                .channel("app-ios")
                 .brand('R')
                 .locale(Locale.US)
                 .build());
