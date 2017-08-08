@@ -3,7 +3,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
                       http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>com.rccl.middleware.guest</groupId>
+  <groupId>com.rccl.middleware</groupId>
   <artifactId>guest-accounts</artifactId>
   <version>1.0-SNAPSHOT</version>
 
@@ -30,6 +30,7 @@
     <middleware.common.version>1.7.1</middleware.common.version>
     <middleware.saviynt.version>1.0-SNAPSHOT</middleware.saviynt.version>
     <middleware.forgerock.version>1.0-SNAPSHOT</middleware.forgerock.version>
+    <middleware.guestprofiles.version>1.0-SNAPSHOT</middleware.guestprofiles.version>
     <middleware.optins.version>1.0-SNAPSHOT</middleware.optins.version>
     <org.json.version>20160810</org.json.version>
     <play.version>2.5.14</play.version>
@@ -301,6 +302,12 @@
         <groupId>com.rccl.middleware</groupId>
         <artifactId>forgerock</artifactId>
         <version>${middleware.forgerock.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.rccl.middleware</groupId>
+        <artifactId>guest-profiles-api</artifactId>
+        <version>${middleware.guestprofiles.version}</version>
       </dependency>
 
       <dependency>
