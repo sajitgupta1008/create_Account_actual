@@ -93,12 +93,12 @@ public class Mapper {
      */
     public static SaviyntGuest.SaviyntGuestBuilder mapGuestToSaviyntGuest(Guest guest, boolean isCreate) {
         SaviyntGuest.SaviyntGuestBuilder builder = SaviyntGuest.builder()
-                .firstname(guest.getFirstName())
-                .lastname(guest.getLastName())
-                .displayname(guest.getFirstName() + " " + guest.getLastName())
+                .firstName(guest.getFirstName())
+                .lastName(guest.getLastName())
+                .displayName(guest.getFirstName() + " " + guest.getLastName())
                 .email(guest.getEmail())
                 .password(guest.getPassword())
-                .dateofBirth(guest.getBirthdate())
+                .birthdate(guest.getBirthdate())
                 .phoneNumber(guest.getPhoneNumber())
                 .consumerId(guest.getConsumerId())
                 .crownAndAnchorIds(mapValuesToSaviyntStringFormat(guest.getCrownAndAnchorIds()))
@@ -115,7 +115,7 @@ public class Mapper {
                 .royalPrimaryBookingId(guest.getRoyalPrimaryBookingId())
                 .celebrityPrimaryBookingId(guest.getCelebrityPrimaryBookingId())
                 .azamaraPrimaryBookingId(guest.getAzamaraPrimaryBookingId())
-                .propertytosearch("email");
+                .propertyToSearch("email");
         
         // only map the account creation specific attributes
         if (isCreate) {
@@ -128,7 +128,7 @@ public class Mapper {
         if (securityQuestions != null && !securityQuestions.isEmpty()) {
             SecurityQuestion sq = securityQuestions.get(0);
             
-            builder.securityquestion(sq.getQuestion()).securityanswer(sq.getAnswer());
+            builder.securityQuestion(sq.getQuestion()).securityAnswer(sq.getAnswer());
         }
         
         if (guest.getTermsAndConditionsAgreement() != null) {
