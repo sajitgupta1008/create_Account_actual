@@ -47,13 +47,17 @@ public class Guest implements Jsonable {
             + " and maximum of fifty (50) characters.", groups = DefaultChecks.class)
     String lastName;
     
+    @Size(min = 2, max = 50, message = "The middle name must be at least two (2) characters"
+            + " and maximum of fifty (50) characters.", groups = DefaultChecks.class)
+    String middleName;
+    
     @NotEmpty(message = "Date of birth is required.", groups = CreateChecks.class)
     @Birthdate(groups = DefaultChecks.class)
     String birthdate;
     
     @Size(min = 7, max = 30, message = "The phone number must be at least seven (7) characters"
             + " and maximum of thirty (30) characters.", groups = DefaultChecks.class)
-    @Pattern(regexp = "[0-9+()-]*", message = "The phone number is invalidly formatted", groups = DefaultChecks.class)
+    @Pattern(regexp = "[0-9+()-]*", message = "The phone number is invalidly formatted.", groups = DefaultChecks.class)
     String phoneNumber;
     
     @NotNull(message = "A password is required.", groups = CreateChecks.class)
