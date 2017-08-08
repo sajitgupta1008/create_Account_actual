@@ -5,6 +5,7 @@ import akka.japi.Pair;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.lightbend.lagom.javadsl.api.broker.Topic;
 import com.lightbend.lagom.javadsl.api.transport.ResponseHeader;
 import com.lightbend.lagom.javadsl.api.transport.TransportErrorCode;
@@ -32,6 +33,8 @@ import com.rccl.middleware.guest.optin.GuestProfileOptinService;
 import com.rccl.middleware.guest.optin.Optin;
 import com.rccl.middleware.guest.optin.OptinType;
 import com.rccl.middleware.guest.optin.Optins;
+import com.rccl.middleware.guestprofiles.GuestProfilesService;
+import com.rccl.middleware.guestprofiles.models.Profile;
 import com.rccl.middleware.saviynt.api.SaviyntGuest;
 import com.rccl.middleware.saviynt.api.SaviyntService;
 import com.rccl.middleware.saviynt.api.exceptions.SaviyntExceptionFactory;
@@ -42,6 +45,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -55,16 +59,20 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     
     private final ForgeRockService forgeRockService;
     
+    private final GuestProfilesService guestProfilesService;
+    
     private final GuestProfileOptinService guestProfileOptinService;
     
     @Inject
     public GuestAccountServiceImpl(SaviyntService saviyntService,
                                    ForgeRockService forgeRockService,
                                    PersistentEntityRegistry persistentEntityRegistry,
+                                   GuestProfilesService guestProfilesService,
                                    GuestProfileOptinService guestProfileOptinService) {
         this.saviyntService = saviyntService;
         this.forgeRockService = forgeRockService;
         
+        this.guestProfilesService = guestProfilesService;
         this.guestProfileOptinService = guestProfileOptinService;
         
         this.persistentEntityRegistry = persistentEntityRegistry;
@@ -179,6 +187,29 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                 .ask(new GuestAccountCommand.UpdateGuest(guest));
                         
                         return new Pair<>(ResponseHeader.OK, NotUsed.getInstance());
+                    });
+        };
+    }
+    
+    @Override
+    public HeaderServiceCall<JsonNode, NotUsed> updateAccountEnriched() {
+        return (requestHeader, request) -> {
+            
+            CompletionStage<NotUsed> updateAccountFuture = this.updateAccount("email")
+                    .invoke(Guest.builder().build());
+            
+            CompletionStage<TextNode> updateProfileFuture = guestProfilesService.updateProfile()
+                    .invoke(Profile.builder().build());
+            
+            return guestProfileOptinService.updateOptins("email").invoke(Optins.builder().build())
+                    .thenCombineAsync(updateAccountFuture, (optinResponse, accountResponse) -> null)
+                    .thenCombineAsync(updateProfileFuture, (optinResponse, profileResponse) -> null)
+                    .thenApply(o -> {
+                        // trigger Kafka event here for createUpdateLink event
+                        
+                        // of loyalty number is present, trigger loyalty service event.
+                        
+                        return Pair.create(ResponseHeader.OK, NotUsed.getInstance());
                     });
         };
     }
