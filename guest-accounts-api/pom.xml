@@ -49,6 +49,11 @@
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
     </dependency>
+    
+    <dependency>
+      <groupId>com.rccl.middleware</groupId>
+      <artifactId>guest-profiles-api</artifactId>
+    </dependency>
 
   </dependencies>
 </project>
