@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.lightbend.lagom.serialization.Jsonable;
 import com.rccl.middleware.common.header.Header;
 import com.rccl.middleware.common.validation.validator.Birthdate;
+import com.rccl.middleware.common.validation.validator.Brand;
 import com.rccl.middleware.common.validation.validator.GuestAccountPassword;
 import com.rccl.middleware.common.validation.validator.NumericFormatList;
 import com.rccl.middleware.common.validation.validator.ValidatorConstants;
@@ -43,13 +44,15 @@ public class Guest implements Jsonable {
     String firstName;
     
     @NotNull(message = "A last name is required.", groups = CreateChecks.class)
-    @Size(min = 2, max = 50, message = "The last name must be at least two (2) characters"
+    @Size(min = 1, max = 50, message = "The last name must be at least two (2) characters"
             + " and maximum of fifty (50) characters.", groups = DefaultChecks.class)
     String lastName;
     
-    @Size(min = 2, max = 50, message = "The middle name must be at least two (2) characters"
+    @Size(min = 1, max = 50, message = "The middle name must be at least two (2) characters"
             + " and maximum of fifty (50) characters.", groups = DefaultChecks.class)
     String middleName;
+    
+    String suffix;
     
     @NotEmpty(message = "Date of birth is required.", groups = CreateChecks.class)
     @Birthdate(groups = DefaultChecks.class)
@@ -91,32 +94,11 @@ public class Guest implements Jsonable {
     @NumericFormatList(groups = DefaultChecks.class)
     List<String> celebrityBlueChipIds;
     
-    @NumericFormatList(groups = DefaultChecks.class)
-    List<String> royalWebShopperIds;
+    @Pattern(regexp = "\\d*", message = "Webshopper ID must be in numeric format.", groups = UpdateChecks.class)
+    String webshopperId;
     
-    @NumericFormatList(groups = DefaultChecks.class)
-    List<String> celebrityWebShopperIds;
-    
-    @NumericFormatList(groups = DefaultChecks.class)
-    List<String> azamaraWebShopperIds;
-    
-    @NumericFormatList(groups = DefaultChecks.class)
-    List<String> royalBookingIds;
-    
-    @NumericFormatList(groups = DefaultChecks.class)
-    List<String> celebrityBookingIds;
-    
-    @NumericFormatList(groups = DefaultChecks.class)
-    List<String> azamaraBookingIds;
-    
-    @Pattern(regexp = "\\d*", message = "Booking ID must be in numeric format.", groups = UpdateChecks.class)
-    String royalPrimaryBookingId;
-    
-    @Pattern(regexp = "\\d*", message = "Booking ID must be in numeric format.", groups = UpdateChecks.class)
-    String celebrityPrimaryBookingId;
-    
-    @Pattern(regexp = "\\d*", message = "Booking ID must be in numeric format.", groups = UpdateChecks.class)
-    String azamaraPrimaryBookingId;
+    @Brand(groups = UpdateChecks.class)
+    Character webshopperBrand;
     
     @NotNull(message = "At least one optin is required.", groups = CreateChecks.class)
     @Valid

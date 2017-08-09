@@ -78,15 +78,8 @@ public class GuestAccountUpdateServiceTest {
                 .password("password!".toCharArray())
                 .securityQuestions(securityQuestionList)
                 .crownAndAnchorIds(Arrays.asList("12345678", "12345678"))
-                .azamaraBookingIds(Arrays.asList("123456", "123457"))
-                .celebrityBookingIds(Arrays.asList("123456", "123457"))
-                .royalBookingIds(Arrays.asList("123456", "123457"))
-                .azamaraWebShopperIds(Arrays.asList("123456", "123457"))
-                .celebrityWebShopperIds(Arrays.asList("123456", "123457"))
-                .royalWebShopperIds(Arrays.asList("123456", "123457"))
-                .royalPrimaryBookingId("123456")
-                .celebrityPrimaryBookingId("123455")
-                .azamaraPrimaryBookingId("123455")
+                .webshopperId("1234567")
+                .webshopperBrand('R')
                 .build();
         
         try {
@@ -201,15 +194,8 @@ public class GuestAccountUpdateServiceTest {
                 .azamaraLoyaltyIds(Arrays.asList("asdd", "12345678"))
                 .clubRoyaleIds(Arrays.asList("asdd", "12345678"))
                 .celebrityBlueChipIds(Arrays.asList("asdd", "12345678"))
-                .azamaraBookingIds(Arrays.asList("asdasd", "123457"))
-                .celebrityBookingIds(Arrays.asList("asda", "123457"))
-                .royalBookingIds(Arrays.asList("gfdgfd", "123457"))
-                .azamaraWebShopperIds(Arrays.asList("dfgdg", "123457"))
-                .celebrityWebShopperIds(Arrays.asList("123456", "dfgfd"))
-                .royalWebShopperIds(Arrays.asList("123456", "dfgfdg"))
-                .royalPrimaryBookingId("asdasd")
-                .celebrityPrimaryBookingId("asdsad")
-                .azamaraPrimaryBookingId("asdsadasd")
+                .webshopperId("asdasdasd")
+                .webshopperBrand('Q')
                 .build();
         
         HeaderServiceCall<Guest, NotUsed> updateAccount = (HeaderServiceCall<Guest, NotUsed>) guestAccountService.updateAccount(emailID);
