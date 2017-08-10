@@ -2,11 +2,22 @@ package com.rccl.middleware.guest.impl.accounts;
 
 import com.rccl.middleware.guest.accounts.Guest;
 import com.rccl.middleware.guest.accounts.SecurityQuestion;
+import com.rccl.middleware.guest.accounts.enriched.ContactInformation;
+import com.rccl.middleware.guest.accounts.enriched.EnrichedGuest;
+import com.rccl.middleware.guest.accounts.enriched.LoyaltyInformation;
+import com.rccl.middleware.guest.accounts.enriched.PersonalInformation;
+import com.rccl.middleware.guest.accounts.enriched.SignInInformation;
+import com.rccl.middleware.guest.accounts.enriched.TravelDocumentInformation;
+import com.rccl.middleware.guest.accounts.enriched.WebshopperInformation;
+import com.rccl.middleware.guest.optin.Optin;
+import com.rccl.middleware.guest.optin.Optins;
+import com.rccl.middleware.guestprofiles.models.Profile;
 import com.rccl.middleware.saviynt.api.SaviyntGuest;
 import com.rccl.middleware.saviynt.api.SaviyntUserType;
+import org.apache.commons.lang3.StringUtils;
 
+import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class Mapper {
     
@@ -28,11 +39,11 @@ public class Mapper {
                 .phoneNumber(guest.getPhoneNumber())
                 .securityQuestions(guest.getSecurityQuestions())
                 .consumerId(guest.getConsumerId())
-                .crownAndAnchorIds(guest.getCrownAndAnchorIds())
-                .captainsClubIds(guest.getCaptainsClubIds())
-                .azamaraLoyaltyIds(guest.getAzamaraLoyaltyIds())
-                .clubRoyaleIds(guest.getClubRoyaleIds())
-                .celebrityBlueChipIds(guest.getCelebrityBlueChipIds())
+                .crownAndAnchorId(guest.getCrownAndAnchorId())
+                .captainsClubId(guest.getCaptainsClubId())
+                .azamaraLoyaltyId(guest.getAzamaraLoyaltyId())
+                .clubRoyaleId(guest.getClubRoyaleId())
+                .celebrityBlueChipId(guest.getCelebrityBlueChipId())
                 .webshopperId(guest.getWebshopperId())
                 .webshopperBrand(guest.getWebshopperBrand())
                 .termsAndConditionsAgreement(guest.getTermsAndConditionsAgreement())
@@ -57,11 +68,11 @@ public class Mapper {
                 .phoneNumber(guest.getPhoneNumber())
                 .securityQuestions(guest.getSecurityQuestions())
                 .consumerId(guest.getConsumerId())
-                .crownAndAnchorIds(guest.getCrownAndAnchorIds())
-                .captainsClubIds(guest.getCaptainsClubIds())
-                .azamaraLoyaltyIds(guest.getAzamaraLoyaltyIds())
-                .clubRoyaleIds(guest.getClubRoyaleIds())
-                .celebrityBlueChipIds(guest.getCelebrityBlueChipIds())
+                .crownAndAnchorId(guest.getCrownAndAnchorId())
+                .captainsClubId(guest.getCaptainsClubId())
+                .azamaraLoyaltyId(guest.getAzamaraLoyaltyId())
+                .clubRoyaleId(guest.getClubRoyaleId())
+                .celebrityBlueChipId(guest.getCelebrityBlueChipId())
                 .webshopperId(guest.getWebshopperId())
                 .webshopperBrand(guest.getWebshopperBrand())
                 .termsAndConditionsAgreement(guest.getTermsAndConditionsAgreement())
@@ -87,14 +98,14 @@ public class Mapper {
                 .birthdate(guest.getBirthdate())
                 .phoneNumber(guest.getPhoneNumber())
                 .consumerId(guest.getConsumerId())
-                .crownAndAnchorIds(mapValuesToSaviyntStringFormat(guest.getCrownAndAnchorIds()))
-                .captainsClubIds(mapValuesToSaviyntStringFormat(guest.getCaptainsClubIds()))
-                .azamaraLoyaltyIds(mapValuesToSaviyntStringFormat(guest.getAzamaraLoyaltyIds()))
-                .clubRoyaleIds(mapValuesToSaviyntStringFormat(guest.getClubRoyaleIds()))
-                .celebrityBlueChipIds(mapValuesToSaviyntStringFormat(guest.getCelebrityBlueChipIds()))
+                .crownAndAnchorIds(mapStringToSaviyntStringList(guest.getCrownAndAnchorId()))
+                .captainsClubIds(mapStringToSaviyntStringList(guest.getCaptainsClubId()))
+                .azamaraLoyaltyIds(mapStringToSaviyntStringList(guest.getAzamaraLoyaltyId()))
+                .clubRoyaleIds(mapStringToSaviyntStringList(guest.getClubRoyaleId()))
+                .celebrityBlueChipIds(mapStringToSaviyntStringList(guest.getCelebrityBlueChipId()))
                 .webshopperId(guest.getWebshopperId())
                 .webshopperBrand(guest.getWebshopperBrand())
-                .propertyToSearch("email");
+                .propertyToSearch("systemUserName");
         
         // only map the account creation specific attributes
         if (isCreate) {
@@ -118,17 +129,122 @@ public class Mapper {
     }
     
     /**
-     * Wraps each {@link List} value with quotation marks to satisfy Saviynt's requirement.
+     * Extracts all necessary information from {@link EnrichedGuest} and maps those attributes
+     * in {@link Guest} for Update Guest Account service.
      *
-     * @param attributeList {@code List<String>}
+     * @param guest {@link EnrichedGuest}
+     * @return {@link SaviyntGuest}
+     */
+    public static Guest mapEnrichedGuestToGuest(EnrichedGuest guest) {
+        PersonalInformation personalInfo = guest.getPersonalInformation();
+        LoyaltyInformation loyaltyInfo = guest.getLoyaltyInformation();
+        ContactInformation contactInfo = guest.getContactInformation();
+        WebshopperInformation webshopperInfo = guest.getWebshopperInformation();
+        SignInInformation signInInfo = guest.getSignInInformation();
+        Guest.GuestBuilder builder = Guest.builder();
+        
+        if (personalInfo != null) {
+            builder.firstName(personalInfo.getFirstName())
+                    .lastName(personalInfo.getLastName())
+                    .middleName(personalInfo.getMiddleName())
+                    .suffix(personalInfo.getSuffix())
+                    .birthdate(personalInfo.getBirthdate());
+        }
+        
+        if (signInInfo != null) {
+            builder.email(signInInfo.getEmail())
+                    .password(signInInfo.getPassword())
+                    .securityQuestions(signInInfo.getSecurityQuestions());
+        }
+        
+        if (loyaltyInfo != null) {
+            builder.crownAndAnchorId(loyaltyInfo.getCrownAndAnchorId())
+                    .captainsClubId(loyaltyInfo.getCaptainsClubId())
+                    .azamaraLoyaltyId(loyaltyInfo.getAzamaraLoyaltyId())
+                    .clubRoyaleId(loyaltyInfo.getClubRoyaleId())
+                    .celebrityBlueChipId(loyaltyInfo.getCelebrityBlueChipId());
+        }
+        
+        if (contactInfo != null) {
+            // TODO add phone country code here.
+            builder.phoneNumber(contactInfo.getPhoneNumber());
+        }
+        
+        if (webshopperInfo != null) {
+            builder.webshopperId(webshopperInfo.getShopperId())
+                    .webshopperBrand(webshopperInfo.getBrand());
+        }
+        
+        builder
+                .header(guest.getHeader())
+                .vdsId(guest.getVdsId());
+        
+        return builder.build();
+    }
+    
+    /**
+     * Extracts all necessary information from {@link EnrichedGuest} and maps those attributes
+     * in {@link Profile} for Update Profile service.
+     *
+     * @param guest {@link EnrichedGuest}
+     * @return {@link Profile}
+     */
+    public static Profile mapEnrichedGuestToProfile(EnrichedGuest guest) {
+        PersonalInformation personalInfo = guest.getPersonalInformation();
+        TravelDocumentInformation travelInfo = guest.getTravelDocumentInformation();
+        Profile.ProfileBuilder builder = Profile.builder();
+        
+        if (personalInfo != null) {
+            builder.avatar(personalInfo.getAvatar())
+                    .nickname(personalInfo.getNickname())
+                    .gender(personalInfo.getGender());
+            
+        }
+        
+        if (travelInfo != null) {
+            builder.birthCountryCode(travelInfo.getBirthCountryCode())
+                    .citizenshipCountryCode(travelInfo.getCitizenshipCountryCode());
+        }
+        
+        if (guest.getEmergencyContact() != null) {
+            builder.emergencyContact(guest.getEmergencyContact());
+        }
+        
+        builder.vdsId(guest.getVdsId());
+        
+        return builder.build();
+    }
+    
+    /**
+     * Extracts all necessary information from {@link EnrichedGuest} and maps those attributes
+     * in {@link Optins} for Update Optins service.
+     *
+     * @param guest {@link EnrichedGuest}
+     * @return {@link Optins}
+     */
+    public static Optins mapEnrichedGuestToOptins(EnrichedGuest guest) {
+        List<Optin> optins = guest.getOptins();
+        
+        if (!optins.isEmpty()) {
+            return Optins.builder()
+                    .optins(optins)
+                    .email(guest.getSignInInformation().getEmail())
+                    .header(guest.getHeader())
+                    .build();
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Wraps each {@link String} value with quotation marks to satisfy Saviynt's requirement.
+     *
+     * @param attribute {@code String}
      * @return {@code List<String>}
      */
-    private static List<String> mapValuesToSaviyntStringFormat(List<String> attributeList) {
-        if (attributeList != null && !attributeList.isEmpty()) {
-            return attributeList
-                    .stream()
-                    .map(val -> "\"" + val + "\"")
-                    .collect(Collectors.toList());
+    private static List<String> mapStringToSaviyntStringList(String attribute) {
+        if (StringUtils.isNotBlank(attribute)) {
+            return Arrays.asList("\"" + attribute + "\"");
         }
         
         return null;

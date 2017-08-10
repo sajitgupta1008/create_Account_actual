@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
+import com.lightbend.lagom.javadsl.api.ServiceCall;
 import com.lightbend.lagom.javadsl.api.broker.Topic;
 import com.lightbend.lagom.javadsl.api.transport.ResponseHeader;
 import com.lightbend.lagom.javadsl.api.transport.TransportErrorCode;
@@ -24,6 +25,7 @@ import com.rccl.middleware.guest.accounts.AccountStatusEnum;
 import com.rccl.middleware.guest.accounts.Guest;
 import com.rccl.middleware.guest.accounts.GuestAccountService;
 import com.rccl.middleware.guest.accounts.GuestEvent;
+import com.rccl.middleware.guest.accounts.enriched.EnrichedGuest;
 import com.rccl.middleware.guest.accounts.exceptions.ExistingGuestException;
 import com.rccl.middleware.guest.accounts.exceptions.GuestAuthenticationException;
 import com.rccl.middleware.guest.accounts.exceptions.GuestNotFoundException;
@@ -152,14 +154,67 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     }
     
     @Override
-    public HeaderServiceCall<Guest, NotUsed> updateAccount(String email) {
-        return (requestHeader, partialGuest) -> {
+    public HeaderServiceCall<EnrichedGuest, NotUsed> updateAccountEnriched() {
+        return (requestHeader, enrichedGuest) -> {
+            CompletionStage<NotUsed> updateAccountFuture = new CompletableFuture<>();
+            CompletionStage<TextNode> updateProfileFuture = new CompletableFuture<>();
+            CompletionStage<NotUsed> updateOptinsFuture = new CompletableFuture<>();
             
-            final Guest guest = Mapper.mapEmailWithGuest(email, partialGuest);
+            Guest guest = Mapper.mapEnrichedGuestToGuest(enrichedGuest);
+            if (guest != Guest.builder().build()) {
+                updateAccountFuture = this.updateAccount()
+                        .invoke(guest)
+                        .exceptionally(throwable -> {
+                            throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), throwable);
+                        });
+            }
+            
+            Profile profile = Mapper.mapEnrichedGuestToProfile(enrichedGuest);
+            if (profile != Profile.builder().build()) {
+                updateProfileFuture = guestProfilesService.updateProfile()
+                        .invoke(profile)
+                        .exceptionally(throwable -> {
+                            throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), throwable);
+                        });
+            }
+            
+            Optins optins = Mapper.mapEnrichedGuestToOptins(enrichedGuest);
+            if (optins != null) {
+                updateOptinsFuture = guestProfileOptinService.updateOptins(guest.getEmail())
+                        .invoke(optins)
+                        .exceptionally(throwable -> {
+                            throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), throwable);
+                        });
+            }
+            
+            return CompletableFuture.allOf(
+                    updateAccountFuture.toCompletableFuture(),
+                    updateProfileFuture.toCompletableFuture(),
+                    updateOptinsFuture.toCompletableFuture())
+                    .exceptionally(throwable -> {
+                        throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), throwable.getCause());
+                    })
+                    .thenApply(o -> {
+                        // trigger Kafka event here for createUpdateLink event
+                        
+                        // of loyalty number is present, trigger loyalty service event.
+                        
+                        return Pair.create(ResponseHeader.OK, NotUsed.getInstance());
+                    });
+        };
+    }
+    
+    /**
+     * Update Account service processing for Saviynt which is not exposed as service endpoint.
+     *
+     * @return {@link HeaderServiceCall} with {@link Pair}
+     */
+    private ServiceCall<Guest, NotUsed> updateAccount() {
+        return (guest) -> {
             
             MiddlewareValidation.validateWithGroups(guest, Guest.UpdateChecks.class);
             
-            final SaviyntGuest saviyntGuest = Mapper.mapGuestToSaviyntGuest(guest, false).email(email).build();
+            final SaviyntGuest saviyntGuest = Mapper.mapGuestToSaviyntGuest(guest, false).build();
             
             return saviyntService
                     .updateGuestAccount()
@@ -183,33 +238,9 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
                     })
                     .thenApply(response -> {
-                        persistentEntityRegistry.refFor(GuestAccountEntity.class, email)
-                                .ask(new GuestAccountCommand.UpdateGuest(guest));
-                        
-                        return new Pair<>(ResponseHeader.OK, NotUsed.getInstance());
-                    });
-        };
-    }
-    
-    @Override
-    public HeaderServiceCall<JsonNode, NotUsed> updateAccountEnriched() {
-        return (requestHeader, request) -> {
-            
-            CompletionStage<NotUsed> updateAccountFuture = this.updateAccount("email")
-                    .invoke(Guest.builder().build());
-            
-            CompletionStage<TextNode> updateProfileFuture = guestProfilesService.updateProfile()
-                    .invoke(Profile.builder().build());
-            
-            return guestProfileOptinService.updateOptins("email").invoke(Optins.builder().build())
-                    .thenCombineAsync(updateAccountFuture, (optinResponse, accountResponse) -> null)
-                    .thenCombineAsync(updateProfileFuture, (optinResponse, profileResponse) -> null)
-                    .thenApply(o -> {
-                        // trigger Kafka event here for createUpdateLink event
-                        
-                        // of loyalty number is present, trigger loyalty service event.
-                        
-                        return Pair.create(ResponseHeader.OK, NotUsed.getInstance());
+//                        persistentEntityRegistry.refFor(GuestAccountEntity.class, guest.getVdsId())
+//                                .ask(new GuestAccountCommand.UpdateGuest(guest));
+                        return NotUsed.getInstance();
                     });
         };
     }
@@ -238,7 +269,6 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                 mockResponse.put("accountLoginStatus", LoginStatusEnum.NEW_ACCOUNT_TEMPORARY_PASSWORD.value());
                 return CompletableFuture.completedFuture(Pair.create(ResponseHeader.OK, mockResponse));
             }
-            
             
             return forgeRockService.authenticateMobileUser()
                     .invoke(forgeRockCredentials)
