@@ -1,7 +1,12 @@
 package com.rccl.middleware.guest.accounts.enriched;
 
+import lombok.Builder;
+import lombok.Value;
+
 import javax.validation.constraints.Pattern;
 
+@Builder
+@Value
 public class LoyaltyInformation {
     
     @Pattern(regexp = "\\d*", message = "Consumer ID must be in numeric format.")

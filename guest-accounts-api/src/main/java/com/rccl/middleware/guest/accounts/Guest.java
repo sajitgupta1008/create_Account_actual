@@ -6,7 +6,6 @@ import com.rccl.middleware.common.header.Header;
 import com.rccl.middleware.common.validation.validator.Birthdate;
 import com.rccl.middleware.common.validation.validator.Brand;
 import com.rccl.middleware.common.validation.validator.GuestAccountPassword;
-import com.rccl.middleware.common.validation.validator.NumericFormatList;
 import com.rccl.middleware.common.validation.validator.ValidatorConstants;
 import lombok.Builder;
 import lombok.Value;
@@ -79,20 +78,20 @@ public class Guest implements Jsonable {
     @Pattern(regexp = "\\d*", message = "Consumer ID must be in numeric format.", groups = UpdateChecks.class)
     String consumerId;
     
-    @NumericFormatList(groups = DefaultChecks.class)
-    List<String> crownAndAnchorIds;
+    @Pattern(regexp = "\\d*", message = "Crown and Anchor Loyalty ID must be in numeric format.")
+    String crownAndAnchorId;
     
-    @NumericFormatList(groups = DefaultChecks.class)
-    List<String> captainsClubIds;
+    @Pattern(regexp = "\\d*", message = "Captains Club Loyalty ID must be in numeric format.")
+    String captainsClubId;
     
-    @NumericFormatList(groups = DefaultChecks.class)
-    List<String> azamaraLoyaltyIds;
+    @Pattern(regexp = "\\d*", message = "Azamara Loyalty ID must be in numeric format.")
+    String azamaraLoyaltyId;
     
-    @NumericFormatList(groups = DefaultChecks.class)
-    List<String> clubRoyaleIds;
+    @Pattern(regexp = "\\d*", message = "Club Royale Loyalty ID must be in numeric format.")
+    String clubRoyaleId;
     
-    @NumericFormatList(groups = DefaultChecks.class)
-    List<String> celebrityBlueChipIds;
+    @Pattern(regexp = "\\d*", message = "Celebrity Blue Chip Loyalty ID must be in numeric format.")
+    String celebrityBlueChipId;
     
     @Pattern(regexp = "\\d*", message = "Webshopper ID must be in numeric format.", groups = UpdateChecks.class)
     String webshopperId;

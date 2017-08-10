@@ -1,9 +1,13 @@
 package com.rccl.middleware.guest.accounts.enriched;
 
 import com.rccl.middleware.common.validation.validator.DateFormat;
+import lombok.Builder;
+import lombok.Value;
 
 import javax.validation.constraints.Pattern;
 
+@Builder
+@Value
 public class TravelDocumentInformation {
     
     String passportNumber;
