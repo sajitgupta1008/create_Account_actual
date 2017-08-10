@@ -6,7 +6,7 @@ import com.lightbend.lagom.javadsl.api.Descriptor;
 import com.lightbend.lagom.javadsl.api.Service;
 import com.lightbend.lagom.javadsl.api.ServiceCall;
 import com.lightbend.lagom.javadsl.api.broker.Topic;
-import com.lightbend.lagom.javadsl.server.HeaderServiceCall;
+import com.rccl.middleware.guest.accounts.enriched.EnrichedGuest;
 import com.typesafe.config.ConfigFactory;
 
 import static com.lightbend.lagom.javadsl.api.Service.named;
@@ -22,11 +22,9 @@ public interface GuestAccountService extends Service {
     
     String LINK_LOYALTY_KAFKA_TOPIC = ConfigFactory.load().getString("kafka.link-loyalty.topic.name");
     
-    HeaderServiceCall<Guest, JsonNode> createAccount();
+    ServiceCall<Guest, JsonNode> createAccount();
     
-    ServiceCall<Guest, NotUsed> updateAccount(String email);
-    
-    ServiceCall<JsonNode, NotUsed> updateAccountEnriched();
+    ServiceCall<EnrichedGuest, NotUsed> updateAccountEnriched();
     
     ServiceCall<AccountCredentials, JsonNode> authenticateUser();
     
@@ -44,7 +42,6 @@ public interface GuestAccountService extends Service {
                 .withCalls(
                         restCall(POST, "/v1/guestAccounts", this::createAccount),
                         restCall(POST, "/v1/guestAccounts/", this::createAccount),
-                        restCall(PUT, "/v1/guestAccounts/:email", this::updateAccount),
                         restCall(PUT, "/v1/guestAccounts/enriched", this::updateAccountEnriched),
                         restCall(POST, "/v1/guestAccounts/login", this::authenticateUser),
                         restCall(GET, "/v1/guestAccounts/:email/validation", this::validateEmail),
