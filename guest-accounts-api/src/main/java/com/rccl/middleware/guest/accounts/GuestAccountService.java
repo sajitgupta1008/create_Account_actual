@@ -24,7 +24,7 @@ public interface GuestAccountService extends Service {
     
     ServiceCall<Guest, JsonNode> createAccount();
     
-    ServiceCall<EnrichedGuest, NotUsed> updateAccountEnriched();
+    ServiceCall<EnrichedGuest, JsonNode> updateAccountEnriched();
     
     ServiceCall<AccountCredentials, JsonNode> authenticateUser();
     

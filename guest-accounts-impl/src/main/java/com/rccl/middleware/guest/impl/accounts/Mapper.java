@@ -105,6 +105,7 @@ public class Mapper {
                 .celebrityBlueChipIds(mapStringToSaviyntStringList(guest.getCelebrityBlueChipId()))
                 .webshopperId(guest.getWebshopperId())
                 .webshopperBrand(guest.getWebshopperBrand())
+                .vdsId(guest.getVdsId())
                 .propertyToSearch("systemUserName");
         
         // only map the account creation specific attributes
@@ -191,6 +192,7 @@ public class Mapper {
      */
     public static Profile mapEnrichedGuestToProfile(EnrichedGuest guest) {
         PersonalInformation personalInfo = guest.getPersonalInformation();
+        ContactInformation contactInfo = guest.getContactInformation();
         TravelDocumentInformation travelInfo = guest.getTravelDocumentInformation();
         Profile.ProfileBuilder builder = Profile.builder();
         
@@ -199,6 +201,10 @@ public class Mapper {
                     .nickname(personalInfo.getNickname())
                     .gender(personalInfo.getGender());
             
+        }
+        
+        if (contactInfo != null) {
+            builder.address(contactInfo.getAddress());
         }
         
         if (travelInfo != null) {

@@ -13,6 +13,7 @@ import com.lightbend.lagom.javadsl.api.transport.TransportErrorCode;
 import com.lightbend.lagom.javadsl.broker.TopicProducer;
 import com.lightbend.lagom.javadsl.persistence.PersistentEntityRegistry;
 import com.lightbend.lagom.javadsl.server.HeaderServiceCall;
+import com.rccl.middleware.common.exceptions.MiddlewareExceptionMessage;
 import com.rccl.middleware.common.exceptions.MiddlewareTransportException;
 import com.rccl.middleware.common.validation.MiddlewareValidation;
 import com.rccl.middleware.common.validation.validator.ValidatorConstants;
@@ -154,7 +155,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     }
     
     @Override
-    public HeaderServiceCall<EnrichedGuest, NotUsed> updateAccountEnriched() {
+    public HeaderServiceCall<EnrichedGuest, JsonNode> updateAccountEnriched() {
         return (requestHeader, enrichedGuest) -> {
             CompletionStage<NotUsed> updateAccountFuture = new CompletableFuture<>();
             CompletionStage<TextNode> updateProfileFuture = new CompletableFuture<>();
@@ -162,44 +163,73 @@ public class GuestAccountServiceImpl implements GuestAccountService {
             
             Guest guest = Mapper.mapEnrichedGuestToGuest(enrichedGuest);
             if (guest != Guest.builder().build()) {
-                updateAccountFuture = this.updateAccount()
-                        .invoke(guest)
-                        .exceptionally(throwable -> {
-                            throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), throwable);
-                        });
+                updateAccountFuture = this.updateAccount().invoke(guest);
             }
             
             Profile profile = Mapper.mapEnrichedGuestToProfile(enrichedGuest);
             if (profile != Profile.builder().build()) {
-                updateProfileFuture = guestProfilesService.updateProfile()
-                        .invoke(profile)
-                        .exceptionally(throwable -> {
-                            throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), throwable);
-                        });
+                updateProfileFuture = guestProfilesService.updateProfile().invoke(profile);
             }
             
             Optins optins = Mapper.mapEnrichedGuestToOptins(enrichedGuest);
             if (optins != null) {
-                updateOptinsFuture = guestProfileOptinService.updateOptins(guest.getEmail())
-                        .invoke(optins)
-                        .exceptionally(throwable -> {
-                            throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), throwable);
-                        });
+                updateOptinsFuture = guestProfileOptinService.updateOptins(guest.getEmail()).invoke(optins);
             }
             
-            return CompletableFuture.allOf(
-                    updateAccountFuture.toCompletableFuture(),
-                    updateProfileFuture.toCompletableFuture(),
-                    updateOptinsFuture.toCompletableFuture())
+            final CompletableFuture<NotUsed> accountFuture = updateAccountFuture.toCompletableFuture();
+            final CompletableFuture<TextNode> profileFuture = updateProfileFuture.toCompletableFuture();
+            final CompletableFuture<NotUsed> optinsFuture = updateOptinsFuture.toCompletableFuture();
+            
+            return CompletableFuture.allOf(accountFuture, profileFuture, optinsFuture)
                     .exceptionally(throwable -> {
-                        throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), throwable.getCause());
+                        // if both Guest Account and Profile failed, throw the exception. otherwise,
+                        // let the process go through.
+                        if (accountFuture.isCompletedExceptionally() && profileFuture.isCompletedExceptionally()) {
+                            
+                            MiddlewareExceptionMessage message = new MiddlewareExceptionMessage();
+                            message.setErrorMessage("The service did not complete successfully.");
+                            message.setDeveloperMessage(throwable.getCause().toString());
+                            
+                            StringBuilder sb = new StringBuilder();
+                            if (accountFuture.isCompletedExceptionally()) {
+                                sb.append("Update Account service failed. ");
+                            }
+                            
+                            if (profileFuture.isCompletedExceptionally()) {
+                                sb.append("Update Profile service failed. ");
+                            }
+                            
+                            if (optinsFuture.isCompletedExceptionally()) {
+                                sb.append("Update Optins service failed. ");
+                            }
+                            message.setAdditionalInformation(sb.toString());
+                            
+                            throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), message);
+                        }
+                        
+                        return null;
                     })
                     .thenApply(o -> {
                         // trigger Kafka event here for createUpdateLink event
-                        
+                        //persistentEntityRegistry.refFor(GuestAccountEntity.class, guest.getVdsId()).ask(new GuestAccountCommand.UpdateGuest(guest));
                         // of loyalty number is present, trigger loyalty service event.
                         
-                        return Pair.create(ResponseHeader.OK, NotUsed.getInstance());
+                        ObjectNode objectNode = OBJECT_MAPPER.createObjectNode();
+                        
+                        if (accountFuture.isCompletedExceptionally() || profileFuture.isCompletedExceptionally()
+                                || optinsFuture.isCompletedExceptionally()) {
+                            objectNode.put("status", "The service completed with some exceptions.");
+                            objectNode.put("updateAccount",
+                                    "completed= " + !accountFuture.isCompletedExceptionally());
+                            objectNode.put("updateProfile",
+                                    "completed= " + !profileFuture.isCompletedExceptionally());
+                            objectNode.put("updateOptins",
+                                    "completed= " + !optinsFuture.isCompletedExceptionally());
+                            
+                            return Pair.create(ResponseHeader.OK, objectNode);
+                        } else {
+                            return Pair.create(ResponseHeader.OK, TextNode.valueOf(guest.getVdsId()));
+                        }
                     });
         };
     }
@@ -237,11 +267,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         
                         throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
                     })
-                    .thenApply(response -> {
-//                        persistentEntityRegistry.refFor(GuestAccountEntity.class, guest.getVdsId())
-//                                .ask(new GuestAccountCommand.UpdateGuest(guest));
-                        return NotUsed.getInstance();
-                    });
+                    .thenApply(response -> NotUsed.getInstance());
         };
     }
     
