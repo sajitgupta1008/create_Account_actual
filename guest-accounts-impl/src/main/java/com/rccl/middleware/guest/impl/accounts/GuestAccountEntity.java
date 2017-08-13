@@ -15,31 +15,35 @@ public class GuestAccountEntity extends PersistentEntity<GuestAccountCommand, Gu
     public Behavior initialBehavior(Optional<GuestAccountState> snapshotState) {
         BehaviorBuilder builder = newBehaviorBuilder(snapshotState.orElse(GuestAccountState.emptyState()));
         
-        builder.setCommandHandler(GuestAccountCommand.CreateGuest.class, (cmd, ctx) -> {
-            if (cmd.getGuest() == null) {
+        builder.setCommandHandler(GuestAccountCommand.CreateGuest.class, (cmd, ctx) ->
+                ctx.thenPersist(new GuestAccountEvent.GuestCreated(cmd.getGuest()),
+                        evt -> ctx.reply(Done.getInstance()))
+        );
+        
+        builder.setEventHandler(GuestAccountEvent.GuestCreated.class,
+                evt -> new GuestAccountState(evt.getGuest(), null,
+                        LocalDateTime.now().toString(), GuestEventStatus.CREATE));
+        
+        builder.setCommandHandler(GuestAccountCommand.UpdateGuest.class, (cmd, ctx) -> {
+            if (cmd.getEnrichedGuest() == null) {
                 ctx.invalidCommand("Guest cannot be null.");
                 ctx.done();
             }
             
             List<GuestAccountEvent> events = new ArrayList<>();
-            events.add(new GuestAccountEvent.GuestCreated(cmd.getGuest()));
-            events.add(new GuestAccountEvent.LinkLoyalty(cmd.getGuest()));
+            events.add(new GuestAccountEvent.GuestUpdated(cmd.getEnrichedGuest()));
+            
+            // add a verify loyalty event for Kafka publishing if loyalty information is not null.
+            if (cmd.getEnrichedGuest().getLoyaltyInformation() != null) {
+                events.add(new GuestAccountEvent.VerifyLoyalty(cmd.getEnrichedGuest()));
+            }
+            
             return ctx.thenPersistAll(events, () -> ctx.reply(Done.getInstance()));
         });
         
-        builder.setEventHandler(GuestAccountEvent.GuestCreated.class,
-                evt -> new GuestAccountState(evt.getGuest(),
-                        LocalDateTime.now().toString(), GuestEventStatus.CREATE));
-        
-        builder.setEventHandler(GuestAccountEvent.LinkLoyalty.class, evt -> new GuestAccountState(evt.getGuest(),
-                LocalDateTime.now().toString(), GuestEventStatus.CREATE));
-        
-        builder.setCommandHandler(GuestAccountCommand.UpdateGuest.class, (cmd, ctx) ->
-                ctx.thenPersist(new GuestAccountEvent.GuestUpdated(cmd.getGuest()),
-                        evt -> ctx.reply(Done.getInstance())));
-        
         builder.setEventHandler(GuestAccountEvent.GuestUpdated.class,
-                evt -> new GuestAccountState(evt.getGuest(), LocalDateTime.now().toString(), GuestEventStatus.UPDATE));
+                evt -> new GuestAccountState(null, evt.getEnrichedGuest(), LocalDateTime.now().toString(),
+                        GuestEventStatus.UPDATE));
         
         return builder.build();
     }

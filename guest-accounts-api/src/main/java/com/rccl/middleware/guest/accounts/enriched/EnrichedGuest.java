@@ -1,6 +1,7 @@
 package com.rccl.middleware.guest.accounts.enriched;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.lightbend.lagom.serialization.Jsonable;
 import com.rccl.middleware.common.header.Header;
 import com.rccl.middleware.guest.optin.Optin;
 import com.rccl.middleware.guestprofiles.models.EmergencyContact;
@@ -14,7 +15,7 @@ import java.util.List;
 @Builder
 @Value
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class EnrichedGuest {
+public class EnrichedGuest implements Jsonable {
     
     @NotNull(message = "A header is required.")
     @Valid

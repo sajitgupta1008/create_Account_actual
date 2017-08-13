@@ -26,7 +26,7 @@ public class Mapper {
      *
      * @param vdsId the given VDS ID of the user.
      * @param guest the {@link Guest} model.
-     * @return {@Guest} with vdsId attribute populated.
+     * @return {@link Guest} with vdsId attribute populated.
      */
     public static Guest mapVdsIdWithGuest(String vdsId, Guest guest) {
         return Guest.builder()
@@ -56,7 +56,7 @@ public class Mapper {
      *
      * @param email the email address of the user.
      * @param guest the {@link Guest} model.
-     * @return {@Guest} with email attribute populated.
+     * @return {@link Guest} with email attribute populated.
      */
     public static Guest mapEmailWithGuest(String email, Guest guest) {
         return Guest.builder()
@@ -231,7 +231,7 @@ public class Mapper {
     public static Optins mapEnrichedGuestToOptins(EnrichedGuest guest) {
         List<Optin> optins = guest.getOptins();
         
-        if (!optins.isEmpty()) {
+        if (optins != null && !optins.isEmpty()) {
             return Optins.builder()
                     .optins(optins)
                     .email(guest.getSignInInformation().getEmail())

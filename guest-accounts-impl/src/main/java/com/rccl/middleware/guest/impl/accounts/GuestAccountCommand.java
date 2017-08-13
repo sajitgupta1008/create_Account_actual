@@ -5,6 +5,7 @@ import com.lightbend.lagom.javadsl.persistence.PersistentEntity;
 import com.lightbend.lagom.serialization.CompressedJsonable;
 import com.lightbend.lagom.serialization.Jsonable;
 import com.rccl.middleware.guest.accounts.Guest;
+import com.rccl.middleware.guest.accounts.enriched.EnrichedGuest;
 import lombok.Builder;
 import lombok.Value;
 
@@ -21,7 +22,7 @@ public interface GuestAccountCommand extends Jsonable {
     @Value
     final class UpdateGuest implements GuestAccountCommand, CompressedJsonable, PersistentEntity.ReplyType<Done> {
         
-        final Guest guest;
+        final EnrichedGuest enrichedGuest;
     }
     
 }

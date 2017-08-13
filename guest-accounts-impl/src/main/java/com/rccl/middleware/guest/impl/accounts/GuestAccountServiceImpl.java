@@ -157,24 +157,20 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     @Override
     public HeaderServiceCall<EnrichedGuest, JsonNode> updateAccountEnriched() {
         return (requestHeader, enrichedGuest) -> {
-            CompletionStage<NotUsed> updateAccountFuture = new CompletableFuture<>();
-            CompletionStage<TextNode> updateProfileFuture = new CompletableFuture<>();
-            CompletionStage<NotUsed> updateOptinsFuture = new CompletableFuture<>();
             
             Guest guest = Mapper.mapEnrichedGuestToGuest(enrichedGuest);
-            if (guest != Guest.builder().build()) {
-                updateAccountFuture = this.updateAccount().invoke(guest);
-            }
+            CompletionStage<NotUsed> updateAccountFuture = guest != Guest.builder().build()
+                    ? this.updateAccount().invoke(guest) : CompletableFuture.completedFuture(NotUsed.getInstance());
             
             Profile profile = Mapper.mapEnrichedGuestToProfile(enrichedGuest);
-            if (profile != Profile.builder().build()) {
-                updateProfileFuture = guestProfilesService.updateProfile().invoke(profile);
-            }
+            CompletionStage<TextNode> updateProfileFuture = profile != Profile.builder().build()
+                    ? guestProfilesService.updateProfile().invoke(profile)
+                    : CompletableFuture.completedFuture(TextNode.valueOf(profile.getVdsId()));
             
             Optins optins = Mapper.mapEnrichedGuestToOptins(enrichedGuest);
-            if (optins != null) {
-                updateOptinsFuture = guestProfileOptinService.updateOptins(guest.getEmail()).invoke(optins);
-            }
+            CompletionStage<NotUsed> updateOptinsFuture = optins != null
+                    ? guestProfileOptinService.updateOptins(guest.getEmail()).invoke(optins)
+                    : CompletableFuture.completedFuture(NotUsed.getInstance());
             
             final CompletableFuture<NotUsed> accountFuture = updateAccountFuture.toCompletableFuture();
             final CompletableFuture<TextNode> profileFuture = updateProfileFuture.toCompletableFuture();
@@ -210,10 +206,10 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         return null;
                     })
                     .thenApply(o -> {
-                        // trigger Kafka event here for createUpdateLink event
-                        //persistentEntityRegistry.refFor(GuestAccountEntity.class, guest.getVdsId()).ask(new GuestAccountCommand.UpdateGuest(guest));
-                        // of loyalty number is present, trigger loyalty service event.
+                        persistentEntityRegistry.refFor(GuestAccountEntity.class, guest.getVdsId())
+                                .ask(new GuestAccountCommand.UpdateGuest(enrichedGuest));
                         
+                        // pending LinkLoyalty
                         ObjectNode objectNode = OBJECT_MAPPER.createObjectNode();
                         
                         if (accountFuture.isCompletedExceptionally() || profileFuture.isCompletedExceptionally()
@@ -228,7 +224,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                             
                             return Pair.create(ResponseHeader.OK, objectNode);
                         } else {
-                            return Pair.create(ResponseHeader.OK, TextNode.valueOf(guest.getVdsId()));
+                            return Pair.create(ResponseHeader.OK, TextNode.valueOf(enrichedGuest.getVdsId()));
                         }
                     });
         };
@@ -360,7 +356,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         if (response.get(STATUS) != null) {
                             jsonResponse = response.deepCopy();
                         } else {
-                            if (response.get("SavCode") != null && response.get("SavCode").asText().contains("Sav000")) {
+                            if (response.get("SavCode") != null
+                                    && response.get("SavCode").asText().contains("Sav000")) {
                                 jsonResponse.put(STATUS, AccountStatusEnum.EXISTING.value());
                             } else {
                                 jsonResponse.put(STATUS, AccountStatusEnum.NEEDSTOBEMIGRATED.value());
@@ -385,8 +382,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
         };
     }
     
-    @Override
-    public Topic<GuestEvent> guestAccountsTopic() {
+    public Topic<GuestEvent> linkLoyaltyTopic() {
         return TopicProducer.taggedStreamWithOffset(GuestAccountTag.GUEST_ACCOUNT_EVENT_TAG.allTags(), (tag, offset) ->
                 persistentEntityRegistry.eventStream(tag, offset)
                         .filter(param -> param.first() instanceof GuestAccountEvent.GuestCreated
@@ -400,7 +396,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                 
                             } else {
                                 GuestAccountEvent.GuestUpdated eventInstance = (GuestAccountEvent.GuestUpdated) event;
-                                guestEvent = new GuestEvent.AccountUpdated(eventInstance.getGuest());
+                                guestEvent = new GuestEvent.AccountUpdated(eventInstance.getEnrichedGuest());
                             }
                             
                             return CompletableFuture.completedFuture(new Pair<>(guestEvent, eventOffset.second()));
@@ -408,15 +404,15 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     }
     
     @Override
-    public Topic<Guest> linkLoyaltyTopic() {
+    public Topic<EnrichedGuest> verifyLoyaltyTopic() {
         return TopicProducer.taggedStreamWithOffset(GuestAccountTag.GUEST_ACCOUNT_EVENT_TAG.allTags(), (tag, offset) ->
                 persistentEntityRegistry.eventStream(tag, offset)
-                        .filter(param -> param.first() instanceof GuestAccountEvent.LinkLoyalty)
+                        .filter(param -> param.first() instanceof GuestAccountEvent.VerifyLoyalty)
                         .mapAsync(1, eventOffset -> {
                             GuestAccountEvent event = eventOffset.first();
-                            GuestAccountEvent.LinkLoyalty loyalty = (GuestAccountEvent.LinkLoyalty) event;
+                            GuestAccountEvent.VerifyLoyalty loyalty = (GuestAccountEvent.VerifyLoyalty) event;
                             
-                            return CompletableFuture.completedFuture(new Pair<>(loyalty.getGuest(), eventOffset.second()));
+                            return CompletableFuture.completedFuture(new Pair<>(loyalty.getEnrichedGuest(), eventOffset.second()));
                         }));
     }
     
