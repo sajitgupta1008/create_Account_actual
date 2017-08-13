@@ -430,7 +430,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                 optinTypeList.add(OptinType.builder()
                         .type(optin.getType())
                         .acceptTime(optin.getAcceptTime())
-                        .flag(optin.isFlag())
+                        .flag(optin.getFlag())
                         .build()));
         
         // enroll the guest to all brands and categories.

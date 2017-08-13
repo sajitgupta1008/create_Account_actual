@@ -231,7 +231,7 @@ public class GuestAccountServiceTest {
         
         builder.securityQuestions(Arrays.asList(sq1, sq2));
         
-        builder.optins(Arrays.asList(Optin.builder().type("EMAIL").flag(true).acceptTime("20170706022122PM").build()));
+        builder.optins(Arrays.asList(Optin.builder().type("EMAIL").flag("Y").acceptTime("20170706022122PM").build()));
         
         return builder;
     }

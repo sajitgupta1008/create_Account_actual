@@ -189,7 +189,7 @@ public class GuestAccountMessageBrokerTest {
                         .acceptTime("20170627033735PM")
                         .version("1.0")
                         .build())
-                .optins(Arrays.asList(Optin.builder().type("EMAIL").flag(true).acceptTime("20170706022122PM").build()))
+                .optins(Arrays.asList(Optin.builder().type("EMAIL").flag("Y").acceptTime("20170706022122PM").build()))
                 .build();
     }
     
