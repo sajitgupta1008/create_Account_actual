@@ -18,8 +18,18 @@ import com.rccl.middleware.guest.accounts.GuestEvent;
 import com.rccl.middleware.guest.accounts.Optin;
 import com.rccl.middleware.guest.accounts.SecurityQuestion;
 import com.rccl.middleware.guest.accounts.TermsAndConditionsAgreement;
+import com.rccl.middleware.guest.accounts.enriched.ContactInformation;
+import com.rccl.middleware.guest.accounts.enriched.EnrichedGuest;
+import com.rccl.middleware.guest.accounts.enriched.LoyaltyInformation;
+import com.rccl.middleware.guest.accounts.enriched.SignInInformation;
+import com.rccl.middleware.guest.accounts.enriched.TravelDocumentInformation;
+import com.rccl.middleware.guest.accounts.enriched.WebshopperInformation;
 import com.rccl.middleware.guest.optin.GuestProfileOptinService;
 import com.rccl.middleware.guest.optin.GuestProfileOptinsStub;
+import com.rccl.middleware.guestprofiles.GuestProfileServiceStub;
+import com.rccl.middleware.guestprofiles.GuestProfilesService;
+import com.rccl.middleware.guestprofiles.models.Address;
+import com.rccl.middleware.guestprofiles.models.EmergencyContact;
 import com.rccl.middleware.saviynt.api.SaviyntService;
 import com.rccl.middleware.saviynt.api.SaviyntServiceImplStub;
 import org.junit.AfterClass;
@@ -57,7 +67,8 @@ public class GuestAccountMessageBrokerTest {
                 .configureBuilder(builder -> builder.overrides(
                         bind(SaviyntService.class).to(SaviyntServiceImplStub.class),
                         bind(ForgeRockService.class).to(ForgeRockServiceImplStub.class),
-                        bind(GuestProfileOptinService.class).to(GuestProfileOptinsStub.class)
+                        bind(GuestProfileOptinService.class).to(GuestProfileOptinsStub.class),
+                        bind(GuestProfilesService.class).to(GuestProfileServiceStub.class)
                 ));
         
         testServer = startServer(setup.withCassandra(true));
@@ -88,8 +99,7 @@ public class GuestAccountMessageBrokerTest {
                 .build());
         
         assertThat(outcome.events().get(0), is(instanceOf(GuestAccountEvent.GuestCreated.class)));
-        assertThat(outcome.events().get(1), is(instanceOf(GuestAccountEvent.LinkLoyalty.class)));
-        assertThat(outcome.events().size(), is(equalTo(2)));
+        assertThat(outcome.events().size(), is(equalTo(1)));
         assertThat(outcome.state().getGuest(), is(equalTo(sampleGuest)));
         assertThat(outcome.state().getEvent(), is(equalTo(GuestEventStatus.CREATE)));
         assertThat(outcome.getReplies().get(0), is(equalTo(Done.getInstance())));
@@ -98,16 +108,16 @@ public class GuestAccountMessageBrokerTest {
     
     @Test
     public void testUpdateGuestAccountPersistentEntity() {
-        Guest sampleGuest = this.createSampleGuest();
+        EnrichedGuest sampleGuest = this.createSampleEnrichedGuest().build();
         
         Outcome<GuestAccountEvent, GuestAccountState> outcome = driver.run(GuestAccountCommand.UpdateGuest
                 .builder()
-                .guest(sampleGuest)
+                .enrichedGuest(sampleGuest)
                 .build());
         
         assertThat(outcome.events().get(0), is(instanceOf(GuestAccountEvent.GuestUpdated.class)));
         assertThat(outcome.events().size(), is(equalTo(1)));
-        assertThat(outcome.state().getGuest(), is(equalTo(sampleGuest)));
+        assertThat(outcome.state().getEnrichedGuest(), is(equalTo(sampleGuest)));
         assertThat(outcome.state().getEvent(), is(equalTo(GuestEventStatus.UPDATE)));
         assertThat(outcome.getReplies().get(0), is(equalTo(Done.getInstance())));
         assertThat(outcome.issues().isEmpty(), is(true));
@@ -115,14 +125,26 @@ public class GuestAccountMessageBrokerTest {
     
     @Test
     public void testGuestAccountKafkaPublishing() {
-        Source<GuestEvent, ?> source = guestAccountService.guestAccountsTopic().subscribe().atMostOnceSource();
+        Source<GuestEvent, ?> linkLoyaltySource = guestAccountService.linkLoyaltyTopic().subscribe().atMostOnceSource();
         
-        TestSubscriber.Probe<GuestEvent> probe = source
+        TestSubscriber.Probe<GuestEvent> linkLoyaltyProbe = linkLoyaltySource
                 .runWith(
                         TestSink.probe(testServer.system()), testServer.materializer()
                 );
         
+        Source<EnrichedGuest, ?> verifyLoyaltySource = guestAccountService.verifyLoyaltyTopic()
+                .subscribe().atMostOnceSource();
+        
+        TestSubscriber.Probe<EnrichedGuest> verifyLoyaltyProbe = verifyLoyaltySource
+                .runWith(
+                        TestSink.probe(testServer.system()), testServer.materializer()
+                );
+        
+        
         Guest sampleGuest = this.createSampleGuest();
+        EnrichedGuest sampleEnrichedGuest = this.createSampleEnrichedGuest()
+                .loyaltyInformation(LoyaltyInformation.builder().consumerId("1234567").build())
+                .build();
         
         try {
             FiniteDuration finiteDuration = new FiniteDuration(20, SECONDS);
@@ -132,16 +154,19 @@ public class GuestAccountMessageBrokerTest {
                     .toCompletableFuture()
                     .get(10, TimeUnit.SECONDS);
             
-            GuestEvent createGuestEvent = probe.request(1).expectNext(finiteDuration);
+            GuestEvent createGuestEvent = linkLoyaltyProbe.request(1).expectNext(finiteDuration);
             assertTrue(createGuestEvent instanceof GuestEvent.AccountCreated);
             
-            guestAccountService.updateAccount("successful@domain.com")
-                    .invoke(sampleGuest)
+            guestAccountService.updateAccountEnriched()
+                    .invoke(sampleEnrichedGuest)
                     .toCompletableFuture()
                     .get(10, TimeUnit.SECONDS);
             
-            GuestEvent updateGuestEvent = probe.request(1).expectNext(finiteDuration);
+            GuestEvent updateGuestEvent = linkLoyaltyProbe.request(1).expectNext(finiteDuration);
             assertTrue(updateGuestEvent instanceof GuestEvent.AccountUpdated);
+            
+            EnrichedGuest verifyLoyaltyEvent = verifyLoyaltyProbe.request(1).expectNext(finiteDuration);
+            assertTrue(verifyLoyaltyEvent instanceof EnrichedGuest);
             
         } catch (Exception e) {
             assertTrue("The service thrown an exception.", e.equals(null));
@@ -163,8 +188,47 @@ public class GuestAccountMessageBrokerTest {
                 .birthdate("19910101")
                 .phoneNumber("+1(234)456-7890")
                 .securityQuestions(Arrays.asList(SecurityQuestion.builder().question("what?").answer("yes").build()))
-                .termsAndConditionsAgreement(TermsAndConditionsAgreement.builder().acceptTime("20170627033735PM").version("1.0").build())
-                .optins(Arrays.asList(Optin.builder().type("EMAIL").flag(true).acceptTime("20170706022122PM").build()))
+                .termsAndConditionsAgreement(TermsAndConditionsAgreement.builder()
+                        .acceptTime("20170627033735PM")
+                        .version("1.0")
+                        .build())
+                .optins(Arrays.asList(Optin.builder().type("EMAIL").flag("Y").acceptTime("20170706022122PM").build()))
                 .build();
+    }
+    
+    private EnrichedGuest.EnrichedGuestBuilder createSampleEnrichedGuest() {
+        return EnrichedGuest.builder()
+                .header(Header.builder().brand('R').channel("app-ios").build())
+                .contactInformation(ContactInformation.builder()
+                        .address(Address.builder()
+                                .addressOne("Address one")
+                                .city("City")
+                                .state("FL")
+                                .zipCode("12345")
+                                .build())
+                        .phoneNumber("123-456-7890")
+                        .phoneCountryCode("+1")
+                        .build())
+                .emergencyContact(EmergencyContact.builder()
+                        .phoneNumber("123-456-7890")
+                        .firstName("First")
+                        .lastName("Last")
+                        .relationship("Mother")
+                        .build())
+                .signInInformation(SignInInformation.builder()
+                        .password("password1".toCharArray())
+                        .securityQuestions(
+                                Arrays.asList(SecurityQuestion.builder().question("what?").answer("yes").build())
+                        )
+                        .build())
+                .travelDocumentInformation(TravelDocumentInformation.builder()
+                        .passportNumber("1234567890")
+                        .passportExpirationDate("20200101")
+                        .birthCountryCode("USA")
+                        .citizenshipCountryCode("USA")
+                        .build())
+                .webshopperInformation(WebshopperInformation.builder().brand('R').shopperId("123456789").build())
+                .email("successful@domain.com")
+                .vdsId("G1234567");
     }
 }

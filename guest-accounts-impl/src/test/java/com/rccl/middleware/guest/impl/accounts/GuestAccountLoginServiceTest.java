@@ -9,6 +9,8 @@ import com.rccl.middleware.guest.accounts.AccountCredentials;
 import com.rccl.middleware.guest.accounts.GuestAccountService;
 import com.rccl.middleware.guest.optin.GuestProfileOptinService;
 import com.rccl.middleware.guest.optin.GuestProfileOptinsStub;
+import com.rccl.middleware.guestprofiles.GuestProfileServiceStub;
+import com.rccl.middleware.guestprofiles.GuestProfilesService;
 import com.rccl.middleware.saviynt.api.SaviyntService;
 import com.rccl.middleware.saviynt.api.SaviyntServiceImplStub;
 import org.junit.AfterClass;
@@ -38,7 +40,8 @@ public class GuestAccountLoginServiceTest {
                 .configureBuilder(builder -> builder.overrides(
                         bind(SaviyntService.class).to(SaviyntServiceImplStub.class),
                         bind(ForgeRockService.class).to(ForgeRockServiceImplStub.class),
-                        bind(GuestProfileOptinService.class).to(GuestProfileOptinsStub.class)
+                        bind(GuestProfileOptinService.class).to(GuestProfileOptinsStub.class),
+                        bind(GuestProfilesService.class).to(GuestProfileServiceStub.class)
                 ))
         );
         

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.rccl.middleware.guest.accounts.enriched.EnrichedGuest;
 import lombok.Value;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type", defaultImpl = Void.class)
@@ -27,10 +28,10 @@ public interface GuestEvent {
     @Value
     @JsonTypeName("updated")
     final class AccountUpdated implements GuestEvent {
-        private final Guest guest;
+        private final EnrichedGuest guest;
         
         @JsonCreator
-        public AccountUpdated(Guest guest) {
+        public AccountUpdated(EnrichedGuest guest) {
             this.guest = guest;
         }
     }

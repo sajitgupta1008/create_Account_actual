@@ -6,6 +6,7 @@ import com.lightbend.lagom.javadsl.api.Descriptor;
 import com.lightbend.lagom.javadsl.api.Service;
 import com.lightbend.lagom.javadsl.api.ServiceCall;
 import com.lightbend.lagom.javadsl.api.broker.Topic;
+import com.rccl.middleware.guest.accounts.enriched.EnrichedGuest;
 import com.typesafe.config.ConfigFactory;
 
 import static com.lightbend.lagom.javadsl.api.Service.named;
@@ -17,19 +18,13 @@ import static com.lightbend.lagom.javadsl.api.transport.Method.PUT;
 
 public interface GuestAccountService extends Service {
     
-    String GUEST_ACCOUNTS_KAFKA_TOPIC = ConfigFactory.load().getString("kafka.guest-accounts.topic.name");
-    
     String LINK_LOYALTY_KAFKA_TOPIC = ConfigFactory.load().getString("kafka.link-loyalty.topic.name");
     
-    /**
-     * Create a guest account from the given {@link Guest} and get back the user ID
-     * representing the created resource.
-     *
-     * @return {@code String}
-     */
+    String VERIFY_LOYALTY_KAFKA_TOPIC = ConfigFactory.load().getString("kafka.verify-loyalty.topic.name");
+    
     ServiceCall<Guest, JsonNode> createAccount();
     
-    ServiceCall<Guest, NotUsed> updateAccount(String email);
+    ServiceCall<EnrichedGuest, JsonNode> updateAccountEnriched();
     
     ServiceCall<AccountCredentials, JsonNode> authenticateUser();
     
@@ -37,9 +32,9 @@ public interface GuestAccountService extends Service {
     
     ServiceCall<NotUsed, String> healthCheck();
     
-    Topic<GuestEvent> guestAccountsTopic();
+    Topic<GuestEvent> linkLoyaltyTopic();
     
-    Topic<Guest> linkLoyaltyTopic();
+    Topic<EnrichedGuest> verifyLoyaltyTopic();
     
     @Override
     default Descriptor descriptor() {
@@ -47,14 +42,14 @@ public interface GuestAccountService extends Service {
                 .withCalls(
                         restCall(POST, "/v1/guestAccounts", this::createAccount),
                         restCall(POST, "/v1/guestAccounts/", this::createAccount),
-                        restCall(PUT, "/v1/guestAccounts/:email", this::updateAccount),
+                        restCall(PUT, "/v1/guestAccounts/enriched", this::updateAccountEnriched),
                         restCall(POST, "/v1/guestAccounts/login", this::authenticateUser),
                         restCall(GET, "/v1/guestAccounts/:email/validation", this::validateEmail),
                         restCall(GET, "/v1/guestAccounts/health", this::healthCheck)
                 )
                 .withTopics(
-                        topic(GUEST_ACCOUNTS_KAFKA_TOPIC, this::guestAccountsTopic),
-                        topic(LINK_LOYALTY_KAFKA_TOPIC, this::linkLoyaltyTopic)
+                        topic(LINK_LOYALTY_KAFKA_TOPIC, this::linkLoyaltyTopic),
+                        topic(VERIFY_LOYALTY_KAFKA_TOPIC, this::verifyLoyaltyTopic)
                 )
                 .withAutoAcl(true);
     }

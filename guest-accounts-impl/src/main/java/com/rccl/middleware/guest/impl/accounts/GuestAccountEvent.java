@@ -4,6 +4,7 @@ import com.lightbend.lagom.javadsl.persistence.AggregateEvent;
 import com.lightbend.lagom.javadsl.persistence.AggregateEventTagger;
 import com.lightbend.lagom.serialization.Jsonable;
 import com.rccl.middleware.guest.accounts.Guest;
+import com.rccl.middleware.guest.accounts.enriched.EnrichedGuest;
 import lombok.Value;
 import org.codehaus.jackson.annotate.JsonCreator;
 
@@ -27,22 +28,23 @@ public interface GuestAccountEvent extends Jsonable, AggregateEvent<GuestAccount
     
     @Value
     final class GuestUpdated implements GuestAccountEvent {
-        public final Guest guest;
+        
+        public final EnrichedGuest enrichedGuest;
         
         @JsonCreator
-        public GuestUpdated(Guest guest) {
-            this.guest = guest;
+        public GuestUpdated(EnrichedGuest enrichedGuest) {
+            this.enrichedGuest = enrichedGuest;
         }
     }
     
     @Value
-    final class LinkLoyalty implements GuestAccountEvent {
+    final class VerifyLoyalty implements GuestAccountEvent {
         
-        public final Guest guest;
+        public final EnrichedGuest enrichedGuest;
         
         @JsonCreator
-        public LinkLoyalty(Guest guest) {
-            this.guest = guest;
+        public VerifyLoyalty(EnrichedGuest enrichedGuest) {
+            this.enrichedGuest = enrichedGuest;
         }
     }
 }

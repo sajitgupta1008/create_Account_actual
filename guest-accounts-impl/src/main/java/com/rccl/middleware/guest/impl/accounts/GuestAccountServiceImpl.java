@@ -5,12 +5,15 @@ import akka.japi.Pair;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
+import com.lightbend.lagom.javadsl.api.ServiceCall;
 import com.lightbend.lagom.javadsl.api.broker.Topic;
 import com.lightbend.lagom.javadsl.api.transport.ResponseHeader;
 import com.lightbend.lagom.javadsl.api.transport.TransportErrorCode;
 import com.lightbend.lagom.javadsl.broker.TopicProducer;
 import com.lightbend.lagom.javadsl.persistence.PersistentEntityRegistry;
 import com.lightbend.lagom.javadsl.server.HeaderServiceCall;
+import com.rccl.middleware.common.exceptions.MiddlewareExceptionMessage;
 import com.rccl.middleware.common.exceptions.MiddlewareTransportException;
 import com.rccl.middleware.common.validation.MiddlewareValidation;
 import com.rccl.middleware.common.validation.validator.ValidatorConstants;
@@ -23,6 +26,7 @@ import com.rccl.middleware.guest.accounts.AccountStatusEnum;
 import com.rccl.middleware.guest.accounts.Guest;
 import com.rccl.middleware.guest.accounts.GuestAccountService;
 import com.rccl.middleware.guest.accounts.GuestEvent;
+import com.rccl.middleware.guest.accounts.enriched.EnrichedGuest;
 import com.rccl.middleware.guest.accounts.exceptions.ExistingGuestException;
 import com.rccl.middleware.guest.accounts.exceptions.GuestAuthenticationException;
 import com.rccl.middleware.guest.accounts.exceptions.GuestNotFoundException;
@@ -32,9 +36,12 @@ import com.rccl.middleware.guest.optin.GuestProfileOptinService;
 import com.rccl.middleware.guest.optin.Optin;
 import com.rccl.middleware.guest.optin.OptinType;
 import com.rccl.middleware.guest.optin.Optins;
+import com.rccl.middleware.guestprofiles.GuestProfilesService;
+import com.rccl.middleware.guestprofiles.models.Profile;
 import com.rccl.middleware.saviynt.api.SaviyntGuest;
 import com.rccl.middleware.saviynt.api.SaviyntService;
 import com.rccl.middleware.saviynt.api.exceptions.SaviyntExceptionFactory;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
@@ -42,6 +49,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -55,16 +63,20 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     
     private final ForgeRockService forgeRockService;
     
+    private final GuestProfilesService guestProfilesService;
+    
     private final GuestProfileOptinService guestProfileOptinService;
     
     @Inject
     public GuestAccountServiceImpl(SaviyntService saviyntService,
                                    ForgeRockService forgeRockService,
                                    PersistentEntityRegistry persistentEntityRegistry,
+                                   GuestProfilesService guestProfilesService,
                                    GuestProfileOptinService guestProfileOptinService) {
         this.saviyntService = saviyntService;
         this.forgeRockService = forgeRockService;
         
+        this.guestProfilesService = guestProfilesService;
         this.guestProfileOptinService = guestProfileOptinService;
         
         this.persistentEntityRegistry = persistentEntityRegistry;
@@ -144,14 +156,108 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     }
     
     @Override
-    public HeaderServiceCall<Guest, NotUsed> updateAccount(String email) {
-        return (requestHeader, partialGuest) -> {
+    public HeaderServiceCall<EnrichedGuest, JsonNode> updateAccountEnriched() {
+        return (requestHeader, enrichedGuest) -> {
             
-            final Guest guest = Mapper.mapEmailWithGuest(email, partialGuest);
+            MiddlewareValidation.validate(enrichedGuest);
+            
+            CompletionStage<NotUsed> updateAccountService = CompletableFuture.completedFuture(NotUsed.getInstance());
+            Guest.GuestBuilder guestBuilder = Mapper.mapEnrichedGuestToGuest(enrichedGuest);
+            
+            if (guestBuilder.build().equals(Guest.builder().build())) {
+                final Guest guest = guestBuilder
+                        .header(enrichedGuest.getHeader())
+                        .vdsId(enrichedGuest.getVdsId())
+                        .build();
+                updateAccountService = this.updateAccount().invoke(guest);
+            }
+            
+            CompletionStage<TextNode> updateProfileService =
+                    CompletableFuture.completedFuture(TextNode.valueOf(enrichedGuest.getVdsId()));
+            Profile.ProfileBuilder profileBuilder = Mapper.mapEnrichedGuestToProfile(enrichedGuest);
+            
+            if (profileBuilder.build().equals(Profile.builder().build())) {
+                final Profile profile = profileBuilder.vdsId(enrichedGuest.getVdsId()).build();
+                updateProfileService = guestProfilesService.updateProfile().invoke(profile);
+            }
+            
+            CompletionStage<NotUsed> updateOptinsService = CompletableFuture.completedFuture(NotUsed.getInstance());
+            Optins optins = Mapper.mapEnrichedGuestToOptins(enrichedGuest);
+            
+            if (optins != null && enrichedGuest.getSignInInformation() != null
+                    && StringUtils.isNotBlank(enrichedGuest.getEmail())) {
+                updateOptinsService = guestProfileOptinService
+                        .updateOptins(enrichedGuest.getEmail()).invoke(optins);
+            }
+            
+            final CompletableFuture<NotUsed> accountFuture = updateAccountService.toCompletableFuture();
+            final CompletableFuture<TextNode> profileFuture = updateProfileService.toCompletableFuture();
+            final CompletableFuture<NotUsed> optinsFuture = updateOptinsService.toCompletableFuture();
+            
+            return CompletableFuture.allOf(accountFuture, profileFuture, optinsFuture)
+                    .exceptionally(throwable -> {
+                        // if both Guest Account and Profile failed, throw the exception. otherwise,
+                        // let the process go through.
+                        if (accountFuture.isCompletedExceptionally() && profileFuture.isCompletedExceptionally()) {
+                            
+                            MiddlewareExceptionMessage message = new MiddlewareExceptionMessage();
+                            message.setErrorMessage("The service did not complete successfully.");
+                            message.setDeveloperMessage(throwable.getCause().toString());
+                            
+                            StringBuilder sb = new StringBuilder();
+                            if (accountFuture.isCompletedExceptionally()) {
+                                sb.append("Update Account service failed. ");
+                            }
+                            
+                            if (profileFuture.isCompletedExceptionally()) {
+                                sb.append("Update Profile service failed. ");
+                            }
+                            
+                            if (optinsFuture.isCompletedExceptionally()) {
+                                sb.append("Update Optins service failed. ");
+                            }
+                            message.setAdditionalInformation(sb.toString());
+                            
+                            throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), message);
+                        }
+                        
+                        return null;
+                    })
+                    .thenApply(o -> {
+                        persistentEntityRegistry.refFor(GuestAccountEntity.class, enrichedGuest.getVdsId())
+                                .ask(new GuestAccountCommand.UpdateGuest(enrichedGuest));
+                        
+                        ObjectNode objectNode = OBJECT_MAPPER.createObjectNode();
+                        
+                        if (accountFuture.isCompletedExceptionally() || profileFuture.isCompletedExceptionally()
+                                || optinsFuture.isCompletedExceptionally()) {
+                            objectNode.put("status", "The service completed with some exceptions.");
+                            objectNode.put("updateAccount",
+                                    "completed= " + !accountFuture.isCompletedExceptionally());
+                            objectNode.put("updateProfile",
+                                    "completed= " + !profileFuture.isCompletedExceptionally());
+                            objectNode.put("updateOptins",
+                                    "completed= " + !optinsFuture.isCompletedExceptionally());
+                            
+                            return Pair.create(ResponseHeader.OK, objectNode);
+                        } else {
+                            return Pair.create(ResponseHeader.OK, TextNode.valueOf(enrichedGuest.getVdsId()));
+                        }
+                    });
+        };
+    }
+    
+    /**
+     * Update Account service processing for Saviynt which is not exposed as service endpoint.
+     *
+     * @return {@link HeaderServiceCall} with {@link Pair}
+     */
+    private ServiceCall<Guest, NotUsed> updateAccount() {
+        return (guest) -> {
             
             MiddlewareValidation.validateWithGroups(guest, Guest.UpdateChecks.class);
             
-            final SaviyntGuest saviyntGuest = Mapper.mapGuestToSaviyntGuest(guest, false).email(email).build();
+            final SaviyntGuest saviyntGuest = Mapper.mapGuestToSaviyntGuest(guest, false).build();
             
             return saviyntService
                     .updateGuestAccount()
@@ -174,12 +280,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         
                         throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
                     })
-                    .thenApply(response -> {
-                        persistentEntityRegistry.refFor(GuestAccountEntity.class, email)
-                                .ask(new GuestAccountCommand.UpdateGuest(guest));
-                        
-                        return new Pair<>(ResponseHeader.OK, NotUsed.getInstance());
-                    });
+                    .thenApply(response -> NotUsed.getInstance());
         };
     }
     
@@ -207,7 +308,6 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                 mockResponse.put("accountLoginStatus", LoginStatusEnum.NEW_ACCOUNT_TEMPORARY_PASSWORD.value());
                 return CompletableFuture.completedFuture(Pair.create(ResponseHeader.OK, mockResponse));
             }
-            
             
             return forgeRockService.authenticateMobileUser()
                     .invoke(forgeRockCredentials)
@@ -273,7 +373,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         if (response.get(STATUS) != null) {
                             jsonResponse = response.deepCopy();
                         } else {
-                            if (response.get("SavCode") != null && response.get("SavCode").asText().contains("Sav000")) {
+                            if (response.get("SavCode") != null
+                                    && response.get("SavCode").asText().contains("Sav000")) {
                                 jsonResponse.put(STATUS, AccountStatusEnum.EXISTING.value());
                             } else {
                                 jsonResponse.put(STATUS, AccountStatusEnum.NEEDSTOBEMIGRATED.value());
@@ -298,8 +399,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
         };
     }
     
-    @Override
-    public Topic<GuestEvent> guestAccountsTopic() {
+    public Topic<GuestEvent> linkLoyaltyTopic() {
         return TopicProducer.taggedStreamWithOffset(GuestAccountTag.GUEST_ACCOUNT_EVENT_TAG.allTags(), (tag, offset) ->
                 persistentEntityRegistry.eventStream(tag, offset)
                         .filter(param -> param.first() instanceof GuestAccountEvent.GuestCreated
@@ -313,7 +413,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                 
                             } else {
                                 GuestAccountEvent.GuestUpdated eventInstance = (GuestAccountEvent.GuestUpdated) event;
-                                guestEvent = new GuestEvent.AccountUpdated(eventInstance.getGuest());
+                                guestEvent = new GuestEvent.AccountUpdated(eventInstance.getEnrichedGuest());
                             }
                             
                             return CompletableFuture.completedFuture(new Pair<>(guestEvent, eventOffset.second()));
@@ -321,15 +421,16 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     }
     
     @Override
-    public Topic<Guest> linkLoyaltyTopic() {
+    public Topic<EnrichedGuest> verifyLoyaltyTopic() {
         return TopicProducer.taggedStreamWithOffset(GuestAccountTag.GUEST_ACCOUNT_EVENT_TAG.allTags(), (tag, offset) ->
                 persistentEntityRegistry.eventStream(tag, offset)
-                        .filter(param -> param.first() instanceof GuestAccountEvent.LinkLoyalty)
+                        .filter(param -> param.first() instanceof GuestAccountEvent.VerifyLoyalty)
                         .mapAsync(1, eventOffset -> {
                             GuestAccountEvent event = eventOffset.first();
-                            GuestAccountEvent.LinkLoyalty loyalty = (GuestAccountEvent.LinkLoyalty) event;
+                            GuestAccountEvent.VerifyLoyalty loyalty = (GuestAccountEvent.VerifyLoyalty) event;
                             
-                            return CompletableFuture.completedFuture(new Pair<>(loyalty.getGuest(), eventOffset.second()));
+                            return CompletableFuture.completedFuture(
+                                    new Pair<>(loyalty.getEnrichedGuest(), eventOffset.second()));
                         }));
     }
     
@@ -347,7 +448,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                 optinTypeList.add(OptinType.builder()
                         .type(optin.getType())
                         .acceptTime(optin.getAcceptTime())
-                        .flag(optin.isFlag())
+                        .flag(optin.getFlag())
                         .build()));
         
         // enroll the guest to all brands and categories.
