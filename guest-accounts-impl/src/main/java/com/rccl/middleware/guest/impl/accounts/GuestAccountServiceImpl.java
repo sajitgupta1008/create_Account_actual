@@ -41,6 +41,7 @@ import com.rccl.middleware.guestprofiles.models.Profile;
 import com.rccl.middleware.saviynt.api.SaviyntGuest;
 import com.rccl.middleware.saviynt.api.SaviyntService;
 import com.rccl.middleware.saviynt.api.exceptions.SaviyntExceptionFactory;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
@@ -158,19 +159,36 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     public HeaderServiceCall<EnrichedGuest, JsonNode> updateAccountEnriched() {
         return (requestHeader, enrichedGuest) -> {
             
-            Guest guest = Mapper.mapEnrichedGuestToGuest(enrichedGuest);
-            CompletionStage<NotUsed> updateAccountFuture = guest != Guest.builder().build()
-                    ? this.updateAccount().invoke(guest) : CompletableFuture.completedFuture(NotUsed.getInstance());
+            MiddlewareValidation.validate(enrichedGuest);
             
-            Profile profile = Mapper.mapEnrichedGuestToProfile(enrichedGuest);
-            CompletionStage<TextNode> updateProfileFuture = profile != Profile.builder().build()
-                    ? guestProfilesService.updateProfile().invoke(profile)
-                    : CompletableFuture.completedFuture(TextNode.valueOf(profile.getVdsId()));
+            CompletionStage<NotUsed> updateAccountFuture = CompletableFuture.completedFuture(NotUsed.getInstance());
+            Guest.GuestBuilder guestBuilder = Mapper.mapEnrichedGuestToGuest(enrichedGuest);
             
+            if (guestBuilder.build().equals(Guest.builder().build())) {
+                final Guest guest = guestBuilder
+                        .header(enrichedGuest.getHeader())
+                        .vdsId(enrichedGuest.getVdsId())
+                        .build();
+                updateAccountFuture = this.updateAccount().invoke(guest);
+            }
+            
+            CompletionStage<TextNode> updateProfileFuture =
+                    CompletableFuture.completedFuture(TextNode.valueOf(enrichedGuest.getVdsId()));
+            Profile.ProfileBuilder profileBuilder = Mapper.mapEnrichedGuestToProfile(enrichedGuest);
+            
+            if (profileBuilder.build().equals(Profile.builder().build())) {
+                final Profile profile = profileBuilder.vdsId(enrichedGuest.getVdsId()).build();
+                updateProfileFuture = guestProfilesService.updateProfile().invoke(profile);
+            }
+            
+            CompletionStage<NotUsed> updateOptinsFuture = CompletableFuture.completedFuture(NotUsed.getInstance());
             Optins optins = Mapper.mapEnrichedGuestToOptins(enrichedGuest);
-            CompletionStage<NotUsed> updateOptinsFuture = optins != null
-                    ? guestProfileOptinService.updateOptins(guest.getEmail()).invoke(optins)
-                    : CompletableFuture.completedFuture(NotUsed.getInstance());
+            
+            if (optins != null && enrichedGuest.getSignInInformation() != null
+                    && StringUtils.isNotBlank(enrichedGuest.getSignInInformation().getEmail())) {
+                updateOptinsFuture = guestProfileOptinService
+                        .updateOptins(enrichedGuest.getSignInInformation().getEmail()).invoke(optins);
+            }
             
             final CompletableFuture<NotUsed> accountFuture = updateAccountFuture.toCompletableFuture();
             final CompletableFuture<TextNode> profileFuture = updateProfileFuture.toCompletableFuture();
@@ -206,7 +224,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         return null;
                     })
                     .thenApply(o -> {
-                        persistentEntityRegistry.refFor(GuestAccountEntity.class, guest.getVdsId())
+                        persistentEntityRegistry.refFor(GuestAccountEntity.class, enrichedGuest.getVdsId())
                                 .ask(new GuestAccountCommand.UpdateGuest(enrichedGuest));
                         
                         // pending LinkLoyalty

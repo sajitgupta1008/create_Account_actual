@@ -134,9 +134,9 @@ public class Mapper {
      * in {@link Guest} for Update Guest Account service.
      *
      * @param guest {@link EnrichedGuest}
-     * @return {@link SaviyntGuest}
+     * @return {@link Guest.GuestBuilder}
      */
-    public static Guest mapEnrichedGuestToGuest(EnrichedGuest guest) {
+    public static Guest.GuestBuilder mapEnrichedGuestToGuest(EnrichedGuest guest) {
         PersonalInformation personalInfo = guest.getPersonalInformation();
         LoyaltyInformation loyaltyInfo = guest.getLoyaltyInformation();
         ContactInformation contactInfo = guest.getContactInformation();
@@ -176,11 +176,7 @@ public class Mapper {
                     .webshopperBrand(webshopperInfo.getBrand());
         }
         
-        builder
-                .header(guest.getHeader())
-                .vdsId(guest.getVdsId());
-        
-        return builder.build();
+        return builder;
     }
     
     /**
@@ -188,9 +184,9 @@ public class Mapper {
      * in {@link Profile} for Update Profile service.
      *
      * @param guest {@link EnrichedGuest}
-     * @return {@link Profile}
+     * @return {@link Profile.ProfileBuilder}
      */
-    public static Profile mapEnrichedGuestToProfile(EnrichedGuest guest) {
+    public static Profile.ProfileBuilder mapEnrichedGuestToProfile(EnrichedGuest guest) {
         PersonalInformation personalInfo = guest.getPersonalInformation();
         ContactInformation contactInfo = guest.getContactInformation();
         TravelDocumentInformation travelInfo = guest.getTravelDocumentInformation();
@@ -216,9 +212,7 @@ public class Mapper {
             builder.emergencyContact(guest.getEmergencyContact());
         }
         
-        builder.vdsId(guest.getVdsId());
-        
-        return builder.build();
+        return builder;
     }
     
     /**
