@@ -16,6 +16,10 @@ import com.rccl.middleware.guest.accounts.enriched.EnrichedGuest;
 import com.rccl.middleware.guest.accounts.enriched.SignInInformation;
 import com.rccl.middleware.guest.accounts.enriched.TravelDocumentInformation;
 import com.rccl.middleware.guest.accounts.enriched.WebshopperInformation;
+import com.rccl.middleware.guest.optin.GuestProfileOptinService;
+import com.rccl.middleware.guest.optin.GuestProfileOptinsStub;
+import com.rccl.middleware.guestprofiles.GuestProfileServiceStub;
+import com.rccl.middleware.guestprofiles.GuestProfilesService;
 import com.rccl.middleware.guestprofiles.models.Address;
 import com.rccl.middleware.guestprofiles.models.EmergencyContact;
 import com.rccl.middleware.saviynt.api.SaviyntService;
@@ -44,6 +48,8 @@ public class GuestAccountUpdateServiceTest {
         final ServiceTest.Setup setup = defaultSetup()
                 .configureBuilder(builder -> builder.overrides(
                         bind(SaviyntService.class).to(SaviyntServiceImplStub.class),
+                        bind(GuestProfileOptinService.class).to(GuestProfileOptinsStub.class),
+                        bind(GuestProfilesService.class).to(GuestProfileServiceStub.class),
                         bind(GuestAccountService.class).to(GuestAccountServiceImpl.class)
                 ));
         

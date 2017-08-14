@@ -17,6 +17,8 @@ import com.rccl.middleware.guest.accounts.SecurityQuestion;
 import com.rccl.middleware.guest.accounts.TermsAndConditionsAgreement;
 import com.rccl.middleware.guest.optin.GuestProfileOptinService;
 import com.rccl.middleware.guest.optin.GuestProfileOptinsStub;
+import com.rccl.middleware.guestprofiles.GuestProfileServiceStub;
+import com.rccl.middleware.guestprofiles.GuestProfilesService;
 import com.rccl.middleware.saviynt.api.SaviyntService;
 import com.rccl.middleware.saviynt.api.SaviyntServiceImplStub;
 import com.rccl.middleware.saviynt.api.exceptions.SaviyntExceptionFactory;
@@ -54,7 +56,8 @@ public class GuestAccountServiceTest {
                         bind(SaviyntService.class).to(SaviyntServiceImplStub.class),
                         bind(ForgeRockService.class).to(ForgeRockServiceImplStub.class),
                         bind(GuestAccountService.class).to(GuestAccountServiceImpl.class),
-                        bind(GuestProfileOptinService.class).to(GuestProfileOptinsStub.class)
+                        bind(GuestProfileOptinService.class).to(GuestProfileOptinsStub.class),
+                        bind(GuestProfilesService.class).to(GuestProfileServiceStub.class)
                 ))
         );
         
