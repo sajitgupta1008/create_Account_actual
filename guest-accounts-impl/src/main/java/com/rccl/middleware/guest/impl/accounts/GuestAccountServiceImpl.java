@@ -429,7 +429,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                             GuestAccountEvent event = eventOffset.first();
                             GuestAccountEvent.VerifyLoyalty loyalty = (GuestAccountEvent.VerifyLoyalty) event;
                             
-                            return CompletableFuture.completedFuture(new Pair<>(loyalty.getEnrichedGuest(), eventOffset.second()));
+                            return CompletableFuture.completedFuture(
+                                    new Pair<>(loyalty.getEnrichedGuest(), eventOffset.second()));
                         }));
     }
     

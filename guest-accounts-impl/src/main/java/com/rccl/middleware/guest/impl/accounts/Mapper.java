@@ -137,13 +137,9 @@ public class Mapper {
      * @return {@link Guest.GuestBuilder}
      */
     public static Guest.GuestBuilder mapEnrichedGuestToGuest(EnrichedGuest guest) {
-        PersonalInformation personalInfo = guest.getPersonalInformation();
-        LoyaltyInformation loyaltyInfo = guest.getLoyaltyInformation();
-        ContactInformation contactInfo = guest.getContactInformation();
-        WebshopperInformation webshopperInfo = guest.getWebshopperInformation();
-        SignInInformation signInInfo = guest.getSignInInformation();
         Guest.GuestBuilder builder = Guest.builder();
         
+        PersonalInformation personalInfo = guest.getPersonalInformation();
         if (personalInfo != null) {
             builder.firstName(personalInfo.getFirstName())
                     .lastName(personalInfo.getLastName())
@@ -152,12 +148,14 @@ public class Mapper {
                     .birthdate(personalInfo.getBirthdate());
         }
         
+        SignInInformation signInInfo = guest.getSignInInformation();
         if (signInInfo != null) {
             builder.email(guest.getEmail())
                     .password(signInInfo.getPassword())
                     .securityQuestions(signInInfo.getSecurityQuestions());
         }
         
+        LoyaltyInformation loyaltyInfo = guest.getLoyaltyInformation();
         if (loyaltyInfo != null) {
             builder.crownAndAnchorId(loyaltyInfo.getCrownAndAnchorId())
                     .captainsClubId(loyaltyInfo.getCaptainsClubId())
@@ -166,11 +164,13 @@ public class Mapper {
                     .celebrityBlueChipId(loyaltyInfo.getCelebrityBlueChipId());
         }
         
+        ContactInformation contactInfo = guest.getContactInformation();
         if (contactInfo != null) {
             // TODO add phone country code here.
             builder.phoneNumber(contactInfo.getPhoneNumber());
         }
         
+        WebshopperInformation webshopperInfo = guest.getWebshopperInformation();
         if (webshopperInfo != null) {
             builder.webshopperId(webshopperInfo.getShopperId())
                     .webshopperBrand(webshopperInfo.getBrand());
