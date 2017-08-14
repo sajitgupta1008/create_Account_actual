@@ -112,9 +112,10 @@ public class GuestAccountUpdateServiceTest {
     public void shouldFailUpdateWithInvalidFields() throws Exception {
         EnrichedGuest guest = this.createSampleEnrichedGuest()
                 .signInInformation(SignInInformation.builder()
-                        .email("invalidformat")
                         .password("123".toCharArray())
-                        .build()).build();
+                        .build())
+                .email("invalidemail")
+                .build();
         
         HeaderServiceCall<EnrichedGuest, JsonNode> updateAccount =
                 (HeaderServiceCall<EnrichedGuest, JsonNode>) guestAccountService.updateAccountEnriched();
@@ -147,7 +148,6 @@ public class GuestAccountUpdateServiceTest {
                         .relationship("Mother")
                         .build())
                 .signInInformation(SignInInformation.builder()
-                        .email("successful@domain.com")
                         .password("password1".toCharArray())
                         .securityQuestions(
                                 Arrays.asList(SecurityQuestion.builder().question("what?").answer("yes").build())
@@ -160,6 +160,7 @@ public class GuestAccountUpdateServiceTest {
                         .citizenshipCountryCode("USA")
                         .build())
                 .webshopperInformation(WebshopperInformation.builder().brand('R').shopperId("123456789").build())
+                .email("successful@domain.com")
                 .vdsId("G1234567");
     }
 }

@@ -153,7 +153,7 @@ public class Mapper {
         }
         
         if (signInInfo != null) {
-            builder.email(signInInfo.getEmail())
+            builder.email(guest.getEmail())
                     .password(signInInfo.getPassword())
                     .securityQuestions(signInInfo.getSecurityQuestions());
         }
@@ -228,7 +228,7 @@ public class Mapper {
         if (optins != null && !optins.isEmpty()) {
             return Optins.builder()
                     .optins(optins)
-                    .email(guest.getSignInInformation().getEmail())
+                    .email(guest.getEmail())
                     .header(guest.getHeader())
                     .build();
         }

@@ -216,7 +216,6 @@ public class GuestAccountMessageBrokerTest {
                         .relationship("Mother")
                         .build())
                 .signInInformation(SignInInformation.builder()
-                        .email("successful@domain.com")
                         .password("password1".toCharArray())
                         .securityQuestions(
                                 Arrays.asList(SecurityQuestion.builder().question("what?").answer("yes").build())
@@ -229,6 +228,7 @@ public class GuestAccountMessageBrokerTest {
                         .citizenshipCountryCode("USA")
                         .build())
                 .webshopperInformation(WebshopperInformation.builder().brand('R').shopperId("123456789").build())
+                .email("successful@domain.com")
                 .vdsId("G1234567");
     }
 }
