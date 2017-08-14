@@ -161,7 +161,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
             
             MiddlewareValidation.validate(enrichedGuest);
             
-            CompletionStage<NotUsed> updateAccountFuture = CompletableFuture.completedFuture(NotUsed.getInstance());
+            CompletionStage<NotUsed> updateAccountService = CompletableFuture.completedFuture(NotUsed.getInstance());
             Guest.GuestBuilder guestBuilder = Mapper.mapEnrichedGuestToGuest(enrichedGuest);
             
             if (guestBuilder.build().equals(Guest.builder().build())) {
@@ -169,30 +169,30 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         .header(enrichedGuest.getHeader())
                         .vdsId(enrichedGuest.getVdsId())
                         .build();
-                updateAccountFuture = this.updateAccount().invoke(guest);
+                updateAccountService = this.updateAccount().invoke(guest);
             }
             
-            CompletionStage<TextNode> updateProfileFuture =
+            CompletionStage<TextNode> updateProfileService =
                     CompletableFuture.completedFuture(TextNode.valueOf(enrichedGuest.getVdsId()));
             Profile.ProfileBuilder profileBuilder = Mapper.mapEnrichedGuestToProfile(enrichedGuest);
             
             if (profileBuilder.build().equals(Profile.builder().build())) {
                 final Profile profile = profileBuilder.vdsId(enrichedGuest.getVdsId()).build();
-                updateProfileFuture = guestProfilesService.updateProfile().invoke(profile);
+                updateProfileService = guestProfilesService.updateProfile().invoke(profile);
             }
             
-            CompletionStage<NotUsed> updateOptinsFuture = CompletableFuture.completedFuture(NotUsed.getInstance());
+            CompletionStage<NotUsed> updateOptinsService = CompletableFuture.completedFuture(NotUsed.getInstance());
             Optins optins = Mapper.mapEnrichedGuestToOptins(enrichedGuest);
             
             if (optins != null && enrichedGuest.getSignInInformation() != null
                     && StringUtils.isNotBlank(enrichedGuest.getEmail())) {
-                updateOptinsFuture = guestProfileOptinService
+                updateOptinsService = guestProfileOptinService
                         .updateOptins(enrichedGuest.getEmail()).invoke(optins);
             }
             
-            final CompletableFuture<NotUsed> accountFuture = updateAccountFuture.toCompletableFuture();
-            final CompletableFuture<TextNode> profileFuture = updateProfileFuture.toCompletableFuture();
-            final CompletableFuture<NotUsed> optinsFuture = updateOptinsFuture.toCompletableFuture();
+            final CompletableFuture<NotUsed> accountFuture = updateAccountService.toCompletableFuture();
+            final CompletableFuture<TextNode> profileFuture = updateProfileService.toCompletableFuture();
+            final CompletableFuture<NotUsed> optinsFuture = updateOptinsService.toCompletableFuture();
             
             return CompletableFuture.allOf(accountFuture, profileFuture, optinsFuture)
                     .exceptionally(throwable -> {
@@ -227,7 +227,6 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         persistentEntityRegistry.refFor(GuestAccountEntity.class, enrichedGuest.getVdsId())
                                 .ask(new GuestAccountCommand.UpdateGuest(enrichedGuest));
                         
-                        // pending LinkLoyalty
                         ObjectNode objectNode = OBJECT_MAPPER.createObjectNode();
                         
                         if (accountFuture.isCompletedExceptionally() || profileFuture.isCompletedExceptionally()
