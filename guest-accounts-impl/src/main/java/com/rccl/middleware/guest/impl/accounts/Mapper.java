@@ -52,35 +52,6 @@ public class Mapper {
     }
     
     /**
-     * Includes email argument value into {@link Guest} model.
-     *
-     * @param email the email address of the user.
-     * @param guest the {@link Guest} model.
-     * @return {@link Guest} with email attribute populated.
-     */
-    public static Guest mapEmailWithGuest(String email, Guest guest) {
-        return Guest.builder()
-                .header(guest.getHeader())
-                .email(email)
-                .firstName(guest.getFirstName())
-                .lastName(guest.getLastName())
-                .birthdate(guest.getBirthdate())
-                .phoneNumber(guest.getPhoneNumber())
-                .securityQuestions(guest.getSecurityQuestions())
-                .consumerId(guest.getConsumerId())
-                .crownAndAnchorId(guest.getCrownAndAnchorId())
-                .captainsClubId(guest.getCaptainsClubId())
-                .azamaraLoyaltyId(guest.getAzamaraLoyaltyId())
-                .clubRoyaleId(guest.getClubRoyaleId())
-                .celebrityBlueChipId(guest.getCelebrityBlueChipId())
-                .webshopperId(guest.getWebshopperId())
-                .webshopperBrand(guest.getWebshopperBrand())
-                .termsAndConditionsAgreement(guest.getTermsAndConditionsAgreement())
-                .optins(guest.getOptins())
-                .build();
-    }
-    
-    /**
      * Creates a builder which maps the appropriate {@link Guest} values into {@link SaviyntGuest} object
      * based on the action taken.
      *
@@ -92,6 +63,8 @@ public class Mapper {
         SaviyntGuest.SaviyntGuestBuilder builder = SaviyntGuest.builder()
                 .firstName(guest.getFirstName())
                 .lastName(guest.getLastName())
+                .middleName(guest.getMiddleName())
+                .suffix(guest.getSuffix())
                 .displayName(guest.getFirstName() + " " + guest.getLastName())
                 .email(guest.getEmail())
                 .password(guest.getPassword())
@@ -105,6 +78,8 @@ public class Mapper {
                 .celebrityBlueChipIds(mapStringToSaviyntStringList(guest.getCelebrityBlueChipId()))
                 .webshopperId(guest.getWebshopperId())
                 .webshopperBrand(guest.getWebshopperBrand())
+                .passportNumber(guest.getPassportNumber())
+                .passportExpirationDate(guest.getPassportExpirationDate())
                 .vdsId(guest.getVdsId())
                 .propertyToSearch("systemUserName");
         
@@ -168,6 +143,12 @@ public class Mapper {
         if (contactInfo != null) {
             // TODO add phone country code here.
             builder.phoneNumber(contactInfo.getPhoneNumber());
+        }
+        
+        TravelDocumentInformation travelDocInfo = guest.getTravelDocumentInformation();
+        if (travelDocInfo != null) {
+            builder.passportNumber(travelDocInfo.getPassportNumber())
+                    .passportExpirationDate(travelDocInfo.getPassportExpirationDate());
         }
         
         WebshopperInformation webshopperInfo = guest.getWebshopperInformation();

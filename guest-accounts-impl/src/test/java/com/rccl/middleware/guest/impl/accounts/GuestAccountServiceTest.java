@@ -78,6 +78,13 @@ public class GuestAccountServiceTest {
     }
     
     @Test
+    public void sample() throws Exception {
+        Guest guest = createSampleGuest().build();
+        JsonNode json = createAccount.invokeWithHeaders(RequestHeader.DEFAULT, guest).toCompletableFuture().join().second();
+        
+    }
+    
+    @Test
     public void testPostGuestAccount() throws Exception {
         Guest guest = createSampleGuest().build();
         

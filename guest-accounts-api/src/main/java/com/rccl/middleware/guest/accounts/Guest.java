@@ -5,6 +5,7 @@ import com.lightbend.lagom.serialization.Jsonable;
 import com.rccl.middleware.common.header.Header;
 import com.rccl.middleware.common.validation.validator.Birthdate;
 import com.rccl.middleware.common.validation.validator.Brand;
+import com.rccl.middleware.common.validation.validator.DateFormat;
 import com.rccl.middleware.common.validation.validator.GuestAccountPassword;
 import com.rccl.middleware.common.validation.validator.ValidatorConstants;
 import lombok.Builder;
@@ -75,33 +76,42 @@ public class Guest implements Jsonable {
     @Valid
     TermsAndConditionsAgreement termsAndConditionsAgreement;
     
-    @Pattern(regexp = "\\d*", message = "Consumer ID must be in numeric format.", groups = UpdateChecks.class)
+    @Pattern(regexp = "\\d*", message = "Consumer ID must be in numeric format.", groups = DefaultChecks.class)
     String consumerId;
     
-    @Pattern(regexp = "\\d*", message = "Crown and Anchor Loyalty ID must be in numeric format.")
+    @Pattern(regexp = "\\d*", message = "Crown and Anchor Loyalty ID must be in numeric format.",
+            groups = DefaultChecks.class)
     String crownAndAnchorId;
     
-    @Pattern(regexp = "\\d*", message = "Captains Club Loyalty ID must be in numeric format.")
+    @Pattern(regexp = "\\d*", message = "Captains Club Loyalty ID must be in numeric format.",
+            groups = DefaultChecks.class)
     String captainsClubId;
     
-    @Pattern(regexp = "\\d*", message = "Azamara Loyalty ID must be in numeric format.")
+    @Pattern(regexp = "\\d*", message = "Azamara Loyalty ID must be in numeric format.", groups = DefaultChecks.class)
     String azamaraLoyaltyId;
     
-    @Pattern(regexp = "\\d*", message = "Club Royale Loyalty ID must be in numeric format.")
+    @Pattern(regexp = "\\d*", message = "Club Royale Loyalty ID must be in numeric format.",
+            groups = DefaultChecks.class)
     String clubRoyaleId;
     
-    @Pattern(regexp = "\\d*", message = "Celebrity Blue Chip Loyalty ID must be in numeric format.")
+    @Pattern(regexp = "\\d*", message = "Celebrity Blue Chip Loyalty ID must be in numeric format.",
+            groups = DefaultChecks.class)
     String celebrityBlueChipId;
     
-    @Pattern(regexp = "\\d*", message = "Webshopper ID must be in numeric format.", groups = UpdateChecks.class)
+    @Pattern(regexp = "\\d*", message = "Webshopper ID must be in numeric format.", groups = DefaultChecks.class)
     String webshopperId;
     
-    @Brand(groups = UpdateChecks.class)
+    @Brand(groups = DefaultChecks.class)
     Character webshopperBrand;
     
     @NotNull(message = "At least one optin is required.", groups = CreateChecks.class)
     @Valid
     List<Optin> optins;
+    
+    String passportNumber;
+    
+    @DateFormat
+    String passportExpirationDate;
     
     public interface CreateChecks extends DefaultChecks {
         // Validation group interface.

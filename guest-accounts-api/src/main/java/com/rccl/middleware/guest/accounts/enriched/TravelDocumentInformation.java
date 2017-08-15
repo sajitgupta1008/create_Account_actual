@@ -12,7 +12,7 @@ public class TravelDocumentInformation {
     
     String passportNumber;
     
-    @DateFormat(message = "The date must follow ISO-8601 format(yyyyMMdd).")
+    @DateFormat
     String passportExpirationDate;
     
     @Pattern(regexp = "[A-Za-z]{3}", message = "The citizenship country code "
