@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.lightbend.lagom.javadsl.api.ServiceCall;
 import com.lightbend.lagom.javadsl.api.broker.Topic;
-import com.lightbend.lagom.javadsl.api.transport.RequestHeader;
 import com.lightbend.lagom.javadsl.api.transport.ResponseHeader;
 import com.lightbend.lagom.javadsl.api.transport.TransportErrorCode;
 import com.lightbend.lagom.javadsl.broker.TopicProducer;
@@ -43,10 +42,8 @@ import com.rccl.middleware.saviynt.api.SaviyntGuest;
 import com.rccl.middleware.saviynt.api.SaviyntService;
 import com.rccl.middleware.saviynt.api.exceptions.SaviyntExceptionFactory;
 import org.apache.commons.lang3.StringUtils;
-import org.mockito.internal.matchers.Not;
 
 import javax.inject.Inject;
-import javax.xml.ws.Response;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
