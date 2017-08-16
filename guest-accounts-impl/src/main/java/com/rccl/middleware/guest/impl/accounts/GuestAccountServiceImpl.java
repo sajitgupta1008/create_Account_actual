@@ -164,7 +164,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
             CompletionStage<NotUsed> updateAccountService = CompletableFuture.completedFuture(NotUsed.getInstance());
             Guest.GuestBuilder guestBuilder = Mapper.mapEnrichedGuestToGuest(enrichedGuest);
             
-            if (guestBuilder.build().equals(Guest.builder().build())) {
+            if (!guestBuilder.build().equals(Guest.builder().build())) {
                 final Guest guest = guestBuilder
                         .header(enrichedGuest.getHeader())
                         .vdsId(enrichedGuest.getVdsId())
@@ -176,7 +176,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                     CompletableFuture.completedFuture(TextNode.valueOf(enrichedGuest.getVdsId()));
             Profile.ProfileBuilder profileBuilder = Mapper.mapEnrichedGuestToProfile(enrichedGuest);
             
-            if (profileBuilder.build().equals(Profile.builder().build())) {
+            if (!profileBuilder.build().equals(Profile.builder().build())) {
                 final Profile profile = profileBuilder.vdsId(enrichedGuest.getVdsId()).build();
                 updateProfileService = guestProfilesService.updateProfile().invoke(profile);
             }
