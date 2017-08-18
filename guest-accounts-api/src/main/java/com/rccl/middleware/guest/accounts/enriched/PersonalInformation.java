@@ -1,5 +1,6 @@
 package com.rccl.middleware.guest.accounts.enriched;
 
+import com.lightbend.lagom.serialization.Jsonable;
 import com.rccl.middleware.common.validation.validator.Birthdate;
 import com.rccl.middleware.guestprofiles.models.Gender;
 import lombok.Builder;
@@ -10,7 +11,7 @@ import javax.validation.constraints.Size;
 
 @Builder
 @Value
-public class PersonalInformation {
+public class PersonalInformation implements Jsonable {
     
     @Pattern(regexp = "^(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]",
             message = "A valid avatar URL path is required, if being provided.")
