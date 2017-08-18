@@ -57,5 +57,15 @@ public class InvalidGuestException extends MiddlewareTransportException {
         public void setValidationErrors(Map<String, String> validationErrors) {
             this.validationErrors = validationErrors;
         }
+        
+        @Override
+        public boolean equals(Object o) {
+            return super.equals(o);
+        }
+        
+        @Override
+        public int hashCode() {
+            return super.hashCode();
+        }
     }
 }
