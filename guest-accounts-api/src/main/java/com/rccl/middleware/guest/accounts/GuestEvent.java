@@ -17,6 +17,7 @@ public interface GuestEvent {
     @Value
     @JsonTypeName("created")
     final class AccountCreated implements GuestEvent {
+        
         private final Guest guest;
         
         @JsonCreator
@@ -28,6 +29,7 @@ public interface GuestEvent {
     @Value
     @JsonTypeName("updated")
     final class AccountUpdated implements GuestEvent {
+        
         private final EnrichedGuest guest;
         
         @JsonCreator

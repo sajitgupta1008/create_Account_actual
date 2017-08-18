@@ -61,7 +61,7 @@ public class GuestAccountEmailValidationServiceTest {
         
         assertNotNull(response);
         assertNotNull(response.get("status"));
-        assertTrue(response.get("status").asText().equals(AccountStatusEnum.DOESTNOTEXIST.value()));
+        assertTrue(response.get("status").asText().equals(AccountStatusEnum.DOES_NOT_EXIST.value()));
     }
     
     @Test(expected = ExecutionException.class)

@@ -356,7 +356,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         if (cause instanceof SaviyntExceptionFactory.ExistingGuestException
                                 || cause instanceof SaviyntExceptionFactory.NoSuchGuestException) {
                             ObjectNode errorJson = OBJECT_MAPPER.createObjectNode();
-                            errorJson.put(STATUS, AccountStatusEnum.DOESTNOTEXIST.value());
+                            errorJson.put(STATUS, AccountStatusEnum.DOES_NOT_EXIST.value());
                             return errorJson;
                         }
                         
@@ -377,7 +377,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                     && response.get("SavCode").asText().contains("Sav000")) {
                                 jsonResponse.put(STATUS, AccountStatusEnum.EXISTING.value());
                             } else {
-                                jsonResponse.put(STATUS, AccountStatusEnum.NEEDSTOBEMIGRATED.value());
+                                jsonResponse.put(STATUS, AccountStatusEnum.NEEDS_TO_BE_MIGRATED.value());
                             }
                         }
                         
