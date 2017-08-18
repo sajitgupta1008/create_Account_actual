@@ -116,7 +116,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         String message = response.get("message").asText();
                         Pattern pattern = Pattern.compile("vdsid=[a-zA-Z0-9]*");
                         Matcher matcher = pattern.matcher(message);
-                        // matcher.find();
+                        matcher.find();
+                        
                         String vdsId = matcher.group(0).substring(6);
                         
                         persistentEntityRegistry.refFor(GuestAccountEntity.class, guest.getEmail())
