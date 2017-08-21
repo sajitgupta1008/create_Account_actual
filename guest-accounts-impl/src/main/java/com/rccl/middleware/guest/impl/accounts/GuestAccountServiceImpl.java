@@ -17,10 +17,10 @@ import com.rccl.middleware.common.exceptions.MiddlewareExceptionMessage;
 import com.rccl.middleware.common.exceptions.MiddlewareTransportException;
 import com.rccl.middleware.common.validation.MiddlewareValidation;
 import com.rccl.middleware.common.validation.validator.ValidatorConstants;
-import com.rccl.middleware.forgerock.api.ForgeRockCredentials;
 import com.rccl.middleware.forgerock.api.ForgeRockService;
-import com.rccl.middleware.forgerock.api.LoginStatusEnum;
 import com.rccl.middleware.forgerock.api.exceptions.ForgeRockExceptionFactory;
+import com.rccl.middleware.forgerock.api.requests.ForgeRockCredentials;
+import com.rccl.middleware.forgerock.api.requests.LoginStatusEnum;
 import com.rccl.middleware.guest.accounts.AccountCredentials;
 import com.rccl.middleware.guest.accounts.AccountStatusEnum;
 import com.rccl.middleware.guest.accounts.Guest;
@@ -38,16 +38,16 @@ import com.rccl.middleware.guest.optin.OptinType;
 import com.rccl.middleware.guest.optin.Optins;
 import com.rccl.middleware.guestprofiles.GuestProfilesService;
 import com.rccl.middleware.guestprofiles.models.Profile;
-import com.rccl.middleware.saviynt.api.SaviyntGuest;
 import com.rccl.middleware.saviynt.api.SaviyntService;
 import com.rccl.middleware.saviynt.api.exceptions.SaviyntExceptionFactory;
+import com.rccl.middleware.saviynt.api.requests.SaviyntGuest;
+import com.rccl.middleware.saviynt.api.responses.AccountStatus;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.regex.Matcher;
@@ -113,7 +113,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                     .thenCompose(response -> {
                         
                         //TODO replace this with the vdsId attribute when available
-                        String message = response.get("message").asText();
+                        String message = response.getMessage();
                         Pattern pattern = Pattern.compile("vdsid=[a-zA-Z0-9]*");
                         Matcher matcher = pattern.matcher(message);
                         matcher.find();
@@ -322,13 +322,13 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         
                         throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
                     })
-                    .thenApply(jsonNode -> {
+                    .thenApply(mobileAuthTokens -> {
                         ObjectNode jsonResponse = OBJECT_MAPPER.createObjectNode();
                         jsonResponse.put("accountLoginStatus", LoginStatusEnum.NEW_ACCOUNT_AUTHENTICATED.value());
-                        jsonResponse.put("accessToken", jsonNode.get("access_token").asText());
-                        jsonResponse.put("refreshToken", jsonNode.get("refresh_token").asText());
-                        jsonResponse.put("openIdToken", jsonNode.get("id_token").asText());
-                        jsonResponse.put("tokenExpiration", jsonNode.get("expires_in").asText());
+                        jsonResponse.put("accessToken", mobileAuthTokens.getAccessToken());
+                        jsonResponse.put("refreshToken", mobileAuthTokens.getRefreshToken());
+                        jsonResponse.put("openIdToken", mobileAuthTokens.getIdToken());
+                        jsonResponse.put("tokenExpiration", mobileAuthTokens.getExpiration());
                         
                         return Pair.create(ResponseHeader.OK.withStatus(200), jsonResponse);
                     });
@@ -338,7 +338,6 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     
     @Override
     public HeaderServiceCall<NotUsed, JsonNode> validateEmail(String email) {
-        final String STATUS = "status";
         return (requestHeader, notUsed) -> {
             
             Pattern pattern = Pattern.compile(ValidatorConstants.EMAIL_REGEXP);
@@ -348,16 +347,16 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                 throw new InvalidEmailFormatException();
             }
             
-            return saviyntService.getGuestAccount("email", Optional.of(email), Optional.empty())
-                    .invoke()
+            return saviyntService.getAccountStatus(email, "email", "False").invoke()
                     .exceptionally(exception -> {
                         Throwable cause = exception.getCause();
                         
-                        if (cause instanceof SaviyntExceptionFactory.ExistingGuestException
-                                || cause instanceof SaviyntExceptionFactory.NoSuchGuestException) {
-                            ObjectNode errorJson = OBJECT_MAPPER.createObjectNode();
-                            errorJson.put(STATUS, AccountStatusEnum.DOESTNOTEXIST.value());
-                            return errorJson;
+                        // in case of non existing account, return an AccountStatus with DoesNotExist message instead.
+                        // So that the service will return a 200 with a status of "DoesNotExist"
+                        if (cause instanceof SaviyntExceptionFactory.ExistingGuestException) {
+                            return AccountStatus.builder()
+                                    .message(AccountStatusEnum.DOESTNOTEXIST.value())
+                                    .build();
                         }
                         
                         if (cause instanceof SaviyntExceptionFactory.InvalidEmailFormatException) {
@@ -366,23 +365,19 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         
                         throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
                     })
-                    .thenApply(response -> {
-                        ObjectNode jsonResponse = OBJECT_MAPPER.createObjectNode();
+                    .thenApply(accountStatus -> {
+                        ObjectNode response = OBJECT_MAPPER.createObjectNode();
+                        AccountStatusEnum accountStatusEnum = AccountStatusEnum.fromValue(accountStatus.getMessage());
                         
-                        //return response from exceptionally block if present.
-                        if (response.get(STATUS) != null) {
-                            jsonResponse = response.deepCopy();
+                        String status;
+                        
+                        if (StringUtils.isNotBlank(accountStatus.getMessage()) && accountStatusEnum != null) {
+                            status = accountStatusEnum.value();
                         } else {
-                            if (response.get("SavCode") != null
-                                    && response.get("SavCode").asText().contains("Sav000")) {
-                                jsonResponse.put(STATUS, AccountStatusEnum.EXISTING.value());
-                            } else {
-                                jsonResponse.put(STATUS, AccountStatusEnum.NEEDSTOBEMIGRATED.value());
-                            }
+                            status = AccountStatusEnum.DOESTNOTEXIST.value();
                         }
                         
-                        ResponseHeader responseHeader = ResponseHeader.OK.withStatus(200);
-                        return new Pair<>(responseHeader, jsonResponse);
+                        return Pair.create(ResponseHeader.OK, response.put("status", status));
                     });
         };
     }

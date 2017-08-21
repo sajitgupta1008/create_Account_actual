@@ -12,8 +12,8 @@ import com.rccl.middleware.guest.accounts.enriched.WebshopperInformation;
 import com.rccl.middleware.guest.optin.Optin;
 import com.rccl.middleware.guest.optin.Optins;
 import com.rccl.middleware.guestprofiles.models.Profile;
-import com.rccl.middleware.saviynt.api.SaviyntGuest;
-import com.rccl.middleware.saviynt.api.SaviyntUserType;
+import com.rccl.middleware.saviynt.api.requests.SaviyntGuest;
+import com.rccl.middleware.saviynt.api.requests.SaviyntUserType;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Arrays;
