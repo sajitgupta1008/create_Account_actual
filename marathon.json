@@ -26,7 +26,7 @@
     "CASSANDRA_PORT": "8042",
     "VERIFY_LOYALTY_KAFKA_TOPIC_NAME": "guest_accounts_verify_loyalty_dev_v1",
     "CASSANDRA_KEYSPACE": "guest_accounts",
-    "HTTP_PORT": "9002"
+    "HTTP_PORT": "9022"
   },
   "instances": 2,
   "cpus": 0.5,
@@ -46,7 +46,7 @@
       "forcePullImage": true,
       "privileged": false,
       "portMappings": [{
-        "containerPort": 9010,
+        "containerPort": 9022,
         "protocol": "tcp",
         "name": "guest-accounts-lb",
         "servicePort": 0
