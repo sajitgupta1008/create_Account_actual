@@ -19,8 +19,11 @@ import com.rccl.middleware.common.validation.MiddlewareValidation;
 import com.rccl.middleware.common.validation.validator.ValidatorConstants;
 import com.rccl.middleware.forgerock.api.ForgeRockService;
 import com.rccl.middleware.forgerock.api.exceptions.ForgeRockExceptionFactory;
+import com.rccl.middleware.forgerock.api.jwt.ForgeRockJWTDecoder;
+import com.rccl.middleware.forgerock.api.jwt.OpenIdTokenInformation;
 import com.rccl.middleware.forgerock.api.requests.ForgeRockCredentials;
 import com.rccl.middleware.forgerock.api.requests.LoginStatusEnum;
+import com.rccl.middleware.forgerock.api.responses.MobileAuthenticationTokens;
 import com.rccl.middleware.guest.accounts.AccountCredentials;
 import com.rccl.middleware.guest.accounts.AccountStatusEnum;
 import com.rccl.middleware.guest.accounts.Guest;
@@ -50,6 +53,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -299,16 +303,6 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                     .password(request.getPassword())
                     .build();
             
-            // TODO remove these once the migration scenarios are finalized.
-            ObjectNode mockResponse = OBJECT_MAPPER.createObjectNode();
-            if ("legacyuser@rccl.com".equalsIgnoreCase(request.getUsername())) {
-                mockResponse.put("accountLoginStatus", LoginStatusEnum.LEGACY_ACCOUNT_VERIFIED.value());
-                return CompletableFuture.completedFuture(Pair.create(ResponseHeader.OK, mockResponse));
-            } else if ("temporarypassword@rccl.com".equalsIgnoreCase(request.getUsername())) {
-                mockResponse.put("accountLoginStatus", LoginStatusEnum.NEW_ACCOUNT_TEMPORARY_PASSWORD.value());
-                return CompletableFuture.completedFuture(Pair.create(ResponseHeader.OK, mockResponse));
-            }
-            
             return forgeRockService.authenticateMobileUser()
                     .invoke(forgeRockCredentials)
                     .exceptionally(exception -> {
@@ -317,6 +311,18 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         if (cause instanceof ForgeRockExceptionFactory.AuthenticationException) {
                             ForgeRockExceptionFactory.AuthenticationException ex =
                                     (ForgeRockExceptionFactory.AuthenticationException) cause;
+                            
+                            // if the error description contains ""Migrated MOBILE", then decrypt the message to
+                            // get the webshopper information
+                            if (StringUtils.contains(ex.getErrorDescription(), "Migrated MOBILE")) {
+                                return MobileAuthenticationTokens.builder()
+                                        .webshopperId("")
+                                        .webshopperUsername("")
+                                        .webshopperFirstName("")
+                                        .webshopperLastName("")
+                                        .build();
+                            }
+                            
                             throw new GuestAuthenticationException(ex.getErrorDescription());
                         }
                         
@@ -324,11 +330,50 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                     })
                     .thenApply(mobileAuthTokens -> {
                         ObjectNode jsonResponse = OBJECT_MAPPER.createObjectNode();
-                        jsonResponse.put("accountLoginStatus", LoginStatusEnum.NEW_ACCOUNT_AUTHENTICATED.value());
-                        jsonResponse.put("accessToken", mobileAuthTokens.getAccessToken());
-                        jsonResponse.put("refreshToken", mobileAuthTokens.getRefreshToken());
-                        jsonResponse.put("openIdToken", mobileAuthTokens.getIdToken());
-                        jsonResponse.put("tokenExpiration", mobileAuthTokens.getExpiration());
+                        
+                        if (StringUtils.isNotBlank(mobileAuthTokens.getAccessToken())) {
+                            jsonResponse.put("accountLoginStatus",
+                                    LoginStatusEnum.NEW_ACCOUNT_AUTHENTICATED.value())
+                                    .put("accessToken", mobileAuthTokens.getAccessToken())
+                                    .put("refreshToken", mobileAuthTokens.getRefreshToken())
+                                    .put("openIdToken", mobileAuthTokens.getIdToken())
+                                    .put("tokenExpiration", mobileAuthTokens.getExpiration());
+                            
+                            OpenIdTokenInformation decryptedInfo = ForgeRockJWTDecoder
+                                    .decodeJwtToken(mobileAuthTokens.getIdToken(), OpenIdTokenInformation.class);
+                            
+                            if (decryptedInfo != null) {
+                                jsonResponse.put("vdsId", decryptedInfo.getVdsId())
+                                        .put("firstName", decryptedInfo.getFirstName())
+                                        .put("lastName", decryptedInfo.getLastName())
+                                        .put("email", decryptedInfo.getEmail())
+                                        .put("birthdate", decryptedInfo.getBirthdate());
+                            }
+                            
+                        } else if (StringUtils.isNotBlank(mobileAuthTokens.getWebshopperId())) {
+                            jsonResponse.put("accountLoginStatus",
+                                    LoginStatusEnum.LEGACY_ACCOUNT_VERIFIED.value())
+                                    .put("webshopperId", mobileAuthTokens.getWebshopperId())
+                                    .put("webshopperUsername", mobileAuthTokens.getWebshopperUsername())
+                                    .put("firstName", mobileAuthTokens.getWebshopperFirstName())
+                                    .put("lastName", mobileAuthTokens.getWebshopperLastName());
+                            
+                        } else { // temp password scenario
+                            try {
+                                AccountStatus accountStatus = saviyntService
+                                        .getAccountStatus(request.getUsername(), "email", "True")
+                                        .invoke().toCompletableFuture().get(20, TimeUnit.SECONDS);
+                                
+                                jsonResponse.put("accountLoginStatus",
+                                        LoginStatusEnum.NEW_ACCOUNT_TEMPORARY_PASSWORD.value())
+                                        .put("vdsId", accountStatus.getVdsId())
+                                        .put("email", request.getUsername())
+                                        .put("token", accountStatus.getToken());
+                                
+                            } catch (Exception e) {
+                                throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), e);
+                            }
+                        }
                         
                         return Pair.create(ResponseHeader.OK.withStatus(200), jsonResponse);
                     });
@@ -437,6 +482,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
      * @param guest the {@link Guest} model
      * @return {@link Optins} with enrollment to all brands and all optin categories.
      */
+    
     private Optins generateCreateOptinsRequest(Guest guest) {
         List<OptinType> optinTypeList = new ArrayList<>();
         guest.getOptins().forEach(optin ->
