@@ -28,6 +28,7 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
 
@@ -78,20 +79,15 @@ public class GuestAccountServiceTest {
     }
     
     @Test
-    public void sample() throws Exception {
-        Guest guest = createSampleGuest().build();
-        JsonNode json = createAccount.invokeWithHeaders(RequestHeader.DEFAULT, guest).toCompletableFuture().join().second();
-        
-    }
-    
-    @Test
     public void testPostGuestAccount() throws Exception {
         Guest guest = createSampleGuest().build();
         
-        Pair<ResponseHeader, JsonNode> response = createAccount.invokeWithHeaders(RequestHeader.DEFAULT, guest).toCompletableFuture().get(5, SECONDS);
+        Pair<ResponseHeader, JsonNode> response = createAccount
+                .invokeWithHeaders(RequestHeader.DEFAULT, guest).toCompletableFuture().get(5, SECONDS);
         
-        assertTrue("The status code for success should be 201 Created.", response.first().status() == 201);
-        assertEquals("G3396535", response.second().get("vdsId").asText());
+        assertTrue("The status code for success should be 201 Created.",
+                response.first().status() == 201);
+        assertEquals("G8038782", response.second().get("vdsId").asText());
         
         assertTrue(response.second().get("accessToken") != null);
         assertTrue(response.second().get("openIdToken") != null);
@@ -105,7 +101,9 @@ public class GuestAccountServiceTest {
         try {
             createAccount.invokeWithHeaders(RequestHeader.DEFAULT, guest).toCompletableFuture().get(5, SECONDS);
         } catch (Exception e) {
-            assertTrue("The exception should be an instance of SaviyntExceptionFactory.ExistingGuestException.", e instanceof SaviyntExceptionFactory.ExistingGuestException);
+            assertTrue("The exception should be an instance of "
+                            + "SaviyntExceptionFactory.ExistingGuestException.",
+                    e instanceof SaviyntExceptionFactory.ExistingGuestException);
         }
     }
     
@@ -160,7 +158,8 @@ public class GuestAccountServiceTest {
         shorthandInvokeExpectingWithValidationExceptionMessage(emptyVersionGuest);
         
         // Test missing agreement time.
-        TermsAndConditionsAgreement emptyAcceptTime = TermsAndConditionsAgreement.builder().version("1.0").acceptTime(null).build();
+        TermsAndConditionsAgreement emptyAcceptTime = TermsAndConditionsAgreement.builder()
+                .version("1.0").acceptTime(null).build();
         Guest emptyAcceptTimeGuest = createSampleGuest().termsAndConditionsAgreement(emptyAcceptTime).build();
         shorthandInvokeExpectingWithValidationExceptionMessage(emptyAcceptTimeGuest);
     }
@@ -190,11 +189,13 @@ public class GuestAccountServiceTest {
         try {
             createAccount.invokeWithHeaders(RequestHeader.DEFAULT, guest);
         } catch (Exception e) {
-            assertTrue("The exception should be of type InvalidGuestException.", e instanceof MiddlewareValidationException);
+            assertTrue("The exception should be of type InvalidGuestException.",
+                    e instanceof MiddlewareValidationException);
             
             MiddlewareValidationException ige = (MiddlewareValidationException) e;
             
-            assertTrue("The exception's status code should be 422.", ige.exceptionMessage().getStatusCode() == 422);
+            assertTrue("The exception's status code should be 422.",
+                    ige.exceptionMessage().getStatusCode() == 422);
             
             Map<String, String> validationErrors = ige.exceptionMessage().getValidationErrors();
             
@@ -241,7 +242,8 @@ public class GuestAccountServiceTest {
         
         builder.securityQuestions(Arrays.asList(sq1, sq2));
         
-        builder.optins(Arrays.asList(Optin.builder().type("EMAIL").flag("Y").acceptTime("20170706022122PM").build()));
+        builder.optins(Collections.singletonList(Optin.builder()
+                .type("EMAIL").flag("Y").acceptTime("20170706022122PM").build()));
         
         return builder;
     }
