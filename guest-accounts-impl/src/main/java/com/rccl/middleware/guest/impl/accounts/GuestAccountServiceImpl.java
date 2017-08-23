@@ -115,12 +115,13 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
                     })
                     .thenCompose(response -> {
-                        
-                        //TODO replace this with the vdsId attribute when available
+
+                        // TODO: Replace this with the vdsId attribute when available.
                         String message = response.getMessage();
                         Pattern pattern = Pattern.compile("vdsid=[a-zA-Z0-9]*");
                         Matcher matcher = pattern.matcher(message);
                         matcher.find();
+                        
                         String vdsId = matcher.group(0).substring(6);
                         
                         persistentEntityRegistry.refFor(GuestAccountEntity.class, guest.getEmail())
@@ -403,12 +404,12 @@ public class GuestAccountServiceImpl implements GuestAccountService {
             return saviyntService.getAccountStatus(email, "email", "False").invoke()
                     .exceptionally(exception -> {
                         Throwable cause = exception.getCause();
-                        
+
                         // in case of non existing account, return an AccountStatus with DoesNotExist message instead.
                         // So that the service will return a 200 with a status of "DoesNotExist"
                         if (cause instanceof SaviyntExceptionFactory.ExistingGuestException) {
                             return AccountStatus.builder()
-                                    .message(AccountStatusEnum.DOESTNOTEXIST.value())
+                                    .message(AccountStatusEnum.DOES_NOT_EXIST.value())
                                     .build();
                         }
                         
@@ -427,7 +428,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         if (StringUtils.isNotBlank(accountStatus.getMessage()) && accountStatusEnum != null) {
                             status = accountStatusEnum.value();
                         } else {
-                            status = AccountStatusEnum.DOESTNOTEXIST.value();
+                            status = AccountStatusEnum.DOES_NOT_EXIST.value();
                         }
                         
                         return Pair.create(ResponseHeader.OK, response.put("status", status));

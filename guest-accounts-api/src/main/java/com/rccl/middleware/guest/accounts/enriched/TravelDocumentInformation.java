@@ -1,5 +1,6 @@
 package com.rccl.middleware.guest.accounts.enriched;
 
+import com.lightbend.lagom.serialization.Jsonable;
 import com.rccl.middleware.common.validation.validator.DateFormat;
 import lombok.Builder;
 import lombok.Value;
@@ -8,7 +9,7 @@ import javax.validation.constraints.Pattern;
 
 @Builder
 @Value
-public class TravelDocumentInformation {
+public class TravelDocumentInformation implements Jsonable {
     
     String passportNumber;
     

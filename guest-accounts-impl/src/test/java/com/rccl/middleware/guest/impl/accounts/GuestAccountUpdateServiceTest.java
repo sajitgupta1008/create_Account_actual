@@ -27,6 +27,7 @@ import com.rccl.middleware.saviynt.api.SaviyntServiceImplStub;
 import com.rccl.middleware.saviynt.api.exceptions.SaviyntExceptionFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -37,6 +38,7 @@ import static com.lightbend.lagom.javadsl.testkit.ServiceTest.startServer;
 import static org.junit.Assert.assertTrue;
 import static play.inject.Bindings.bind;
 
+@Ignore
 public class GuestAccountUpdateServiceTest {
     
     private static volatile ServiceTest.TestServer testServer;

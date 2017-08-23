@@ -10,13 +10,13 @@ import lombok.Value;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type", defaultImpl = Void.class)
 @JsonSubTypes({
         @JsonSubTypes.Type(GuestEvent.AccountCreated.class),
-        @JsonSubTypes.Type(GuestEvent.AccountUpdated.class)
-})
+        @JsonSubTypes.Type(GuestEvent.AccountUpdated.class)})
 public interface GuestEvent {
     
     @Value
     @JsonTypeName("created")
     final class AccountCreated implements GuestEvent {
+        
         private final Guest guest;
         
         @JsonCreator
@@ -28,6 +28,7 @@ public interface GuestEvent {
     @Value
     @JsonTypeName("updated")
     final class AccountUpdated implements GuestEvent {
+        
         private final EnrichedGuest guest;
         
         @JsonCreator

@@ -40,12 +40,12 @@ public interface GuestAccountService extends Service {
     default Descriptor descriptor() {
         return named("guestAccounts")
                 .withCalls(
-                        restCall(POST, "/v1/guestAccounts", this::createAccount),
-                        restCall(POST, "/v1/guestAccounts/", this::createAccount),
-                        restCall(PUT, "/v1/guestAccounts/enriched", this::updateAccountEnriched),
-                        restCall(POST, "/v1/guestAccounts/login", this::authenticateUser),
-                        restCall(GET, "/v1/guestAccounts/:email/validation", this::validateEmail),
-                        restCall(GET, "/v1/guestAccounts/health", this::healthCheck)
+                        restCall(POST, "/guestAccounts", this::createAccount),
+                        restCall(POST, "/guestAccounts/", this::createAccount),
+                        restCall(PUT, "/guestAccounts/enriched", this::updateAccountEnriched),
+                        restCall(POST, "/guestAccounts/login", this::authenticateUser),
+                        restCall(GET, "/guestAccounts/:email/validation", this::validateEmail),
+                        restCall(GET, "/guestAccounts/health", this::healthCheck)
                 )
                 .withTopics(
                         topic(LINK_LOYALTY_KAFKA_TOPIC, this::linkLoyaltyTopic),
