@@ -48,6 +48,7 @@ import com.rccl.middleware.saviynt.api.responses.AccountStatus;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.inject.Inject;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -308,15 +309,20 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                             ForgeRockExceptionFactory.AuthenticationException ex =
                                     (ForgeRockExceptionFactory.AuthenticationException) cause;
                             
-                            // if the error description contains "Migrated MOBILE", then decrypt the message to
+                            // if the error description contains "shopperid", then decrypt the message to
                             // get the webshopper information
-                            if (StringUtils.contains(ex.getErrorDescription(), "Migrated MOBILE")) {
-                                return MobileAuthenticationTokens.builder()
-                                        .webshopperId("")
-                                        .webshopperUsername("")
-                                        .webshopperFirstName("")
-                                        .webshopperLastName("")
-                                        .build();
+                            if (StringUtils.contains(ex.getErrorDescription(), "shopperid")) {
+                                try {
+                                    String decodedString = URLDecoder.decode(ex.getErrorDescription(), "UTF-8");
+                                    Pattern pattern = Pattern.compile("\\{.*\\}");
+                                    Matcher matcher = pattern.matcher(decodedString);
+                                    matcher.find();
+                                    
+                                    return OBJECT_MAPPER.readValue(matcher.group(0), MobileAuthenticationTokens.class);
+                                    
+                                } catch (Exception e) {
+                                    throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), e);
+                                }
                             }
                             
                             throw new GuestAuthenticationException(ex.getErrorDescription());
@@ -347,13 +353,13 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                         .put("birthdate", decryptedInfo.getBirthdate());
                             }
                             
-                        } else if (StringUtils.isNotBlank(mobileAuthTokens.getWebshopperId())) {
+                        } else if (StringUtils.isNotBlank(mobileAuthTokens.getWebShopperId())) {
                             jsonResponse.put(ACCOUNT_LOGIN_STATUS,
                                     LoginStatusEnum.LEGACY_ACCOUNT_VERIFIED.value())
-                                    .put("webshopperId", mobileAuthTokens.getWebshopperId())
-                                    .put("webshopperUsername", mobileAuthTokens.getWebshopperUsername())
-                                    .put("webshopperFirstName", mobileAuthTokens.getWebshopperFirstName())
-                                    .put("webshopperLastName", mobileAuthTokens.getWebshopperLastName());
+                                    .put("webShopperId", mobileAuthTokens.getWebShopperId())
+                                    .put("webShopperUsername", mobileAuthTokens.getWebShopperUsername())
+                                    .put("webShopperFirstName", mobileAuthTokens.getWebShopperFirstName())
+                                    .put("webShopperLastName", mobileAuthTokens.getWebShopperLastName());
                             
                         } else {
                             // in case of temporary password scenario, Saviynt AccountStatus service 
@@ -475,7 +481,6 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                     new Pair<>(loyalty.getEnrichedGuest(), eventOffset.second()));
                         }));
     }
-    
     
     /**
      * Populates {@link Optins} to register the guest email to all brands and all categories of optins specified in

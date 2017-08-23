@@ -87,7 +87,7 @@ public class GuestAccountServiceTest {
         
         assertTrue("The status code for success should be 201 Created.",
                 response.first().status() == 201);
-        assertEquals("G3396535", response.second().get("vdsId").asText());
+        assertEquals("G8038782", response.second().get("vdsId").asText());
         
         assertTrue(response.second().get("accessToken") != null);
         assertTrue(response.second().get("openIdToken") != null);
