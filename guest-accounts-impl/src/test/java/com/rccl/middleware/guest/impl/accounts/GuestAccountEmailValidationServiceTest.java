@@ -8,6 +8,7 @@ import com.rccl.middleware.saviynt.api.SaviyntService;
 import com.rccl.middleware.saviynt.api.SaviyntServiceImplStub;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
@@ -19,6 +20,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static play.inject.Bindings.bind;
 
+@Ignore
 public class GuestAccountEmailValidationServiceTest {
     
     private static volatile ServiceTest.TestServer testServer;

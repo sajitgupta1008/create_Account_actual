@@ -33,6 +33,7 @@ import com.rccl.middleware.saviynt.api.SaviyntService;
 import com.rccl.middleware.saviynt.api.SaviyntServiceImplStub;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import scala.concurrent.duration.FiniteDuration;
 
@@ -50,6 +51,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static play.inject.Bindings.bind;
 
+@Ignore
 public class GuestAccountMessageBrokerTest {
     
     private static ActorSystem system;
