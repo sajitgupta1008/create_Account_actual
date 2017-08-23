@@ -17,10 +17,13 @@ import com.rccl.middleware.common.exceptions.MiddlewareExceptionMessage;
 import com.rccl.middleware.common.exceptions.MiddlewareTransportException;
 import com.rccl.middleware.common.validation.MiddlewareValidation;
 import com.rccl.middleware.common.validation.validator.ValidatorConstants;
-import com.rccl.middleware.forgerock.api.ForgeRockCredentials;
 import com.rccl.middleware.forgerock.api.ForgeRockService;
-import com.rccl.middleware.forgerock.api.LoginStatusEnum;
 import com.rccl.middleware.forgerock.api.exceptions.ForgeRockExceptionFactory;
+import com.rccl.middleware.forgerock.api.jwt.ForgeRockJWTDecoder;
+import com.rccl.middleware.forgerock.api.jwt.OpenIdTokenInformation;
+import com.rccl.middleware.forgerock.api.requests.ForgeRockCredentials;
+import com.rccl.middleware.forgerock.api.requests.LoginStatusEnum;
+import com.rccl.middleware.forgerock.api.responses.MobileAuthenticationTokens;
 import com.rccl.middleware.guest.accounts.AccountCredentials;
 import com.rccl.middleware.guest.accounts.AccountStatusEnum;
 import com.rccl.middleware.guest.accounts.Guest;
@@ -38,16 +41,17 @@ import com.rccl.middleware.guest.optin.OptinType;
 import com.rccl.middleware.guest.optin.Optins;
 import com.rccl.middleware.guestprofiles.GuestProfilesService;
 import com.rccl.middleware.guestprofiles.models.Profile;
-import com.rccl.middleware.saviynt.api.SaviyntGuest;
 import com.rccl.middleware.saviynt.api.SaviyntService;
 import com.rccl.middleware.saviynt.api.exceptions.SaviyntExceptionFactory;
+import com.rccl.middleware.saviynt.api.requests.SaviyntGuest;
+import com.rccl.middleware.saviynt.api.responses.AccountStatus;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.inject.Inject;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.regex.Matcher;
@@ -111,9 +115,9 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
                     })
                     .thenCompose(response -> {
-                        
+
                         // TODO: Replace this with the vdsId attribute when available.
-                        String message = response.get("message").asText();
+                        String message = response.getMessage();
                         Pattern pattern = Pattern.compile("vdsid=[a-zA-Z0-9]*");
                         Matcher matcher = pattern.matcher(message);
                         matcher.find();
@@ -145,11 +149,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                             
                             return this.authenticateUser()
                                     .invokeWithHeaders(requestHeader, credentials)
-                                    .thenApply(jsonPair -> {
-                                        ObjectNode objNode = jsonPair.second().deepCopy();
-                                        objNode.put("vdsId", vdsId);
-                                        return Pair.create(ResponseHeader.OK.withStatus(201), objNode);
-                                    });
+                                    .thenApply(pair ->
+                                            Pair.create(ResponseHeader.OK.withStatus(201), pair.second()));
                         }
                         
                     });
@@ -300,16 +301,6 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                     .password(request.getPassword())
                     .build();
             
-            // TODO remove these once the migration scenarios are finalized.
-            ObjectNode mockResponse = OBJECT_MAPPER.createObjectNode();
-            if ("legacyuser@rccl.com".equalsIgnoreCase(request.getUsername())) {
-                mockResponse.put("accountLoginStatus", LoginStatusEnum.LEGACY_ACCOUNT_VERIFIED.value());
-                return CompletableFuture.completedFuture(Pair.create(ResponseHeader.OK, mockResponse));
-            } else if ("temporarypassword@rccl.com".equalsIgnoreCase(request.getUsername())) {
-                mockResponse.put("accountLoginStatus", LoginStatusEnum.NEW_ACCOUNT_TEMPORARY_PASSWORD.value());
-                return CompletableFuture.completedFuture(Pair.create(ResponseHeader.OK, mockResponse));
-            }
-            
             return forgeRockService.authenticateMobileUser()
                     .invoke(forgeRockCredentials)
                     .exceptionally(exception -> {
@@ -318,20 +309,82 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         if (cause instanceof ForgeRockExceptionFactory.AuthenticationException) {
                             ForgeRockExceptionFactory.AuthenticationException ex =
                                     (ForgeRockExceptionFactory.AuthenticationException) cause;
+                            
+                            // if the error description contains "shopperid", then decrypt the message to
+                            // get the webshopper information
+                            if (StringUtils.contains(ex.getErrorDescription(), "shopperid")) {
+                                try {
+                                    String decodedString = URLDecoder.decode(ex.getErrorDescription(), "UTF-8");
+                                    Pattern pattern = Pattern.compile("\\{.*\\}");
+                                    Matcher matcher = pattern.matcher(decodedString);
+                                    matcher.find();
+                                    
+                                    return OBJECT_MAPPER.readValue(matcher.group(0), MobileAuthenticationTokens.class);
+                                    
+                                } catch (Exception e) {
+                                    throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), e);
+                                }
+                            }
+                            
                             throw new GuestAuthenticationException(ex.getErrorDescription());
                         }
                         
                         throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
                     })
-                    .thenApply(jsonNode -> {
+                    .thenCompose(mobileAuthTokens -> {
                         ObjectNode jsonResponse = OBJECT_MAPPER.createObjectNode();
-                        jsonResponse.put("accountLoginStatus", LoginStatusEnum.NEW_ACCOUNT_AUTHENTICATED.value());
-                        jsonResponse.put("accessToken", jsonNode.get("access_token").asText());
-                        jsonResponse.put("refreshToken", jsonNode.get("refresh_token").asText());
-                        jsonResponse.put("openIdToken", jsonNode.get("id_token").asText());
-                        jsonResponse.put("tokenExpiration", jsonNode.get("expires_in").asText());
+                        final String ACCOUNT_LOGIN_STATUS = "accountLoginStatus";
                         
-                        return Pair.create(ResponseHeader.OK.withStatus(200), jsonResponse);
+                        if (StringUtils.isNotBlank(mobileAuthTokens.getAccessToken())) {
+                            jsonResponse.put(ACCOUNT_LOGIN_STATUS,
+                                    LoginStatusEnum.NEW_ACCOUNT_AUTHENTICATED.value())
+                                    .put("accessToken", mobileAuthTokens.getAccessToken())
+                                    .put("refreshToken", mobileAuthTokens.getRefreshToken())
+                                    .put("openIdToken", mobileAuthTokens.getIdToken())
+                                    .put("tokenExpiration", mobileAuthTokens.getExpiration());
+                            
+                            OpenIdTokenInformation decryptedInfo = ForgeRockJWTDecoder
+                                    .decodeJwtToken(mobileAuthTokens.getIdToken(), OpenIdTokenInformation.class);
+                            
+                            if (decryptedInfo != null) {
+                                jsonResponse.put("vdsId", decryptedInfo.getVdsId())
+                                        .put("firstName", decryptedInfo.getFirstName())
+                                        .put("lastName", decryptedInfo.getLastName())
+                                        .put("email", decryptedInfo.getEmail())
+                                        .put("birthdate", decryptedInfo.getBirthdate());
+                            }
+                            
+                        } else if (StringUtils.isNotBlank(mobileAuthTokens.getWebShopperId())) {
+                            jsonResponse.put(ACCOUNT_LOGIN_STATUS,
+                                    LoginStatusEnum.LEGACY_ACCOUNT_VERIFIED.value())
+                                    .put("webShopperId", mobileAuthTokens.getWebShopperId())
+                                    .put("webShopperUsername", mobileAuthTokens.getWebShopperUsername())
+                                    .put("webShopperFirstName", mobileAuthTokens.getWebShopperFirstName())
+                                    .put("webShopperLastName", mobileAuthTokens.getWebShopperLastName());
+                            
+                        } else {
+                            // in case of temporary password scenario, Saviynt AccountStatus service 
+                            // with generateToken=True must be invoked to retrieve all the necessary attributes
+                            // for eventually updating the guest password.
+                            return saviyntService
+                                    .getAccountStatus(request.getUsername(), "email", "True").invoke()
+                                    .exceptionally(throwable -> {
+                                        throw new MiddlewareTransportException(
+                                                TransportErrorCode.fromHttp(500), throwable);
+                                    })
+                                    .thenApply(accountStatus -> {
+                                        jsonResponse.put(ACCOUNT_LOGIN_STATUS,
+                                                LoginStatusEnum.LEGACY_ACCOUNT_VERIFIED.value())
+                                                .put("vdsId", accountStatus.getVdsId())
+                                                .put("email", request.getUsername())
+                                                .put("token", accountStatus.getToken());
+                                        
+                                        return Pair.create(ResponseHeader.OK, jsonResponse);
+                                    });
+                        }
+                        
+                        return CompletableFuture.completedFuture(
+                                Pair.create(ResponseHeader.OK.withStatus(200), jsonResponse));
                     });
             
         };
@@ -339,7 +392,6 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     
     @Override
     public HeaderServiceCall<NotUsed, JsonNode> validateEmail(String email) {
-        final String STATUS = "status";
         return (requestHeader, notUsed) -> {
             
             Pattern pattern = Pattern.compile(ValidatorConstants.EMAIL_REGEXP);
@@ -349,16 +401,16 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                 throw new InvalidEmailFormatException();
             }
             
-            return saviyntService.getGuestAccount("email", Optional.of(email), Optional.empty())
-                    .invoke()
+            return saviyntService.getAccountStatus(email, "email", "False").invoke()
                     .exceptionally(exception -> {
                         Throwable cause = exception.getCause();
-                        
-                        if (cause instanceof SaviyntExceptionFactory.ExistingGuestException
-                                || cause instanceof SaviyntExceptionFactory.NoSuchGuestException) {
-                            ObjectNode errorJson = OBJECT_MAPPER.createObjectNode();
-                            errorJson.put(STATUS, AccountStatusEnum.DOES_NOT_EXIST.value());
-                            return errorJson;
+
+                        // in case of non existing account, return an AccountStatus with DoesNotExist message instead.
+                        // So that the service will return a 200 with a status of "DoesNotExist"
+                        if (cause instanceof SaviyntExceptionFactory.ExistingGuestException) {
+                            return AccountStatus.builder()
+                                    .message(AccountStatusEnum.DOES_NOT_EXIST.value())
+                                    .build();
                         }
                         
                         if (cause instanceof SaviyntExceptionFactory.InvalidEmailFormatException) {
@@ -367,23 +419,19 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         
                         throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
                     })
-                    .thenApply(response -> {
-                        ObjectNode jsonResponse = OBJECT_MAPPER.createObjectNode();
+                    .thenApply(accountStatus -> {
+                        ObjectNode response = OBJECT_MAPPER.createObjectNode();
+                        AccountStatusEnum accountStatusEnum = AccountStatusEnum.fromValue(accountStatus.getMessage());
                         
-                        //return response from exceptionally block if present.
-                        if (response.get(STATUS) != null) {
-                            jsonResponse = response.deepCopy();
+                        String status;
+                        
+                        if (StringUtils.isNotBlank(accountStatus.getMessage()) && accountStatusEnum != null) {
+                            status = accountStatusEnum.value();
                         } else {
-                            if (response.get("SavCode") != null
-                                    && response.get("SavCode").asText().contains("Sav000")) {
-                                jsonResponse.put(STATUS, AccountStatusEnum.EXISTING.value());
-                            } else {
-                                jsonResponse.put(STATUS, AccountStatusEnum.NEEDS_TO_BE_MIGRATED.value());
-                            }
+                            status = AccountStatusEnum.DOES_NOT_EXIST.value();
                         }
                         
-                        ResponseHeader responseHeader = ResponseHeader.OK.withStatus(200);
-                        return new Pair<>(responseHeader, jsonResponse);
+                        return Pair.create(ResponseHeader.OK, response.put("status", status));
                     });
         };
     }
@@ -435,7 +483,6 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         }));
     }
     
-    
     /**
      * Populates {@link Optins} to register the guest email to all brands and all categories of optins specified in
      * create account request.
@@ -443,6 +490,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
      * @param guest the {@link Guest} model
      * @return {@link Optins} with enrollment to all brands and all optin categories.
      */
+    
     private Optins generateCreateOptinsRequest(Guest guest) {
         List<OptinType> optinTypeList = new ArrayList<>();
         guest.getOptins().forEach(optin ->

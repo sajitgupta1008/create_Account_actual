@@ -54,7 +54,7 @@ public class GuestAccountEmailValidationServiceTest {
         assertTrue(response.get("status").asText().equals(AccountStatusEnum.EXISTING.value()));
     }
     
-    @Test
+    @Test(expected = ExecutionException.class)
     public void shouldReturnStatusAccountNonExisting() throws Exception {
         JsonNode response = guestAccountEmailValidationService.validateEmail("notexisting@domain.com")
                 .invoke().toCompletableFuture().get(5, TimeUnit.SECONDS);
