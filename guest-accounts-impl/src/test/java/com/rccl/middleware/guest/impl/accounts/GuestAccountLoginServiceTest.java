@@ -65,7 +65,7 @@ public class GuestAccountLoginServiceTest {
         AccountCredentials credentials = AccountCredentials.builder()
                 .header(Header.builder().brand('R').channel("web").locale(Locale.US).build())
                 .username("successful@domain.com")
-                .password("password!".toCharArray())
+                .password("password1".toCharArray())
                 .build();
         
         service.authenticateUser().invoke(credentials)
@@ -77,18 +77,22 @@ public class GuestAccountLoginServiceTest {
     public void testSuccessfulMobileAuthentication() {
         AccountCredentials credentials = AccountCredentials.builder()
                 .header(Header.builder().brand('R').channel("app-ios").locale(Locale.US).build())
-                .username("willfail@domain.com")
-                .password("password!".toCharArray())
+                .username("successful@domain.com")
+                .password("password1".toCharArray())
                 .build();
         
         try {
             JsonNode response = service.authenticateUser().invoke(credentials)
-                    .toCompletableFuture().get(5, TimeUnit.SECONDS);
+                    .toCompletableFuture().get(10, TimeUnit.SECONDS);
             
             assertTrue("Account login status must not be null", response.get("accountLoginStatus") != null);
             assertTrue("accessToken must not be null", response.get("accessToken") != null);
             assertTrue("refreshToken must not be null", response.get("refreshToken") != null);
             assertTrue("openIdToken must not be null", response.get("openIdToken") != null);
+            assertTrue("vdsId must not be null", response.get("vdsId") != null);
+            assertTrue("email must not be null", response.get("email") != null);
+            assertTrue("firstName must not be null", response.get("firstName") != null);
+            assertTrue("lastName must not be null", response.get("lastName") != null);
             
         } catch (Exception e) {
             assertFalse("Must return successful login instead.", e == null);
