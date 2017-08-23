@@ -53,7 +53,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -148,11 +147,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                             
                             return this.authenticateUser()
                                     .invokeWithHeaders(requestHeader, credentials)
-                                    .thenApply(jsonPair -> {
-                                        ObjectNode objNode = jsonPair.second().deepCopy();
-                                        objNode.put("vdsId", vdsId);
-                                        return Pair.create(ResponseHeader.OK.withStatus(201), objNode);
-                                    });
+                                    .thenApply(pair ->
+                                            Pair.create(ResponseHeader.OK.withStatus(201), pair.second()));
                         }
                         
                     });
@@ -312,7 +308,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                             ForgeRockExceptionFactory.AuthenticationException ex =
                                     (ForgeRockExceptionFactory.AuthenticationException) cause;
                             
-                            // if the error description contains ""Migrated MOBILE", then decrypt the message to
+                            // if the error description contains "Migrated MOBILE", then decrypt the message to
                             // get the webshopper information
                             if (StringUtils.contains(ex.getErrorDescription(), "Migrated MOBILE")) {
                                 return MobileAuthenticationTokens.builder()
@@ -328,11 +324,12 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         
                         throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
                     })
-                    .thenApply(mobileAuthTokens -> {
+                    .thenCompose(mobileAuthTokens -> {
                         ObjectNode jsonResponse = OBJECT_MAPPER.createObjectNode();
+                        final String ACCOUNT_LOGIN_STATUS = "accountLoginStatus";
                         
                         if (StringUtils.isNotBlank(mobileAuthTokens.getAccessToken())) {
-                            jsonResponse.put("accountLoginStatus",
+                            jsonResponse.put(ACCOUNT_LOGIN_STATUS,
                                     LoginStatusEnum.NEW_ACCOUNT_AUTHENTICATED.value())
                                     .put("accessToken", mobileAuthTokens.getAccessToken())
                                     .put("refreshToken", mobileAuthTokens.getRefreshToken())
@@ -351,31 +348,36 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                             }
                             
                         } else if (StringUtils.isNotBlank(mobileAuthTokens.getWebshopperId())) {
-                            jsonResponse.put("accountLoginStatus",
+                            jsonResponse.put(ACCOUNT_LOGIN_STATUS,
                                     LoginStatusEnum.LEGACY_ACCOUNT_VERIFIED.value())
                                     .put("webshopperId", mobileAuthTokens.getWebshopperId())
                                     .put("webshopperUsername", mobileAuthTokens.getWebshopperUsername())
-                                    .put("firstName", mobileAuthTokens.getWebshopperFirstName())
-                                    .put("lastName", mobileAuthTokens.getWebshopperLastName());
+                                    .put("webshopperFirstName", mobileAuthTokens.getWebshopperFirstName())
+                                    .put("webshopperLastName", mobileAuthTokens.getWebshopperLastName());
                             
-                        } else { // temp password scenario
-                            try {
-                                AccountStatus accountStatus = saviyntService
-                                        .getAccountStatus(request.getUsername(), "email", "True")
-                                        .invoke().toCompletableFuture().get(20, TimeUnit.SECONDS);
-                                
-                                jsonResponse.put("accountLoginStatus",
-                                        LoginStatusEnum.NEW_ACCOUNT_TEMPORARY_PASSWORD.value())
-                                        .put("vdsId", accountStatus.getVdsId())
-                                        .put("email", request.getUsername())
-                                        .put("token", accountStatus.getToken());
-                                
-                            } catch (Exception e) {
-                                throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), e);
-                            }
+                        } else {
+                            // in case of temporary password scenario, Saviynt AccountStatus service 
+                            // with generateToken=True must be invoked to retrieve all the necessary attributes
+                            // for eventually updating the guest password.
+                            return saviyntService
+                                    .getAccountStatus(request.getUsername(), "email", "True").invoke()
+                                    .exceptionally(throwable -> {
+                                        throw new MiddlewareTransportException(
+                                                TransportErrorCode.fromHttp(500), throwable);
+                                    })
+                                    .thenApply(accountStatus -> {
+                                        jsonResponse.put(ACCOUNT_LOGIN_STATUS,
+                                                LoginStatusEnum.LEGACY_ACCOUNT_VERIFIED.value())
+                                                .put("vdsId", accountStatus.getVdsId())
+                                                .put("email", request.getUsername())
+                                                .put("token", accountStatus.getToken());
+                                        
+                                        return Pair.create(ResponseHeader.OK, jsonResponse);
+                                    });
                         }
                         
-                        return Pair.create(ResponseHeader.OK.withStatus(200), jsonResponse);
+                        return CompletableFuture.completedFuture(
+                                Pair.create(ResponseHeader.OK.withStatus(200), jsonResponse));
                     });
             
         };
