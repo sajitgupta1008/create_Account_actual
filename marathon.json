@@ -1,6 +1,6 @@
 {
   "volumes": null,
-  "id": "/dev/middleware/guest-accounts/guest-accounts-v01",
+  "id": "/dev/middleware/guest-accounts/guest-accounts",
   "cmd": null,
   "args": null,
   "user": null,
@@ -42,22 +42,24 @@
   "maxLaunchDelaySeconds": 3600,
   "container": {
     "docker": {
-      "image": "rhldcmesboot711.na.rccl.com:5000/guest-accounts:v01",
+      "image": "rhldcmesboot711.na.rccl.com:5000/guest-accounts:v1",
       "forcePullImage": true,
       "privileged": false,
-      "portMappings": [{
-        "containerPort": 9022,
-        "protocol": "tcp",
-        "name": "guest-accounts-lb",
-        "servicePort": 0
-      }],
+      "portMappings": [
+        {
+          "containerPort": 9022,
+          "protocol": "tcp",
+          "name": "guest-accounts-lb",
+          "servicePort": 0
+        }
+      ],
       "network": "BRIDGE"
     }
   },
   "healthChecks": [
     {
       "protocol": "HTTP",
-      "path": "/v1/guestAccounts/health",
+      "path": "/guestAccounts/health",
       "gracePeriodSeconds": 300,
       "intervalSeconds": 60,
       "timeoutSeconds": 20,
@@ -76,8 +78,8 @@
     "HAPROXY_GROUP": "external",
     "DCOS_SERVICE_NAME": "guest-accounts",
     "DCOS_SERVICE_PORT_INDEX": "0",
-    "HAPROXY_0_HTTP_BACKEND_PROXYPASS_PATH": "/guest-accounts/",
-    "HAPROXY_0_PATH": "/guest-accounts/",
+    "HAPROXY_0_HTTP_BACKEND_PROXYPASS_PATH": "/guest-accounts",
+    "HAPROXY_0_PATH": "/guest-accounts",
     "HAPROXY_0_VHOST": "10.16.4.8,dev1.mesos.rccl.com"
   },
   "acceptedResourceRoles": null,
@@ -91,10 +93,12 @@
     }
   },
   "taskKillGracePeriodSeconds": null,
-  "portDefinitions": [{
-    "port": 0,
-    "protocol": "tcp",
-    "labels": {}
-  }],
+  "portDefinitions": [
+    {
+      "port": 0,
+      "protocol": "tcp",
+      "labels": {}
+    }
+  ],
   "requirePorts": false
 }
