@@ -115,7 +115,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
                     })
                     .thenCompose(response -> {
-
+                        
                         // TODO: Replace this with the vdsId attribute when available.
                         String message = response.getMessage();
                         Pattern pattern = Pattern.compile("vdsid=[a-zA-Z0-9]*");
@@ -360,7 +360,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                     .put("webShopperId", mobileAuthTokens.getWebShopperId())
                                     .put("webShopperUsername", mobileAuthTokens.getWebShopperUsername())
                                     .put("webShopperFirstName", mobileAuthTokens.getWebShopperFirstName())
-                                    .put("webShopperLastName", mobileAuthTokens.getWebShopperLastName());
+                                    .put("webShopperLastName", mobileAuthTokens.getWebShopperLastName())
+                                    .put("webShopperEmail", mobileAuthTokens.getWebShopperEmail());
                             
                         } else {
                             // in case of temporary password scenario, Saviynt AccountStatus service 
@@ -404,7 +405,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
             return saviyntService.getAccountStatus(email, "email", "False").invoke()
                     .exceptionally(exception -> {
                         Throwable cause = exception.getCause();
-
+                        
                         // in case of non existing account, return an AccountStatus with DoesNotExist message instead.
                         // So that the service will return a 200 with a status of "DoesNotExist"
                         if (cause instanceof SaviyntExceptionFactory.ExistingGuestException) {
