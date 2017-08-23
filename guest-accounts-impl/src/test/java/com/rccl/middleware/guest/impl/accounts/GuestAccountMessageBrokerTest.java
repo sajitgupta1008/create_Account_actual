@@ -5,7 +5,6 @@ import akka.actor.ActorSystem;
 import akka.stream.javadsl.Source;
 import akka.stream.testkit.TestSubscriber;
 import akka.stream.testkit.javadsl.TestSink;
-import akka.testkit.JavaTestKit;
 import com.lightbend.lagom.javadsl.testkit.PersistentEntityTestDriver;
 import com.lightbend.lagom.javadsl.testkit.PersistentEntityTestDriver.Outcome;
 import com.lightbend.lagom.javadsl.testkit.ServiceTest;
@@ -37,7 +36,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import scala.concurrent.duration.FiniteDuration;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
@@ -85,7 +84,7 @@ public class GuestAccountMessageBrokerTest {
             testServer = null;
         }
         
-        JavaTestKit.shutdownActorSystem(system);
+        system.shutdown();
         system = null;
     }
     
@@ -166,10 +165,10 @@ public class GuestAccountMessageBrokerTest {
             assertTrue(updateGuestEvent instanceof GuestEvent.AccountUpdated);
             
             EnrichedGuest verifyLoyaltyEvent = verifyLoyaltyProbe.request(1).expectNext(finiteDuration);
-            assertTrue(verifyLoyaltyEvent instanceof EnrichedGuest);
+            assertTrue(verifyLoyaltyEvent != null);
             
         } catch (Exception e) {
-            assertTrue("The service thrown an exception.", e.equals(null));
+            assertTrue("The service thrown an exception.", false);
         }
     }
     
@@ -187,12 +186,12 @@ public class GuestAccountMessageBrokerTest {
                 .password("password1".toCharArray())
                 .birthdate("19910101")
                 .phoneNumber("+1(234)456-7890")
-                .securityQuestions(Arrays.asList(SecurityQuestion.builder().question("what?").answer("yes").build()))
+                .securityQuestions(Collections.singletonList(SecurityQuestion.builder().question("what?").answer("yes").build()))
                 .termsAndConditionsAgreement(TermsAndConditionsAgreement.builder()
                         .acceptTime("20170627033735PM")
                         .version("1.0")
                         .build())
-                .optins(Arrays.asList(Optin.builder().type("EMAIL").flag("Y").acceptTime("20170706022122PM").build()))
+                .optins(Collections.singletonList(Optin.builder().type("EMAIL").flag("Y").acceptTime("20170706022122PM").build()))
                 .build();
     }
     
@@ -218,7 +217,7 @@ public class GuestAccountMessageBrokerTest {
                 .signInInformation(SignInInformation.builder()
                         .password("password1".toCharArray())
                         .securityQuestions(
-                                Arrays.asList(SecurityQuestion.builder().question("what?").answer("yes").build())
+                                Collections.singletonList(SecurityQuestion.builder().question("what?").answer("yes").build())
                         )
                         .build())
                 .travelDocumentInformation(TravelDocumentInformation.builder()
