@@ -168,11 +168,9 @@ public class Mapper {
      * @return {@link Profile.ProfileBuilder}
      */
     public static Profile.ProfileBuilder mapEnrichedGuestToProfile(EnrichedGuest guest) {
-        PersonalInformation personalInfo = guest.getPersonalInformation();
-        ContactInformation contactInfo = guest.getContactInformation();
-        TravelDocumentInformation travelInfo = guest.getTravelDocumentInformation();
         Profile.ProfileBuilder builder = Profile.builder();
         
+        PersonalInformation personalInfo = guest.getPersonalInformation();
         if (personalInfo != null) {
             builder.avatar(personalInfo.getAvatar())
                     .nickname(personalInfo.getNickname())
@@ -180,10 +178,12 @@ public class Mapper {
             
         }
         
+        ContactInformation contactInfo = guest.getContactInformation();
         if (contactInfo != null) {
             builder.address(contactInfo.getAddress());
         }
         
+        TravelDocumentInformation travelInfo = guest.getTravelDocumentInformation();
         if (travelInfo != null) {
             builder.birthCountryCode(travelInfo.getBirthCountryCode())
                     .citizenshipCountryCode(travelInfo.getCitizenshipCountryCode());
