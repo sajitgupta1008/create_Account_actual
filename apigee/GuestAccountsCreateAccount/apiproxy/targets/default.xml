@@ -3,9 +3,12 @@
     <Description/>
     <FaultRules/>
     <PreFlow name="PreFlow">
-        <Request/>
-        <Response>
-        </Response>
+        <Request>
+            <Step>
+                <Name>ExtractVariables.ExtractPathIntoVariable</Name>
+            </Step>
+        </Request>
+        <Response/>
     </PreFlow>
     <PostFlow name="PostFlow">
         <Request/>
