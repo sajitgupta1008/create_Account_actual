@@ -5,7 +5,7 @@
   "args": null,
   "user": null,
   "env": {
-    "GUEST_PROFILES_OPTINS": "http://10.16.6.134:9001",
+    "GUEST_PROFILES_OPTINS": "http://dev1-int.api.rccl.com/v1",
     "APIGEE_APPKEY": "Q3bWUuTVRTWMxWrlBhfpKy1CGPkNcQRO",
     "FORGEROCK": "http://dev1-int.api.rccl.com",
     "CAS_CONTACT_POINT_THREE": "10.16.6.162",
@@ -17,7 +17,7 @@
       "secret": "secret14"
     },
     "CASSANDRA_REPLICATION_STRATEGY": "SimpleStrategy",
-    "GUEST_PROFILES": "http://dev1-int.api.rccl.com",
+    "GUEST_PROFILES": "http://dev1-int.api.rccl.com/v1",
     "KAFKA_URL": "10.16.5.94:9092, 10.16.5.91:9092",
     "SAVIYNT": "http://dev1-int.api.rccl.com",
     "CASSANDRA_PASSWORD": {

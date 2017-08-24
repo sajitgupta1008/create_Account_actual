@@ -135,8 +135,8 @@
             <cas_native>http://localhost:9042</cas_native>
             <saviynt>http://dev1.api.rccl.com</saviynt>
             <forgerock>http://dev1.api.rccl.com</forgerock>
-            <guest-profiles>http://dev1.api.rccl.com</guest-profiles>
-            <guest_profile_optins>http://dev1.api.rccl.com</guest_profile_optins>
+            <guest-profiles>http://dev1.api.rccl.com/v1</guest-profiles>
+            <guest_profile_optins>http://dev1.api.rccl.com/v1</guest_profile_optins>
           </unmanagedServices>
           <kafkaEnabled>false</kafkaEnabled>
           <cassandraEnabled>false</cassandraEnabled>
