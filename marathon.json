@@ -12,7 +12,7 @@
     "CAS_CONTACT_POINT_ONE": "10.16.4.106",
     "CASSANDRA_REPLICATION_FACTOR": "3",
     "CAS_NATIVE_URL": "tcp://10.16.6.162:8042/cas_native",
-    "LINK_LOYALTY_KAFKA_TOPIC_NAME": "guest_accounts_link_loyalty_dev_v1",
+    "LINK_LOYALTY_TOPIC_NAME": "guest_accounts_link_loyalty_dev_v1",
     "CASSANDRA_USERNAME": {
       "secret": "secret14"
     },
@@ -24,7 +24,7 @@
       "secret": "secret16"
     },
     "CASSANDRA_PORT": "8042",
-    "VERIFY_LOYALTY_KAFKA_TOPIC_NAME": "guest_accounts_verify_loyalty_dev_v1",
+    "VERIFY_LOYALTY_TOPIC_NAME": "guest_accounts_verify_loyalty_dev_v1",
     "CASSANDRA_KEYSPACE": "guest_accounts",
     "HTTP_PORT": "9022"
   },
