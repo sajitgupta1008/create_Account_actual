@@ -203,7 +203,6 @@
         <configuration>
           <forkCount>3</forkCount>
           <reuseForks>true</reuseForks>
-          <argLine>-Xmx1024m -Dconfig.file=${project.basedir}/src/test/resources/test-application.conf</argLine>
         </configuration>
       </plugin>
 
