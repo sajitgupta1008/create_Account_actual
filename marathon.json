@@ -26,7 +26,8 @@
     "CASSANDRA_PORT": "8042",
     "VERIFY_LOYALTY_TOPIC_NAME": "guest_accounts_verify_loyalty_dev_v1",
     "CASSANDRA_KEYSPACE": "guest_accounts",
-    "HTTP_PORT": "9022"
+    "HTTP_PORT": "9022",
+    "JAVA_OPTS": "-Xmx512m -Xms384m -Djavax.net.ssl.keyStorePassword=password -Djavax.net.ssl.trustStorePassword=password -Djavax.net.ssl.keyStore=/etc/ssl/certs/clientkeystore.jks -Djavax.net.ssl.trustStore=/etc/ssl/certs/cacerts.jks"
   },
   "instances": 2,
   "cpus": 0.5,
@@ -54,7 +55,24 @@
         }
       ],
       "network": "BRIDGE"
-    }
+    },
+    "volumes": [
+      {
+        "containerPath": "/etc/ssl/certs/ca-certificates.crt",
+        "hostPath": "/opt/mesosphere/active/python-requests/lib/python3.5/site-packages/requests/cacert.pem",
+        "mode": "RW"
+      },
+      {
+        "containerPath": "/etc/ssl/certs/clientkeystore.jks",
+        "hostPath": "/opt/mesosphere/certs/clientkeystore.jks",
+        "mode": "RW"
+      },
+      {
+        "containerPath": "/etc/ssl/certs/cacerts.jks",
+        "hostPath": "/opt/mesosphere/certs/cacerts.jks",
+        "mode": "RW"
+      }
+    ]
   },
   "healthChecks": [
     {
