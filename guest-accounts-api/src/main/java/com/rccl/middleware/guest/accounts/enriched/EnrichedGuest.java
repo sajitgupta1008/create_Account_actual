@@ -12,12 +12,13 @@ import org.hibernate.validator.constraints.Email;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 import java.util.List;
 
 @Builder
 @Value
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class EnrichedGuest implements Jsonable {
     
     @NotNull(message = "A header is required.")
@@ -47,6 +48,9 @@ public class EnrichedGuest implements Jsonable {
     
     @Valid
     List<Optin> optins;
+    
+    @Pattern(regexp = "\\d*", message = "Consumer ID must be in numeric format.")
+    String consumerId;
     
     @NotNull(message = "An email is required.")
     @Size(min = 5, max = 256, message = "The email can only have up to 256 characters.")

@@ -24,6 +24,8 @@ public interface GuestAccountService extends Service {
     
     ServiceCall<Guest, JsonNode> createAccount();
     
+    ServiceCall<NotUsed, EnrichedGuest> getAccountEnriched(String vdsId);
+    
     ServiceCall<EnrichedGuest, JsonNode> updateAccountEnriched();
     
     ServiceCall<AccountCredentials, JsonNode> authenticateUser();
@@ -42,6 +44,7 @@ public interface GuestAccountService extends Service {
                 .withCalls(
                         restCall(POST, "/guestAccounts", this::createAccount),
                         restCall(POST, "/guestAccounts/", this::createAccount),
+                        restCall(GET, "/guestAccounts/enriched/:vdsId", this::getAccountEnriched),
                         restCall(PUT, "/guestAccounts/enriched", this::updateAccountEnriched),
                         restCall(POST, "/guestAccounts/login", this::authenticateUser),
                         restCall(GET, "/guestAccounts/:email/validation", this::validateEmail),

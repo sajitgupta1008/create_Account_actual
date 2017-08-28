@@ -162,6 +162,7 @@ public class GuestAccountUpdateServiceTest {
                         .citizenshipCountryCode("USA")
                         .build())
                 .webshopperInformation(WebshopperInformation.builder().brand('R').shopperId("123456789").build())
+                .consumerId("1234567")
                 .email("successful@domain.com")
                 .vdsId("G1234567");
     }

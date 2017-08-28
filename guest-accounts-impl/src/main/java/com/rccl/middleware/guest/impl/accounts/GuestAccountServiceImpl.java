@@ -52,6 +52,7 @@ import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.regex.Matcher;
@@ -158,6 +159,37 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     }
     
     @Override
+    public HeaderServiceCall<NotUsed, EnrichedGuest> getAccountEnriched(String vdsId) {
+        return (requestHeader, notUsed) -> {
+            
+            if (StringUtils.isBlank(vdsId)) {
+                throw new MiddlewareTransportException(TransportErrorCode.fromHttp(422), "VDS ID is required.");
+            }
+            
+            // In case of exception, return null and let the other process go through to return whichever
+            // attributes are available.
+            final CompletionStage<Profile> getProfile = guestProfilesService.getProfile(vdsId)
+                    .invoke().exceptionally(throwable -> null);
+            
+            return this.getAccount(vdsId).invoke().exceptionally(throwable -> null)
+                    .thenCombineAsync(getProfile, (guest, profile) -> {
+                        Optins optins = null;
+                        
+                        if (guest != null) {
+                            optins = guestProfileOptinService.getOptins(guest.getEmail())
+                                    .invoke()
+                                    .exceptionally(throwable -> null)
+                                    .toCompletableFuture()
+                                    .join();
+                        }
+                        
+                        EnrichedGuest enrichedGuest = Mapper.mapToEnrichedGuest(guest, profile, optins);
+                        return Pair.create(ResponseHeader.OK, enrichedGuest);
+                    });
+        };
+    }
+    
+    @Override
     public HeaderServiceCall<EnrichedGuest, JsonNode> updateAccountEnriched() {
         return (requestHeader, enrichedGuest) -> {
             
@@ -186,8 +218,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
             CompletionStage<NotUsed> updateOptinsService = CompletableFuture.completedFuture(NotUsed.getInstance());
             Optins optins = Mapper.mapEnrichedGuestToOptins(enrichedGuest);
             
-            if (optins != null && enrichedGuest.getSignInInformation() != null
-                    && StringUtils.isNotBlank(enrichedGuest.getEmail())) {
+            if (optins != null && StringUtils.isNotBlank(enrichedGuest.getEmail())) {
                 updateOptinsService = guestProfileOptinService
                         .updateOptins(enrichedGuest.getEmail()).invoke(optins);
             }
@@ -207,13 +238,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                             message.setDeveloperMessage(throwable.getCause().toString());
                             
                             StringBuilder sb = new StringBuilder();
-                            if (accountFuture.isCompletedExceptionally()) {
-                                sb.append("Update Account service failed. ");
-                            }
-                            
-                            if (profileFuture.isCompletedExceptionally()) {
-                                sb.append("Update Profile service failed. ");
-                            }
+                            sb.append("Update Account and Update Profile services failed. ");
                             
                             if (optinsFuture.isCompletedExceptionally()) {
                                 sb.append("Update Optins service failed. ");
@@ -250,12 +275,38 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     }
     
     /**
+     * Retrieves guest account information from Saviynt with the given VDS ID.
+     *
+     * @param vdsId the guest account's VDS ID.
+     * @return {@link Guest} guest account information from VDS.
+     */
+    private ServiceCall<NotUsed, Guest> getAccount(String vdsId) {
+        return notUsed -> {
+            if (StringUtils.isBlank(vdsId)) {
+                throw new MiddlewareTransportException(TransportErrorCode.fromHttp(422), "VDS ID is required.");
+            }
+            
+            return saviyntService.getGuestAccount("systemUserName", Optional.empty(), Optional.of(vdsId)).invoke()
+                    .exceptionally(throwable -> {
+                        Throwable cause = throwable.getCause();
+                        if (cause instanceof SaviyntExceptionFactory.ExistingGuestException
+                                || cause instanceof SaviyntExceptionFactory.NoSuchGuestException) {
+                            throw new GuestNotFoundException();
+                        }
+                        
+                        throw new MiddlewareTransportException(TransportErrorCode.BadRequest, throwable);
+                    })
+                    .thenApply(Mapper::mapSaviyntGuestToGuest);
+        };
+    }
+    
+    /**
      * Update Account service processing for Saviynt which is not exposed as service endpoint.
      *
      * @return {@link HeaderServiceCall} with {@link Pair}
      */
     private ServiceCall<Guest, NotUsed> updateAccount() {
-        return (guest) -> {
+        return guest -> {
             
             MiddlewareValidation.validateWithGroups(guest, Guest.UpdateChecks.class);
             
@@ -333,10 +384,10 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                     })
                     .thenCompose(mobileAuthTokens -> {
                         ObjectNode jsonResponse = OBJECT_MAPPER.createObjectNode();
-                        final String ACCOUNT_LOGIN_STATUS = "accountLoginStatus";
+                        final String accountLoginStatus = "accountLoginStatus";
                         
                         if (StringUtils.isNotBlank(mobileAuthTokens.getAccessToken())) {
-                            jsonResponse.put(ACCOUNT_LOGIN_STATUS,
+                            jsonResponse.put(accountLoginStatus,
                                     LoginStatusEnum.NEW_ACCOUNT_AUTHENTICATED.value())
                                     .put("accessToken", mobileAuthTokens.getAccessToken())
                                     .put("refreshToken", mobileAuthTokens.getRefreshToken())
@@ -355,7 +406,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                             }
                             
                         } else if (StringUtils.isNotBlank(mobileAuthTokens.getWebShopperId())) {
-                            jsonResponse.put(ACCOUNT_LOGIN_STATUS,
+                            jsonResponse.put(accountLoginStatus,
                                     LoginStatusEnum.LEGACY_ACCOUNT_VERIFIED.value())
                                     .put("webShopperId", mobileAuthTokens.getWebShopperId())
                                     .put("webShopperUsername", mobileAuthTokens.getWebShopperUsername())
@@ -374,7 +425,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                                 TransportErrorCode.fromHttp(500), throwable);
                                     })
                                     .thenApply(accountStatus -> {
-                                        jsonResponse.put(ACCOUNT_LOGIN_STATUS,
+                                        jsonResponse.put(accountLoginStatus,
                                                 LoginStatusEnum.LEGACY_ACCOUNT_VERIFIED.value())
                                                 .put("vdsId", accountStatus.getVdsId())
                                                 .put("email", request.getUsername())
