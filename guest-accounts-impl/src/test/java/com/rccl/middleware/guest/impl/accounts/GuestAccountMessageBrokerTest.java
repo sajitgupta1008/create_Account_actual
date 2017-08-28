@@ -19,7 +19,6 @@ import com.rccl.middleware.guest.accounts.SecurityQuestion;
 import com.rccl.middleware.guest.accounts.TermsAndConditionsAgreement;
 import com.rccl.middleware.guest.accounts.enriched.ContactInformation;
 import com.rccl.middleware.guest.accounts.enriched.EnrichedGuest;
-import com.rccl.middleware.guest.accounts.enriched.LoyaltyInformation;
 import com.rccl.middleware.guest.accounts.enriched.SignInInformation;
 import com.rccl.middleware.guest.accounts.enriched.TravelDocumentInformation;
 import com.rccl.middleware.guest.accounts.enriched.WebshopperInformation;
@@ -86,7 +85,7 @@ public class GuestAccountMessageBrokerTest {
             testServer = null;
         }
         
-        system.shutdown();
+        system.terminate();
         system = null;
     }
     
@@ -143,9 +142,7 @@ public class GuestAccountMessageBrokerTest {
         
         
         Guest sampleGuest = this.createSampleGuest();
-        EnrichedGuest sampleEnrichedGuest = this.createSampleEnrichedGuest()
-                .loyaltyInformation(LoyaltyInformation.builder().consumerId("1234567").build())
-                .build();
+        EnrichedGuest sampleEnrichedGuest = this.createSampleEnrichedGuest().build();
         
         try {
             FiniteDuration finiteDuration = new FiniteDuration(20, SECONDS);
@@ -229,6 +226,7 @@ public class GuestAccountMessageBrokerTest {
                         .citizenshipCountryCode("USA")
                         .build())
                 .webshopperInformation(WebshopperInformation.builder().brand('R').shopperId("123456789").build())
+                .consumerId("1234567")
                 .email("successful@domain.com")
                 .vdsId("G1234567");
     }
