@@ -272,7 +272,8 @@ public class Mapper {
         
         PersonalInformation.PersonalInformationBuilder personalInformationBuilder = PersonalInformation.builder();
         ContactInformation.ContactInformationBuilder contactInformationBuilder = ContactInformation.builder();
-        TravelDocumentInformation.TravelDocumentInformationBuilder travelDocumentInformation = TravelDocumentInformation.builder();
+        TravelDocumentInformation.TravelDocumentInformationBuilder
+                travelDocumentInformation = TravelDocumentInformation.builder();
         LoyaltyInformation.LoyaltyInformationBuilder loyaltyInformationBuilder = LoyaltyInformation.builder();
         
         EnrichedGuest.EnrichedGuestBuilder enrichedGuestBuilder = EnrichedGuest.builder();

@@ -161,6 +161,11 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     @Override
     public HeaderServiceCall<NotUsed, EnrichedGuest> getAccountEnriched(String vdsId) {
         return (requestHeader, notUsed) -> {
+            
+            if (StringUtils.isBlank(vdsId)) {
+                throw new MiddlewareTransportException(TransportErrorCode.fromHttp(422), "VDS ID is required.");
+            }
+            
             final CompletableFuture<Guest> getAccount = this.getAccount(vdsId).invoke().toCompletableFuture();
             
             final CompletableFuture<Profile> getProfile = guestProfilesService.getProfile(vdsId)
