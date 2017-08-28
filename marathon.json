@@ -1,6 +1,6 @@
 {
   "volumes": null,
-  "id": "/dev/middleware/guest-accounts/guest-accounts",
+  "id": "middleware/guest-accounts/guest-accounts",
   "cmd": null,
   "args": null,
   "user": null,
