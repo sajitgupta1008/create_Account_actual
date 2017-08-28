@@ -14,12 +14,19 @@ import com.rccl.middleware.guest.optin.Optins;
 import com.rccl.middleware.guestprofiles.models.Profile;
 import com.rccl.middleware.saviynt.api.requests.SaviyntGuest;
 import com.rccl.middleware.saviynt.api.requests.SaviyntUserType;
+import com.rccl.middleware.saviynt.api.responses.AccountInformation;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.util.CollectionUtils;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class Mapper {
+    
+    private Mapper() {
+        // No-op
+    }
     
     /**
      * Includes VDS ID argument value into {@link Guest} model.
@@ -102,6 +109,42 @@ public class Mapper {
         }
         
         return builder;
+    }
+    
+    /**
+     * Creates a {@link Guest} object which maps the appropriate {@link SaviyntGuest} attributes.
+     *
+     * @param accountInformation the {@link AccountInformation} Saviynt response object
+     * @return {@link Guest}
+     */
+    public static Guest mapSaviyntGuestToGuest(AccountInformation accountInformation) {
+        SaviyntGuest saviyntGuest = accountInformation.getGuest();
+        return Guest.builder()
+                .firstName(saviyntGuest.getFirstName())
+                .lastName(saviyntGuest.getLastName())
+                .middleName(saviyntGuest.getMiddleName())
+                .suffix(saviyntGuest.getSuffix())
+                .email(saviyntGuest.getEmail())
+                .phoneNumber(saviyntGuest.getPhoneNumber())
+                .vdsId(saviyntGuest.getVdsId())
+                .password(saviyntGuest.getPassword())
+                .birthdate(saviyntGuest.getBirthdate())
+                .consumerId(saviyntGuest.getConsumerId())
+                .crownAndAnchorId(CollectionUtils.isEmpty(saviyntGuest.getCrownAndAnchorIds())
+                        ? null : saviyntGuest.getCrownAndAnchorIds().get(0))
+                .captainsClubId(CollectionUtils.isEmpty(saviyntGuest.getCaptainsClubIds())
+                        ? null : saviyntGuest.getCaptainsClubIds().get(0))
+                .azamaraLoyaltyId(CollectionUtils.isEmpty(saviyntGuest.getAzamaraLoyaltyIds())
+                        ? null : saviyntGuest.getAzamaraLoyaltyIds().get(0))
+                .clubRoyaleId(CollectionUtils.isEmpty(saviyntGuest.getClubRoyaleIds())
+                        ? null : saviyntGuest.getClubRoyaleIds().get(0))
+                .celebrityBlueChipId(CollectionUtils.isEmpty(saviyntGuest.getCelebrityBlueChipIds())
+                        ? null : saviyntGuest.getCelebrityBlueChipIds().get(0))
+                .webshopperId(saviyntGuest.getWebshopperId())
+                .webshopperBrand(saviyntGuest.getWebshopperBrand())
+                .passportNumber(saviyntGuest.getPassportNumber())
+                .passportExpirationDate(saviyntGuest.getPassportExpirationDate())
+                .build();
     }
     
     /**
@@ -218,6 +261,84 @@ public class Mapper {
     }
     
     /**
+     * Maps the individual model values into the {@link EnrichedGuest} model.
+     *
+     * @param guest   the {@link Guest} model from accounts service.
+     * @param profile the {@link Profile} model from profiles service.
+     * @param optins  the {@link Optins} model from optins service.
+     * @return {@link EnrichedGuest}
+     */
+    public static EnrichedGuest mapToEnrichedGuest(Guest guest, Profile profile, Optins optins) {
+        
+        PersonalInformation.PersonalInformationBuilder personalInformationBuilder = PersonalInformation.builder();
+        ContactInformation.ContactInformationBuilder contactInformationBuilder = ContactInformation.builder();
+        TravelDocumentInformation.TravelDocumentInformationBuilder travelDocumentInformation = TravelDocumentInformation.builder();
+        LoyaltyInformation.LoyaltyInformationBuilder loyaltyInformationBuilder = LoyaltyInformation.builder();
+        
+        EnrichedGuest.EnrichedGuestBuilder enrichedGuestBuilder = EnrichedGuest.builder();
+        
+        if (guest != null) {
+            personalInformationBuilder.firstName(guest.getFirstName())
+                    .lastName(guest.getLastName())
+                    .middleName(guest.getMiddleName())
+                    .suffix(guest.getSuffix())
+                    .birthdate(guest.getBirthdate());
+            
+            contactInformationBuilder.phoneNumber(guest.getPhoneNumber())
+                    .phoneCountryCode(null);
+            
+            travelDocumentInformation.passportNumber(guest.getPassportNumber())
+                    .passportExpirationDate(guest.getPassportExpirationDate());
+            
+            loyaltyInformationBuilder.crownAndAnchorId(guest.getCrownAndAnchorId())
+                    .captainsClubId(guest.getCaptainsClubId())
+                    .azamaraLoyaltyId(guest.getAzamaraLoyaltyId())
+                    .clubRoyaleId(guest.getClubRoyaleId())
+                    .celebrityBlueChipId(guest.getCelebrityBlueChipId());
+            
+            enrichedGuestBuilder.vdsId(guest.getVdsId())
+                    .email(guest.getEmail())
+                    .consumerId(guest.getConsumerId());
+        }
+        
+        if (profile != null) {
+            personalInformationBuilder.avatar(profile.getAvatar())
+                    .nickname(profile.getNickname())
+                    .gender(profile.getGender());
+            
+            contactInformationBuilder.address(profile.getAddress());
+            
+            travelDocumentInformation.citizenshipCountryCode(profile.getCitizenshipCountryCode())
+                    .birthCountryCode(profile.getBirthCountryCode());
+            
+            loyaltyInformationBuilder.crownAndAnchorSocietyLoyaltyTier(profile.getCrownAndAnchorSocietyLoyaltyTier())
+                    .crownAndAnchorSocietyLoyaltyIndividualPoints(profile
+                            .getCrownAndAnchorSocietyLoyaltyIndividualPoints())
+                    .crownAndAnchorSocietyLoyaltyRelationshipPoints(profile
+                            .getCrownAndAnchorSocietyLoyaltyRelationshipPoints())
+                    .captainsClubLoyaltyTier(profile.getCaptainsClubLoyaltyTier())
+                    .captainsClubLoyaltyIndividualPoints(profile.getCaptainsClubLoyaltyIndividualPoints())
+                    .captainsClubLoyaltyRelationshipPoints(profile.getCaptainsClubLoyaltyRelationshipPoints())
+                    .clubRoyaleLoyaltyTier(profile.getClubRoyaleLoyaltyTier())
+                    .clubRoyaleLoyaltyIndividualPoints(profile.getClubRoyaleLoyaltyIndividualPoints())
+                    .clubRoyaleLoyaltyRelationshipPoints(profile.getClubRoyaleLoyaltyRelationshipPoints())
+                    .celebrityBlueChipLoyaltyTier(profile.getCelebrityBlueChipLoyaltyTier())
+                    .celebrityBlueChipLoyaltyIndividualPoints(profile.getCelebrityBlueChipLoyaltyIndividualPoints())
+                    .celebrityBlueChipLoyaltyRelationshipPoints(profile
+                            .getCelebrityBlueChipLoyaltyRelationshipPoints());
+        }
+        
+        return enrichedGuestBuilder
+                .personalInformation(personalInformationBuilder.build())
+                .contactInformation(contactInformationBuilder.build())
+                .travelDocumentInformation(travelDocumentInformation.build())
+                .loyaltyInformation(loyaltyInformationBuilder.build())
+                .emergencyContact(profile != null ? profile.getEmergencyContact() : null)
+                .optins(optins != null ? optins.getOptins() : null)
+                .build();
+    }
+    
+    /**
      * Wraps each {@link String} value with quotation marks to satisfy Saviynt's requirement.
      *
      * @param attribute {@code String}
@@ -228,6 +349,6 @@ public class Mapper {
             return Arrays.asList("\"" + attribute + "\"");
         }
         
-        return null;
+        return Collections.emptyList();
     }
 }
