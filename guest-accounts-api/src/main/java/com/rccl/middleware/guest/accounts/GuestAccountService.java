@@ -2,6 +2,7 @@ package com.rccl.middleware.guest.accounts;
 
 import akka.NotUsed;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.lightbend.lagom.javadsl.api.CircuitBreaker;
 import com.lightbend.lagom.javadsl.api.Descriptor;
 import com.lightbend.lagom.javadsl.api.Service;
 import com.lightbend.lagom.javadsl.api.ServiceCall;
@@ -40,7 +41,7 @@ public interface GuestAccountService extends Service {
     
     @Override
     default Descriptor descriptor() {
-        return named("guestAccounts")
+        return named("guest_accounts")
                 .withCalls(
                         restCall(POST, "/guestAccounts", this::createAccount),
                         restCall(POST, "/guestAccounts/", this::createAccount),
@@ -54,6 +55,7 @@ public interface GuestAccountService extends Service {
                         topic(LINK_LOYALTY_KAFKA_TOPIC, this::linkLoyaltyTopic),
                         topic(VERIFY_LOYALTY_KAFKA_TOPIC, this::verifyLoyaltyTopic)
                 )
+                .withCircuitBreaker(CircuitBreaker.identifiedBy("guest_accounts"))
                 .withAutoAcl(true);
     }
 }
