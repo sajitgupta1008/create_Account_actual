@@ -215,12 +215,12 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                 updateProfileService = guestProfilesService.updateProfile().invoke(profile);
             }
             
-            CompletableFuture<NotUsed> updateOptinsService = CompletableFuture.completedFuture(NotUsed.getInstance());
+            CompletionStage<NotUsed> updateOptinsService = CompletableFuture.completedFuture(NotUsed.getInstance());
             Optins optins = Mapper.mapEnrichedGuestToOptins(enrichedGuest);
             
             if (optins != null && StringUtils.isNotBlank(enrichedGuest.getEmail())) {
                 updateOptinsService = guestProfileOptinService
-                        .updateOptins(enrichedGuest.getEmail()).invoke(optins).toCompletableFuture();
+                        .updateOptins(enrichedGuest.getEmail()).invoke(optins);
             }
             
             final CompletableFuture<NotUsed> accountFuture = updateAccountService.toCompletableFuture();
