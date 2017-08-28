@@ -1,5 +1,6 @@
 package com.rccl.middleware.guest.accounts.enriched;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.lightbend.lagom.serialization.Jsonable;
 import com.rccl.middleware.guestprofiles.models.CaptainsClubLoyaltyTier;
 import com.rccl.middleware.guestprofiles.models.CelebrityBlueChipLoyaltyTier;
@@ -12,6 +13,7 @@ import javax.validation.constraints.Pattern;
 
 @Builder
 @Value
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class LoyaltyInformation implements Jsonable {
     
     @Pattern(regexp = "\\d*", message = "Crown and Anchor Loyalty ID must be in numeric format.")

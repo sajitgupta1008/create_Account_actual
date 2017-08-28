@@ -1,5 +1,6 @@
 package com.rccl.middleware.guest.accounts.enriched;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.lightbend.lagom.serialization.Jsonable;
 import com.rccl.middleware.common.validation.validator.Birthdate;
 import com.rccl.middleware.guestprofiles.models.Gender;
@@ -11,6 +12,7 @@ import javax.validation.constraints.Size;
 
 @Builder
 @Value
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class PersonalInformation implements Jsonable {
     
     @Pattern(regexp = "^(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]",

@@ -18,7 +18,7 @@ import java.util.List;
 
 @Builder
 @Value
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class EnrichedGuest implements Jsonable {
     
     @NotNull(message = "A header is required.")
