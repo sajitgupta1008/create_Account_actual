@@ -286,7 +286,7 @@ public class Mapper {
                     .birthdate(guest.getBirthdate());
             
             contactInformationBuilder.phoneNumber(guest.getPhoneNumber())
-                    .phoneCountryCode(null);
+                    .phoneCountryCode("");
             
             travelDocumentInformation.passportNumber(guest.getPassportNumber())
                     .passportExpirationDate(guest.getPassportExpirationDate());

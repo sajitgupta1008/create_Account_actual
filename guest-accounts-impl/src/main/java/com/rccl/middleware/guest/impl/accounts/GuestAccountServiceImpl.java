@@ -166,25 +166,26 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                 throw new MiddlewareTransportException(TransportErrorCode.fromHttp(422), "VDS ID is required.");
             }
             
-            final CompletableFuture<Guest> getAccount = this.getAccount(vdsId).invoke().toCompletableFuture();
+            // In case of exception, return null and let the other process go through to return whichever
+            // attributes are available.
+            final CompletionStage<Profile> getProfile = guestProfilesService.getProfile(vdsId)
+                    .invoke().exceptionally(throwable -> null);
             
-            final CompletableFuture<Profile> getProfile = guestProfilesService.getProfile(vdsId)
-                    .invoke().toCompletableFuture();
-            
-            return getAccount.thenCombineAsync(getProfile, (guest, profile) -> {
-                Optins optins = null;
-                if (!getAccount.isCompletedExceptionally()) {
-                    try {
-                        optins = guestProfileOptinService.getOptins(guest.getEmail())
-                                .invoke().toCompletableFuture().get();
-                    } catch (Exception e) {
-                        // no-op
-                    }
-                }
-                
-                EnrichedGuest enrichedGuest = Mapper.mapToEnrichedGuest(guest, profile, optins);
-                return Pair.create(ResponseHeader.OK, enrichedGuest);
-            });
+            return this.getAccount(vdsId).invoke().exceptionally(throwable -> null)
+                    .thenCombineAsync(getProfile, (guest, profile) -> {
+                        Optins optins = null;
+                        
+                        if (guest != null) {
+                            optins = guestProfileOptinService.getOptins(guest.getEmail())
+                                    .invoke()
+                                    .exceptionally(throwable -> null)
+                                    .toCompletableFuture()
+                                    .join();
+                        }
+                        
+                        EnrichedGuest enrichedGuest = Mapper.mapToEnrichedGuest(guest, profile, optins);
+                        return Pair.create(ResponseHeader.OK, enrichedGuest);
+                    });
         };
     }
     
@@ -213,7 +214,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                 final Profile profile = profileBuilder.vdsId(enrichedGuest.getVdsId()).build();
                 updateProfileService = guestProfilesService.updateProfile().invoke(profile);
             }
-    
+            
             CompletableFuture<NotUsed> updateOptinsService = CompletableFuture.completedFuture(NotUsed.getInstance());
             Optins optins = Mapper.mapEnrichedGuestToOptins(enrichedGuest);
             
