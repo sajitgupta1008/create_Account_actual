@@ -183,6 +183,10 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                     .join();
                         }
                         
+                        if (guest == null && profile == null && optins == null) {
+                            throw new GuestNotFoundException();
+                        }
+                        
                         EnrichedGuest enrichedGuest = Mapper.mapToEnrichedGuest(guest, profile, optins);
                         return Pair.create(ResponseHeader.OK, enrichedGuest);
                     });
