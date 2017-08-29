@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<ProxyEndpoint name="UpdateAccount">
+<ProxyEndpoint name="GetAccount">
     <Description/>
     <FaultRules/>
     <PreFlow name="PreFlow">
@@ -24,7 +24,7 @@
     </Flows>
 
     <HTTPProxyConnection>
-        <BasePath>/v1/guestAccounts/enriched</BasePath>
+        <BasePath>/v1/guestAccounts/enriched/*</BasePath>
         <Properties/>
         <VirtualHost>default</VirtualHost>
     </HTTPProxyConnection>
