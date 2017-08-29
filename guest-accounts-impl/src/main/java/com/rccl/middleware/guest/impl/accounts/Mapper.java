@@ -159,8 +159,8 @@ public class Mapper {
         
         PersonalInformation personalInfo = guest.getPersonalInformation();
         if (personalInfo != null) {
+            // as per business rule, last name should not be allowed to be updated.
             builder.firstName(personalInfo.getFirstName())
-                    .lastName(personalInfo.getLastName())
                     .middleName(personalInfo.getMiddleName())
                     .suffix(personalInfo.getSuffix())
                     .birthdate(personalInfo.getBirthdate());
