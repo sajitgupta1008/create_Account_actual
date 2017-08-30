@@ -104,7 +104,6 @@ public class Guest implements Jsonable {
     @Brand(groups = DefaultChecks.class)
     Character webshopperBrand;
     
-    @NotNull(message = "At least one optin is required.", groups = CreateChecks.class)
     @Valid
     List<Optin> optins;
     
