@@ -19,6 +19,8 @@ public class PersonalInformation implements Jsonable {
             message = "A valid avatar URL path is required, if being provided.")
     String avatar;
     
+    @Size(min = 1, max = 50, message = "The nickname must be at least one (1) character"
+            + " and maximum of fifty (50) characters.")
     @Pattern(regexp = "^[A-Za-z0-9]+[A-Za-z0-9\\s]{0,19}$",
             message = "If provided, the nickname must be at least one alphanumeric character.")
     String nickname;
