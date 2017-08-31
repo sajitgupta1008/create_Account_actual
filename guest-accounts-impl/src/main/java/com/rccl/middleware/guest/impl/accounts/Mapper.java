@@ -168,8 +168,7 @@ public class Mapper {
         
         SignInInformation signInInfo = guest.getSignInInformation();
         if (signInInfo != null) {
-            builder.email(guest.getEmail())
-                    .password(signInInfo.getPassword())
+            builder.password(signInInfo.getPassword())
                     .securityQuestions(signInInfo.getSecurityQuestions());
         }
         

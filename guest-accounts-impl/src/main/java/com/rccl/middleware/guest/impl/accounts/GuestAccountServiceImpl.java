@@ -205,6 +205,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
             if (!guestBuilder.build().equals(Guest.builder().build())) {
                 final Guest guest = guestBuilder
                         .header(enrichedGuest.getHeader())
+                        .email(enrichedGuest.getEmail())
                         .vdsId(enrichedGuest.getVdsId())
                         .build();
                 updateAccountService = this.updateAccount().invoke(guest);
