@@ -29,7 +29,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
 import static com.lightbend.lagom.javadsl.testkit.ServiceTest.defaultSetup;
@@ -150,7 +150,7 @@ public class GuestAccountUpdateServiceTest {
                 .signInInformation(SignInInformation.builder()
                         .password("password1".toCharArray())
                         .securityQuestions(
-                                Arrays.asList(SecurityQuestion.builder().question("what?").answer("yes").build())
+                                Collections.singletonList(SecurityQuestion.builder().question("what?").answer("yes").build())
                         )
                         .build())
                 .travelDocumentInformation(TravelDocumentInformation.builder()

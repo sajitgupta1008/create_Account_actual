@@ -176,12 +176,16 @@ public class GuestAccountServiceTest {
         
         // Test an empty question field.
         SecurityQuestion emptyQuestion = SecurityQuestion.builder().question("").answer("answer").build();
-        Guest emptyQuestionGuest = createSampleGuest().securityQuestions(Arrays.asList(emptyQuestion)).build();
+        Guest emptyQuestionGuest = createSampleGuest()
+                .securityQuestions(Collections.singletonList(emptyQuestion))
+                .build();
         shorthandInvokeExpectingWithValidationExceptionMessage(emptyQuestionGuest);
         
         // Test an empty answer field.
         SecurityQuestion emptyAnswer = SecurityQuestion.builder().question("question").answer("").build();
-        Guest emptyAnswerGuest = createSampleGuest().securityQuestions(Arrays.asList(emptyAnswer)).build();
+        Guest emptyAnswerGuest = createSampleGuest()
+                .securityQuestions(Collections.singletonList(emptyAnswer))
+                .build();
         shorthandInvokeExpectingWithValidationExceptionMessage(emptyAnswerGuest);
     }
     
