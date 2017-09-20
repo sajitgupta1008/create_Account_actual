@@ -95,7 +95,7 @@ public class GuestAccountLoginServiceTest {
             assertTrue("lastName must not be null", response.get("lastName") != null);
             
         } catch (Exception e) {
-            assertFalse("Must return successful login instead.", e == null);
+            assertFalse("Must return successful login instead.", true);
         }
     }
     
