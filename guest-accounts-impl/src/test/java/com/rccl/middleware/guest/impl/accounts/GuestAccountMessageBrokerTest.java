@@ -19,6 +19,7 @@ import com.rccl.middleware.guest.accounts.SecurityQuestion;
 import com.rccl.middleware.guest.accounts.TermsAndConditionsAgreement;
 import com.rccl.middleware.guest.accounts.enriched.ContactInformation;
 import com.rccl.middleware.guest.accounts.enriched.EnrichedGuest;
+import com.rccl.middleware.guest.accounts.enriched.LoyaltyInformation;
 import com.rccl.middleware.guest.accounts.enriched.SignInInformation;
 import com.rccl.middleware.guest.accounts.enriched.TravelDocumentInformation;
 import com.rccl.middleware.guest.accounts.enriched.WebshopperInformation;
@@ -140,7 +141,10 @@ public class GuestAccountMessageBrokerTest {
         
         
         Guest sampleGuest = this.createSampleGuest();
-        EnrichedGuest sampleEnrichedGuest = this.createSampleEnrichedGuest().build();
+        // loyalty information is required to test verify loyalty event.
+        EnrichedGuest sampleEnrichedGuest = this.createSampleEnrichedGuest()
+                .loyaltyInformation(LoyaltyInformation.builder().captainsClubId("12345678").build())
+                .build();
         
         try {
             FiniteDuration finiteDuration = new FiniteDuration(20, SECONDS);
