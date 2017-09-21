@@ -175,7 +175,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                     .thenCombineAsync(getProfile, (guest, profile) -> {
                         Optins optins = null;
                         
-                        if (guest != null && StringUtils.isNoneBlank(guest.getEmail())) {
+                        if (guest != null && StringUtils.isNotBlank(guest.getEmail())) {
                             optins = guestProfileOptinService.getOptins(guest.getEmail())
                                     .invoke()
                                     .exceptionally(throwable -> null)
