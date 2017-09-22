@@ -150,6 +150,9 @@ public class Mapper {
     /**
      * Extracts all necessary information from {@link EnrichedGuest} and maps those attributes
      * in {@link Guest} for Update Guest Account service.
+     * <p>
+     * Note that this does not include the {@link LoyaltyInformation} part of {@link EnrichedGuest} object
+     * since it needs to undergo Siebel validation first.
      *
      * @param guest {@link EnrichedGuest}
      * @return {@link Guest.GuestBuilder}
@@ -170,15 +173,6 @@ public class Mapper {
         if (signInInfo != null) {
             builder.password(signInInfo.getPassword())
                     .securityQuestions(signInInfo.getSecurityQuestions());
-        }
-        
-        LoyaltyInformation loyaltyInfo = guest.getLoyaltyInformation();
-        if (loyaltyInfo != null) {
-            builder.crownAndAnchorId(loyaltyInfo.getCrownAndAnchorId())
-                    .captainsClubId(loyaltyInfo.getCaptainsClubId())
-                    .azamaraLoyaltyId(loyaltyInfo.getAzamaraLoyaltyId())
-                    .clubRoyaleId(loyaltyInfo.getClubRoyaleId())
-                    .celebrityBlueChipId(loyaltyInfo.getCelebrityBlueChipId());
         }
         
         ContactInformation contactInfo = guest.getContactInformation();
