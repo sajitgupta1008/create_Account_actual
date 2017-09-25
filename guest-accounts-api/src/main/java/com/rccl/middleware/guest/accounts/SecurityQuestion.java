@@ -1,5 +1,6 @@
 package com.rccl.middleware.guest.accounts;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.lightbend.lagom.serialization.Jsonable;
 import lombok.Builder;
 import lombok.Value;
@@ -9,6 +10,7 @@ import javax.validation.constraints.Size;
 
 @Value
 @Builder
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class SecurityQuestion implements Jsonable {
     
     /**
