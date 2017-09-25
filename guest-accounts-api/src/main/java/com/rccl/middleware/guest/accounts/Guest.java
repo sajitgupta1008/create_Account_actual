@@ -112,6 +112,8 @@ public class Guest implements Jsonable {
     @DateFormat
     String passportExpirationDate;
     
+    String creationTimestamp;
+    
     public interface CreateChecks extends DefaultChecks {
         // Validation group interface.
     }

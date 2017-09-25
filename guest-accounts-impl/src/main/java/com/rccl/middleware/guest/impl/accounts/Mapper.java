@@ -18,6 +18,9 @@ import com.rccl.middleware.saviynt.api.responses.AccountInformation;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.CollectionUtils;
 
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -29,7 +32,8 @@ public class Mapper {
     }
     
     /**
-     * Includes VDS ID argument value into {@link Guest} model.
+     * Includes VDS ID argument value into {@link Guest} model as well as the creation timestamp
+     * which is for the Kafka event.
      *
      * @param vdsId the given VDS ID of the user.
      * @param guest the {@link Guest} model.
@@ -55,6 +59,8 @@ public class Mapper {
                 .webshopperBrand(guest.getWebshopperBrand())
                 .termsAndConditionsAgreement(guest.getTermsAndConditionsAgreement())
                 .optins(guest.getOptins())
+                .creationTimestamp(DateTimeFormatter.ofPattern("yyyyMMdd'T'hhmmssz")
+                        .withZone(ZoneId.of("UTC")).format(ZonedDateTime.now()))
                 .build();
     }
     
