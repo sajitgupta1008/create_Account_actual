@@ -13,8 +13,9 @@ import com.lightbend.lagom.javadsl.api.transport.TransportErrorCode;
 import com.lightbend.lagom.javadsl.broker.TopicProducer;
 import com.lightbend.lagom.javadsl.persistence.PersistentEntityRegistry;
 import com.lightbend.lagom.javadsl.server.HeaderServiceCall;
-import com.rccl.middleware.common.exceptions.MiddlewareExceptionMessage;
+import com.rccl.middleware.common.exceptions.MiddlewareError;
 import com.rccl.middleware.common.exceptions.MiddlewareTransportException;
+import com.rccl.middleware.common.response.ResponseBody;
 import com.rccl.middleware.common.validation.MiddlewareValidation;
 import com.rccl.middleware.common.validation.validator.ValidatorConstants;
 import com.rccl.middleware.forgerock.api.ForgeRockService;
@@ -78,6 +79,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                    PersistentEntityRegistry persistentEntityRegistry,
                                    GuestProfilesService guestProfilesService,
                                    GuestProfileOptinService guestProfileOptinService) {
+        
         this.saviyntService = saviyntService;
         this.forgeRockService = forgeRockService;
         
@@ -89,7 +91,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     }
     
     @Override
-    public HeaderServiceCall<Guest, JsonNode> createAccount() {
+    public HeaderServiceCall<Guest, ResponseBody<JsonNode>> createAccount() {
         return (requestHeader, guest) -> {
             MiddlewareValidation.validateWithGroups(guest, Guest.CreateChecks.class);
             
@@ -138,7 +140,11 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                             objNode.put("vdsId", vdsId);
                             
                             return CompletableFuture.completedFuture(
-                                    Pair.create(ResponseHeader.OK.withStatus(201), objNode));
+                                    Pair.create(ResponseHeader.OK.withStatus(201), ResponseBody
+                                            .<JsonNode>builder()
+                                            .status(201)
+                                            .payload(objNode)
+                                            .build()));
                             
                         } else {
                             // automatically authenticate user and include vdsId in the response.
@@ -150,8 +156,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                             
                             return this.authenticateUser()
                                     .invokeWithHeaders(requestHeader, credentials)
-                                    .thenApply(pair ->
-                                            Pair.create(ResponseHeader.OK.withStatus(201), pair.second()));
+                                    .thenApply(pair -> Pair.create(ResponseHeader.OK.withStatus(201), pair.second()));
                         }
                         
                     });
@@ -159,7 +164,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     }
     
     @Override
-    public HeaderServiceCall<NotUsed, EnrichedGuest> getAccountEnriched(String vdsId) {
+    public HeaderServiceCall<NotUsed, ResponseBody<EnrichedGuest>> getAccountEnriched(String vdsId) {
         return (requestHeader, notUsed) -> {
             
             if (StringUtils.isBlank(vdsId)) {
@@ -188,13 +193,17 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         }
                         
                         EnrichedGuest enrichedGuest = Mapper.mapToEnrichedGuest(guest, profile, optins);
-                        return Pair.create(ResponseHeader.OK, enrichedGuest);
+                        return Pair.create(ResponseHeader.OK, ResponseBody
+                                .<EnrichedGuest>builder()
+                                .status(ResponseHeader.OK.status())
+                                .payload(enrichedGuest)
+                                .build());
                     });
         };
     }
     
     @Override
-    public HeaderServiceCall<EnrichedGuest, JsonNode> updateAccountEnriched() {
+    public HeaderServiceCall<EnrichedGuest, ResponseBody<JsonNode>> updateAccountEnriched() {
         return (requestHeader, enrichedGuest) -> {
             
             MiddlewareValidation.validate(enrichedGuest);
@@ -238,9 +247,10 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         // let the process go through.
                         if (accountFuture.isCompletedExceptionally() && profileFuture.isCompletedExceptionally()) {
                             
-                            MiddlewareExceptionMessage message = new MiddlewareExceptionMessage();
-                            message.setErrorMessage("The service did not complete successfully.");
-                            message.setDeveloperMessage(throwable.getCause().toString());
+                            MiddlewareError.MiddlewareErrorBuilder error = MiddlewareError.builder();
+                            
+                            error.internalMessage("The service did not complete successfully.");
+                            error.developerMessage(throwable.getCause().toString());
                             
                             StringBuilder sb = new StringBuilder();
                             sb.append("Update Account and Update Profile services failed. ");
@@ -248,9 +258,9 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                             if (optinsFuture.isCompletedExceptionally()) {
                                 sb.append("Update Optins service failed. ");
                             }
-                            message.setAdditionalInformation(sb.toString());
+                            error.userMessage(sb.toString());
                             
-                            throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), message);
+                            throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), error.build());
                         }
                         
                         return null;
@@ -271,9 +281,17 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                             objectNode.put("updateOptins",
                                     "completed= " + !optinsFuture.isCompletedExceptionally());
                             
-                            return Pair.create(ResponseHeader.OK, objectNode);
+                            return Pair.create(ResponseHeader.OK, ResponseBody
+                                    .<JsonNode>builder()
+                                    .status(ResponseHeader.OK.status())
+                                    .payload(objectNode)
+                                    .build());
                         } else {
-                            return Pair.create(ResponseHeader.OK, TextNode.valueOf(enrichedGuest.getVdsId()));
+                            return Pair.create(ResponseHeader.OK, ResponseBody
+                                    .<JsonNode>builder()
+                                    .status(ResponseHeader.OK.status())
+                                    .payload(TextNode.valueOf(enrichedGuest.getVdsId()))
+                                    .build());
                         }
                     });
         };
@@ -343,7 +361,57 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     }
     
     @Override
-    public HeaderServiceCall<AccountCredentials, JsonNode> authenticateUser() {
+    public HeaderServiceCall<NotUsed, ResponseBody<JsonNode>> validateEmail(String email) {
+        return (requestHeader, notUsed) -> {
+            
+            Pattern pattern = Pattern.compile(ValidatorConstants.EMAIL_REGEXP);
+            Matcher matcher = pattern.matcher(email);
+            
+            if (!matcher.matches()) {
+                throw new InvalidEmailFormatException();
+            }
+            
+            return saviyntService.getAccountStatus(email, "email", "False").invoke()
+                    .exceptionally(exception -> {
+                        Throwable cause = exception.getCause();
+                        
+                        // in case of non existing account, return an AccountStatus with DoesNotExist message instead.
+                        // So that the service will return a 200 with a status of "DoesNotExist"
+                        if (cause instanceof SaviyntExceptionFactory.ExistingGuestException) {
+                            return AccountStatus.builder()
+                                    .message(AccountStatusEnum.DOES_NOT_EXIST.value())
+                                    .build();
+                        }
+                        
+                        if (cause instanceof SaviyntExceptionFactory.InvalidEmailFormatException) {
+                            throw new InvalidEmailFormatException();
+                        }
+                        
+                        throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
+                    })
+                    .thenApply(accountStatus -> {
+                        ObjectNode response = OBJECT_MAPPER.createObjectNode();
+                        AccountStatusEnum accountStatusEnum = AccountStatusEnum.fromValue(accountStatus.getMessage());
+                        
+                        String status;
+                        
+                        if (StringUtils.isNotBlank(accountStatus.getMessage()) && accountStatusEnum != null) {
+                            status = accountStatusEnum.value();
+                        } else {
+                            status = AccountStatusEnum.DOES_NOT_EXIST.value();
+                        }
+                        
+                        return Pair.create(ResponseHeader.OK, ResponseBody
+                                .<JsonNode>builder()
+                                .status(ResponseHeader.OK.status())
+                                .payload(response.put("status", status))
+                                .build());
+                    });
+        };
+    }
+    
+    @Override
+    public HeaderServiceCall<AccountCredentials, ResponseBody<JsonNode>> authenticateUser() {
         return (requestHeader, request) -> {
             
             if ("web".equals(request.getHeader().getChannel())) {
@@ -436,60 +504,22 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                                 .put("email", request.getUsername())
                                                 .put("token", accountStatus.getToken());
                                         
-                                        return Pair.create(ResponseHeader.OK, jsonResponse);
+                                        return Pair.create(ResponseHeader.OK, ResponseBody.
+                                                <JsonNode>builder()
+                                                .status(ResponseHeader.OK.status())
+                                                .payload(jsonResponse)
+                                                .build());
                                     });
                         }
                         
                         return CompletableFuture.completedFuture(
-                                Pair.create(ResponseHeader.OK.withStatus(200), jsonResponse));
+                                Pair.create(ResponseHeader.OK.withStatus(200), ResponseBody.
+                                        <JsonNode>builder()
+                                        .status(ResponseHeader.OK.status())
+                                        .payload(jsonResponse)
+                                        .build()));
                     });
             
-        };
-    }
-    
-    @Override
-    public HeaderServiceCall<NotUsed, JsonNode> validateEmail(String email) {
-        return (requestHeader, notUsed) -> {
-            
-            Pattern pattern = Pattern.compile(ValidatorConstants.EMAIL_REGEXP);
-            Matcher matcher = pattern.matcher(email);
-            
-            if (!matcher.matches()) {
-                throw new InvalidEmailFormatException();
-            }
-            
-            return saviyntService.getAccountStatus(email, "email", "False").invoke()
-                    .exceptionally(exception -> {
-                        Throwable cause = exception.getCause();
-                        
-                        // in case of non existing account, return an AccountStatus with DoesNotExist message instead.
-                        // So that the service will return a 200 with a status of "DoesNotExist"
-                        if (cause instanceof SaviyntExceptionFactory.ExistingGuestException) {
-                            return AccountStatus.builder()
-                                    .message(AccountStatusEnum.DOES_NOT_EXIST.value())
-                                    .build();
-                        }
-                        
-                        if (cause instanceof SaviyntExceptionFactory.InvalidEmailFormatException) {
-                            throw new InvalidEmailFormatException();
-                        }
-                        
-                        throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
-                    })
-                    .thenApply(accountStatus -> {
-                        ObjectNode response = OBJECT_MAPPER.createObjectNode();
-                        AccountStatusEnum accountStatusEnum = AccountStatusEnum.fromValue(accountStatus.getMessage());
-                        
-                        String status;
-                        
-                        if (StringUtils.isNotBlank(accountStatus.getMessage()) && accountStatusEnum != null) {
-                            status = accountStatusEnum.value();
-                        } else {
-                            status = AccountStatusEnum.DOES_NOT_EXIST.value();
-                        }
-                        
-                        return Pair.create(ResponseHeader.OK, response.put("status", status));
-                    });
         };
     }
     
