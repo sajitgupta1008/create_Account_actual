@@ -3,6 +3,7 @@ package com.rccl.middleware.guest.impl.accounts;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.lightbend.lagom.javadsl.testkit.ServiceTest.TestServer;
 import com.rccl.middleware.common.header.Header;
+import com.rccl.middleware.common.response.ResponseBody;
 import com.rccl.middleware.forgerock.api.ForgeRockService;
 import com.rccl.middleware.forgerock.api.ForgeRockServiceImplStub;
 import com.rccl.middleware.guest.accounts.AccountCredentials;
@@ -82,8 +83,9 @@ public class GuestAccountLoginServiceTest {
                 .build();
         
         try {
-            JsonNode response = service.authenticateUser().invoke(credentials)
+            ResponseBody<JsonNode> responseBody = service.authenticateUser().invoke(credentials)
                     .toCompletableFuture().get(10, TimeUnit.SECONDS);
+            JsonNode response = responseBody.getPayload();
             
             assertTrue("Account login status must not be null", response.get("accountLoginStatus") != null);
             assertTrue("accessToken must not be null", response.get("accessToken") != null);
@@ -107,7 +109,7 @@ public class GuestAccountLoginServiceTest {
                 .password("password!".toCharArray())
                 .build();
         
-        JsonNode response = service.authenticateUser().invoke(credentials)
+        ResponseBody<JsonNode> response = service.authenticateUser().invoke(credentials)
                 .toCompletableFuture().get(5, TimeUnit.SECONDS);
         
         assertFalse("Must throw an exception instead", response != null);

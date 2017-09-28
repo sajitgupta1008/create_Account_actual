@@ -139,7 +139,6 @@ public class GuestAccountMessageBrokerTest {
                         TestSink.probe(testServer.system()), testServer.materializer()
                 );
         
-        
         Guest sampleGuest = this.createSampleGuest();
         // loyalty information is required to test verify loyalty event.
         EnrichedGuest sampleEnrichedGuest = this.createSampleEnrichedGuest()
@@ -187,12 +186,14 @@ public class GuestAccountMessageBrokerTest {
                 .password("password1".toCharArray())
                 .birthdate("19910101")
                 .phoneNumber("+1(234)456-7890")
-                .securityQuestions(Collections.singletonList(SecurityQuestion.builder().question("what?").answer("yes").build()))
+                .securityQuestions(Collections.singletonList(SecurityQuestion.builder()
+                        .question("what?").answer("yes").build()))
                 .termsAndConditionsAgreement(TermsAndConditionsAgreement.builder()
-                        .acceptTime("20170627033735PM")
+                        .acceptTime("20170627T033735UTC")
                         .version("1.0")
                         .build())
-                .optins(Collections.singletonList(Optin.builder().type("EMAIL").flag("Y").acceptTime("20170706022122PM").build()))
+                .optins(Collections.singletonList(Optin.builder()
+                        .type("EMAIL").flag("Y").acceptTime("20170706T022122UTC").build()))
                 .build();
     }
     
@@ -218,7 +219,8 @@ public class GuestAccountMessageBrokerTest {
                 .signInInformation(SignInInformation.builder()
                         .password("password1".toCharArray())
                         .securityQuestions(
-                                Collections.singletonList(SecurityQuestion.builder().question("what?").answer("yes").build())
+                                Collections.singletonList(SecurityQuestion.builder()
+                                        .question("what?").answer("yes").build())
                         )
                         .build())
                 .travelDocumentInformation(TravelDocumentInformation.builder()
@@ -227,7 +229,8 @@ public class GuestAccountMessageBrokerTest {
                         .birthCountryCode("USA")
                         .citizenshipCountryCode("USA")
                         .build())
-                .webshopperInformation(WebshopperInformation.builder().brand('R').shopperId("123456789").build())
+                .webshopperInformation(WebshopperInformation.builder()
+                        .brand('R').shopperId("123456789").build())
                 .consumerId("1234567")
                 .email("successful@domain.com")
                 .vdsId("G1234567");

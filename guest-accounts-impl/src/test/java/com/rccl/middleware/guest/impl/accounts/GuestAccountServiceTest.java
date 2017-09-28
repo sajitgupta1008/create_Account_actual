@@ -6,7 +6,9 @@ import com.lightbend.lagom.javadsl.api.transport.RequestHeader;
 import com.lightbend.lagom.javadsl.api.transport.ResponseHeader;
 import com.lightbend.lagom.javadsl.server.HeaderServiceCall;
 import com.lightbend.lagom.javadsl.testkit.ServiceTest.TestServer;
+import com.rccl.middleware.common.exceptions.MiddlewareError;
 import com.rccl.middleware.common.header.Header;
+import com.rccl.middleware.common.response.ResponseBody;
 import com.rccl.middleware.common.validation.MiddlewareValidationException;
 import com.rccl.middleware.forgerock.api.ForgeRockService;
 import com.rccl.middleware.forgerock.api.ForgeRockServiceImplStub;
@@ -29,8 +31,8 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 import static com.lightbend.lagom.javadsl.testkit.ServiceTest.defaultSetup;
 import static com.lightbend.lagom.javadsl.testkit.ServiceTest.startServer;
@@ -47,7 +49,7 @@ public class GuestAccountServiceTest {
     
     private static GuestAccountService service;
     
-    private static HeaderServiceCall<Guest, JsonNode> createAccount;
+    private static HeaderServiceCall<Guest, ResponseBody<JsonNode>> createAccount;
     
     @BeforeClass
     public static void beforeClass() {
@@ -63,7 +65,7 @@ public class GuestAccountServiceTest {
         );
         
         service = testServer.client(GuestAccountService.class);
-        createAccount = (HeaderServiceCall<Guest, JsonNode>) service.createAccount();
+        createAccount = (HeaderServiceCall<Guest, ResponseBody<JsonNode>>) service.createAccount();
     }
     
     @AfterClass
@@ -82,16 +84,16 @@ public class GuestAccountServiceTest {
     public void testPostGuestAccount() throws Exception {
         Guest guest = createSampleGuest().build();
         
-        Pair<ResponseHeader, JsonNode> response = createAccount
+        Pair<ResponseHeader, ResponseBody<JsonNode>> responseBody = createAccount
                 .invokeWithHeaders(RequestHeader.DEFAULT, guest).toCompletableFuture().get(5, SECONDS);
+        JsonNode response = responseBody.second().getPayload();
         
         assertTrue("The status code for success should be 201 Created.",
-                response.first().status() == 201);
-        assertEquals("G8038782", response.second().get("vdsId").asText());
-        
-        assertTrue(response.second().get("accessToken") != null);
-        assertTrue(response.second().get("openIdToken") != null);
-        assertTrue(response.second().get("refreshToken") != null);
+                responseBody.first().status() == 201);
+        assertEquals("G8038782", response.get("vdsId").asText());
+        assertTrue(response.get("accessToken") != null);
+        assertTrue(response.get("openIdToken") != null);
+        assertTrue(response.get("refreshToken") != null);
     }
     
     @Test
@@ -189,7 +191,7 @@ public class GuestAccountServiceTest {
         shorthandInvokeExpectingWithValidationExceptionMessage(emptyAnswerGuest);
     }
     
-    private Map<String, String> shorthandInvokeExpectingWithValidationExceptionMessage(Guest guest) {
+    private List<MiddlewareError> shorthandInvokeExpectingWithValidationExceptionMessage(Guest guest) {
         try {
             createAccount.invokeWithHeaders(RequestHeader.DEFAULT, guest);
         } catch (Exception e) {
@@ -199,15 +201,15 @@ public class GuestAccountServiceTest {
             MiddlewareValidationException ige = (MiddlewareValidationException) e;
             
             assertTrue("The exception's status code should be 422.",
-                    ige.exceptionMessage().getStatusCode() == 422);
+                    ige.exceptionMessage().getStatus() == 422);
             
-            Map<String, String> validationErrors = ige.exceptionMessage().getValidationErrors();
+            List<MiddlewareError> validationErrors = ige.exceptionMessage().getErrors();
             
             assertNotNull("The validation errors object should not be null.", validationErrors);
             
             assertFalse("The validation errors map should not be empty.", validationErrors.isEmpty());
             
-            return ige.exceptionMessage().getValidationErrors();
+            return ige.exceptionMessage().getErrors();
         }
         
         throw new RuntimeException("This test should've returned in the catch block above.");
@@ -230,7 +232,7 @@ public class GuestAccountServiceTest {
                 .password("secretpass1".toCharArray());
         
         TermsAndConditionsAgreement tca = TermsAndConditionsAgreement.builder()
-                .acceptTime("20170627033735PM")
+                .acceptTime("20170627T033735UTC")
                 .version("1.0")
                 .build();
         
@@ -247,7 +249,7 @@ public class GuestAccountServiceTest {
         builder.securityQuestions(Arrays.asList(sq1, sq2));
         
         builder.optins(Collections.singletonList(Optin.builder()
-                .type("EMAIL").flag("Y").acceptTime("20170706022122PM").build()));
+                .type("EMAIL").flag("Y").acceptTime("20170706T022122UTC").build()));
         
         return builder;
     }
