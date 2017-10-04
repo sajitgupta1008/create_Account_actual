@@ -504,8 +504,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                                 .put("email", request.getUsername())
                                                 .put("token", accountStatus.getToken());
                                         
-                                        return Pair.create(ResponseHeader.OK, ResponseBody.
-                                                <JsonNode>builder()
+                                        return Pair.create(ResponseHeader.OK, ResponseBody
+                                                .<JsonNode>builder()
                                                 .status(ResponseHeader.OK.status())
                                                 .payload(jsonResponse)
                                                 .build());
@@ -513,8 +513,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         }
                         
                         return CompletableFuture.completedFuture(
-                                Pair.create(ResponseHeader.OK.withStatus(200), ResponseBody.
-                                        <JsonNode>builder()
+                                Pair.create(ResponseHeader.OK.withStatus(200), ResponseBody
+                                        .<JsonNode>builder()
                                         .status(ResponseHeader.OK.status())
                                         .payload(jsonResponse)
                                         .build()));
