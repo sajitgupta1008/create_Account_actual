@@ -12,7 +12,7 @@
     "CAS_CONTACT_POINT_ONE": "10.16.4.106",
     "CASSANDRA_REPLICATION_FACTOR": "3",
     "CAS_NATIVE_URL": "tcp://10.16.6.162:8042/cas_native",
-    "LINK_LOYALTY_TOPIC_NAME": "guest_accounts_link_loyalty_dev_v1",
+    "LINK_LOYALTY_TOPIC_NAME": "guest_accounts_search_add_loyalty_ucm_dev_v1",
     "CASSANDRA_REPLICATION_STRATEGY": "SimpleStrategy",
     "GUEST_PROFILES": "http://dev1-int.api.rccl.com/v1",
     "KAFKA_BOOTSTRAP_SERVERS": "10.16.5.94:9092, 10.16.5.91:9092",
