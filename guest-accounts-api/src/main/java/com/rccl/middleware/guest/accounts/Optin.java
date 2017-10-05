@@ -16,7 +16,7 @@ public class Optin {
     String type;
     
     @NotNull(message = "A flag is required.", groups = Guest.DefaultChecks.class)
-    @Pattern(regexp = "[YNU]", message = "The value of the flag can either be of the following: Y, N or U.",
+    @Pattern(regexp = "[YN]", message = "The value of the flag can either be Y or N.",
             groups = Guest.DefaultChecks.class)
     String flag;
     

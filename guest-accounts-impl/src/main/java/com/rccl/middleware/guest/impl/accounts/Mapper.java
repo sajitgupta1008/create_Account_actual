@@ -1,5 +1,6 @@
 package com.rccl.middleware.guest.impl.accounts;
 
+import com.rccl.middleware.common.response.ResponseBody;
 import com.rccl.middleware.guest.accounts.Guest;
 import com.rccl.middleware.guest.accounts.SecurityQuestion;
 import com.rccl.middleware.guest.accounts.enriched.ContactInformation;
@@ -263,11 +264,13 @@ public class Mapper {
      * Maps the individual model values into the {@link EnrichedGuest} model.
      *
      * @param guest   the {@link Guest} model from accounts service.
-     * @param profile the {@link Profile} model from profiles service.
-     * @param optins  the {@link Optins} model from optins service.
+     * @param profileResponseBody the {@link ResponseBody}<{@link Profile}> model from profiles service.
+     * @param optinsResponseBody  the {@link ResponseBody}<{@link Optins}> model from optins service.
      * @return {@link EnrichedGuest}
      */
-    public static EnrichedGuest mapToEnrichedGuest(Guest guest, Profile profile, Optins optins) {
+    public static EnrichedGuest mapToEnrichedGuest(Guest guest,
+                                                   ResponseBody<Profile> profileResponseBody,
+                                                   ResponseBody<Optins> optinsResponseBody) {
         
         PersonalInformation.PersonalInformationBuilder personalInformationBuilder = PersonalInformation.builder();
         ContactInformation.ContactInformationBuilder contactInformationBuilder = ContactInformation.builder();
@@ -301,7 +304,8 @@ public class Mapper {
                     .consumerId(guest.getConsumerId());
         }
         
-        if (profile != null) {
+        if (profileResponseBody != null && profileResponseBody.getPayload() != null) {
+            Profile profile = profileResponseBody.getPayload();
             personalInformationBuilder.avatar(profile.getAvatar())
                     .nickname(profile.getNickname())
                     .gender(profile.getGender());
@@ -326,6 +330,12 @@ public class Mapper {
                     .celebrityBlueChipLoyaltyIndividualPoints(profile.getCelebrityBlueChipLoyaltyIndividualPoints())
                     .celebrityBlueChipLoyaltyRelationshipPoints(profile
                             .getCelebrityBlueChipLoyaltyRelationshipPoints());
+            
+            enrichedGuestBuilder.emergencyContact(profile.getEmergencyContact());
+        }
+        
+        if (optinsResponseBody != null && optinsResponseBody.getPayload() != null) {
+            enrichedGuestBuilder.optins(optinsResponseBody.getPayload().getOptins());
         }
         
         return enrichedGuestBuilder
@@ -333,8 +343,6 @@ public class Mapper {
                 .contactInformation(contactInformationBuilder.build())
                 .travelDocumentInformation(travelDocumentInformation.build())
                 .loyaltyInformation(loyaltyInformationBuilder.build())
-                .emergencyContact(profile != null ? profile.getEmergencyContact() : null)
-                .optins(optins != null ? optins.getOptins() : null)
                 .build();
     }
     

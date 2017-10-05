@@ -133,7 +133,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         // trigger optin service to store the optins into Cassandra
                         guestProfileOptinService.createOptins(guest.getEmail())
                                 .invoke(this.generateCreateOptinsRequest(guest))
-                                .toCompletableFuture().complete(NotUsed.getInstance());
+                                .toCompletableFuture().complete(ResponseBody.builder().build());
                         
                         if ("web".equals(guest.getHeader().getChannel())) {
                             ObjectNode objNode = OBJECT_MAPPER.createObjectNode();
@@ -173,12 +173,12 @@ public class GuestAccountServiceImpl implements GuestAccountService {
             
             // In case of exception, return null and let the other process go through to return whichever
             // attributes are available.
-            final CompletionStage<Profile> getProfile = guestProfilesService.getProfile(vdsId)
+            final CompletionStage<ResponseBody<Profile>> getProfile = guestProfilesService.getProfile(vdsId)
                     .invoke().exceptionally(throwable -> null);
             
             return this.getAccount(vdsId).invoke().exceptionally(throwable -> null)
                     .thenCombineAsync(getProfile, (guest, profile) -> {
-                        Optins optins = null;
+                        ResponseBody<Optins> optins = null;
                         
                         if (guest != null && StringUtils.isNotBlank(guest.getEmail())) {
                             optins = guestProfileOptinService.getOptins(guest.getEmail())
@@ -220,8 +220,9 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                 updateAccountService = this.updateAccount().invoke(guest);
             }
             
-            CompletionStage<TextNode> updateProfileService =
-                    CompletableFuture.completedFuture(TextNode.valueOf(enrichedGuest.getVdsId()));
+            CompletionStage<ResponseBody<TextNode>> updateProfileService =
+                    CompletableFuture.completedFuture(ResponseBody
+                            .<TextNode>builder().payload(TextNode.valueOf(enrichedGuest.getVdsId())).build());
             Profile.ProfileBuilder profileBuilder = Mapper.mapEnrichedGuestToProfile(enrichedGuest);
             
             if (!profileBuilder.build().equals(Profile.builder().build())) {
@@ -229,7 +230,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                 updateProfileService = guestProfilesService.updateProfile().invoke(profile);
             }
             
-            CompletionStage<NotUsed> updateOptinsService = CompletableFuture.completedFuture(NotUsed.getInstance());
+            CompletionStage<ResponseBody> updateOptinsService = CompletableFuture
+                    .completedFuture(ResponseBody.builder().build());
             Optins optins = Mapper.mapEnrichedGuestToOptins(enrichedGuest);
             
             if (optins != null && StringUtils.isNotBlank(enrichedGuest.getEmail())) {
@@ -238,8 +240,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
             }
             
             final CompletableFuture<NotUsed> accountFuture = updateAccountService.toCompletableFuture();
-            final CompletableFuture<TextNode> profileFuture = updateProfileService.toCompletableFuture();
-            final CompletableFuture<NotUsed> optinsFuture = updateOptinsService.toCompletableFuture();
+            final CompletableFuture<ResponseBody<TextNode>> profileFuture = updateProfileService.toCompletableFuture();
+            final CompletableFuture<ResponseBody> optinsFuture = updateOptinsService.toCompletableFuture();
             
             return CompletableFuture.allOf(accountFuture, profileFuture, optinsFuture)
                     .exceptionally(throwable -> {
