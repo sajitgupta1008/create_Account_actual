@@ -2,6 +2,7 @@ package com.rccl.middleware.guest.impl.accounts;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.lightbend.lagom.javadsl.testkit.ServiceTest;
+import com.rccl.middleware.common.response.ResponseBody;
 import com.rccl.middleware.guest.accounts.AccountStatusEnum;
 import com.rccl.middleware.guest.accounts.GuestAccountService;
 import com.rccl.middleware.saviynt.api.SaviyntService;
@@ -46,22 +47,22 @@ public class GuestAccountEmailValidationServiceTest {
     
     @Test
     public void shouldReturnStatusAccountExists() throws Exception {
-        JsonNode response = guestAccountEmailValidationService.validateEmail("successful@domain.com")
+        ResponseBody<JsonNode> response = guestAccountEmailValidationService.validateEmail("successful@domain.com")
                 .invoke().toCompletableFuture().get(5, TimeUnit.SECONDS);
         
         assertNotNull(response);
-        assertNotNull(response.get("status"));
-        assertTrue(response.get("status").asText().equals(AccountStatusEnum.EXISTING.value()));
+        assertNotNull(response.getPayload().get("status"));
+        assertTrue(response.getPayload().get("status").asText().equals(AccountStatusEnum.EXISTING.value()));
     }
     
     @Test(expected = ExecutionException.class)
     public void shouldReturnStatusAccountNonExisting() throws Exception {
-        JsonNode response = guestAccountEmailValidationService.validateEmail("notexisting@domain.com")
+        ResponseBody<JsonNode> response = guestAccountEmailValidationService.validateEmail("notexisting@domain.com")
                 .invoke().toCompletableFuture().get(5, TimeUnit.SECONDS);
         
         assertNotNull(response);
-        assertNotNull(response.get("status"));
-        assertTrue(response.get("status").asText().equals(AccountStatusEnum.DOES_NOT_EXIST.value()));
+        assertNotNull(response.getPayload().get("status"));
+        assertTrue(response.getPayload().get("status").asText().equals(AccountStatusEnum.DOES_NOT_EXIST.value()));
     }
     
     @Test(expected = ExecutionException.class)

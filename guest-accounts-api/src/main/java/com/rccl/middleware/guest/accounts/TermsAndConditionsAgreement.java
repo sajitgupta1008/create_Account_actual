@@ -12,11 +12,11 @@ import javax.validation.constraints.NotNull;
 @Builder
 public class TermsAndConditionsAgreement implements Jsonable {
     
-    @NotBlank(message = "The acceptance time in ISO-8601 date format (yyyyMMddhhmmssaa) is required.",
+    @NotBlank(message = "The acceptance time in ISO-8601 date format (yyyyMMddThhmmssz) is required.",
             groups = Guest.CreateChecks.class)
-    @NotNull(message = "The acceptance time in ISO-8601 date format (yyyyMMddhhmmssaa) is required.",
+    @NotNull(message = "The acceptance time in ISO-8601 date format (yyyyMMddThhmmssz) is required.",
             groups = Guest.UpdateChecks.class)
-    @DateFormat(format = "yyyyMMddhhmmssaa", message = "The date must follow ISO-8601 format(yyyyMMddhhmmssaa).",
+    @DateFormat(format = "yyyyMMdd'T'HHmmssz", message = "The date must follow ISO-8601 format(yyyyMMddThhmmssz).",
             groups = Guest.DefaultChecks.class)
     String acceptTime;
     

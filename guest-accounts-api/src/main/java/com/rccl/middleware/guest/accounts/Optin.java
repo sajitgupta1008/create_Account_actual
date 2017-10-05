@@ -20,9 +20,9 @@ public class Optin {
             groups = Guest.DefaultChecks.class)
     String flag;
     
-    @NotNull(message = "The acceptance time in ISO-8601 date format (yyyyMMddhhmmssaa) is required.",
+    @NotNull(message = "The acceptance time in ISO-8601 date format (yyyyMMddTHHmmssz) is required.",
             groups = Guest.DefaultChecks.class)
-    @DateFormat(format = "yyyyMMddhhmmssaa", message = "The date must follow ISO-8601 format(yyyyMMddhhmmssaa).",
+    @DateFormat(format = "yyyyMMdd'T'HHmmssz", message = "The date must follow ISO-8601 format(yyyyMMddTHHmmssz).",
             groups = Guest.DefaultChecks.class)
     String acceptTime;
 }

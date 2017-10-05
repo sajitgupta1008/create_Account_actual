@@ -7,6 +7,7 @@ import com.lightbend.lagom.javadsl.api.Descriptor;
 import com.lightbend.lagom.javadsl.api.Service;
 import com.lightbend.lagom.javadsl.api.ServiceCall;
 import com.lightbend.lagom.javadsl.api.broker.Topic;
+import com.rccl.middleware.common.response.ResponseBody;
 import com.rccl.middleware.guest.accounts.enriched.EnrichedGuest;
 import com.typesafe.config.ConfigFactory;
 
@@ -23,15 +24,15 @@ public interface GuestAccountService extends Service {
     
     String VERIFY_LOYALTY_KAFKA_TOPIC = ConfigFactory.load().getString("kafka.verify-loyalty.topic.name");
     
-    ServiceCall<Guest, JsonNode> createAccount();
+    ServiceCall<Guest, ResponseBody<JsonNode>> createAccount();
     
-    ServiceCall<NotUsed, EnrichedGuest> getAccountEnriched(String vdsId);
+    ServiceCall<NotUsed, ResponseBody<EnrichedGuest>> getAccountEnriched(String vdsId);
     
-    ServiceCall<EnrichedGuest, JsonNode> updateAccountEnriched();
+    ServiceCall<EnrichedGuest, ResponseBody<JsonNode>> updateAccountEnriched();
     
-    ServiceCall<AccountCredentials, JsonNode> authenticateUser();
+    ServiceCall<AccountCredentials, ResponseBody<JsonNode>> authenticateUser();
     
-    ServiceCall<NotUsed, JsonNode> validateEmail(String email);
+    ServiceCall<NotUsed, ResponseBody<JsonNode>> validateEmail(String email);
     
     ServiceCall<NotUsed, String> healthCheck();
     

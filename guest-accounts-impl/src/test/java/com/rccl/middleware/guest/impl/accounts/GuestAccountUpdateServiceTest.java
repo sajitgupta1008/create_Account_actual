@@ -8,6 +8,7 @@ import com.lightbend.lagom.javadsl.server.HeaderServiceCall;
 import com.lightbend.lagom.javadsl.testkit.ServiceTest;
 import com.rccl.middleware.common.exceptions.MiddlewareTransportException;
 import com.rccl.middleware.common.header.Header;
+import com.rccl.middleware.common.response.ResponseBody;
 import com.rccl.middleware.common.validation.MiddlewareValidationException;
 import com.rccl.middleware.guest.accounts.GuestAccountService;
 import com.rccl.middleware.guest.accounts.SecurityQuestion;
@@ -70,10 +71,10 @@ public class GuestAccountUpdateServiceTest {
         EnrichedGuest guest = this.createSampleEnrichedGuest().build();
         
         try {
-            HeaderServiceCall<EnrichedGuest, JsonNode> updateAccount =
-                    (HeaderServiceCall<EnrichedGuest, JsonNode>) guestAccountService.updateAccountEnriched();
+            HeaderServiceCall<EnrichedGuest, ResponseBody<JsonNode>> updateAccount =
+                    (HeaderServiceCall<EnrichedGuest, ResponseBody<JsonNode>>) guestAccountService.updateAccountEnriched();
             
-            Pair<ResponseHeader, JsonNode> response = updateAccount
+            Pair<ResponseHeader, ResponseBody<JsonNode>> response = updateAccount
                     .invokeWithHeaders(RequestHeader.DEFAULT, guest)
                     .toCompletableFuture()
                     .get(5, TimeUnit.SECONDS);
@@ -92,10 +93,10 @@ public class GuestAccountUpdateServiceTest {
         EnrichedGuest guest = this.createSampleEnrichedGuest().vdsId("G765432").build();
         
         try {
-            HeaderServiceCall<EnrichedGuest, JsonNode> updateAccount =
-                    (HeaderServiceCall<EnrichedGuest, JsonNode>) guestAccountService.updateAccountEnriched();
+            HeaderServiceCall<EnrichedGuest, ResponseBody<JsonNode>> updateAccount =
+                    (HeaderServiceCall<EnrichedGuest, ResponseBody<JsonNode>>) guestAccountService.updateAccountEnriched();
             
-            Pair<ResponseHeader, JsonNode> response = updateAccount
+            Pair<ResponseHeader, ResponseBody<JsonNode>> response = updateAccount
                     .invokeWithHeaders(RequestHeader.DEFAULT, guest)
                     .toCompletableFuture()
                     .get(5, TimeUnit.SECONDS);
@@ -117,10 +118,10 @@ public class GuestAccountUpdateServiceTest {
                 .email("invalidemail")
                 .build();
         
-        HeaderServiceCall<EnrichedGuest, JsonNode> updateAccount =
-                (HeaderServiceCall<EnrichedGuest, JsonNode>) guestAccountService.updateAccountEnriched();
+        HeaderServiceCall<EnrichedGuest, ResponseBody<JsonNode>> updateAccount =
+                (HeaderServiceCall<EnrichedGuest, ResponseBody<JsonNode>>) guestAccountService.updateAccountEnriched();
         
-        Pair<ResponseHeader, JsonNode> response = updateAccount
+        Pair<ResponseHeader, ResponseBody<JsonNode>> response = updateAccount
                 .invokeWithHeaders(RequestHeader.DEFAULT, guest)
                 .toCompletableFuture()
                 .get(5, TimeUnit.SECONDS);

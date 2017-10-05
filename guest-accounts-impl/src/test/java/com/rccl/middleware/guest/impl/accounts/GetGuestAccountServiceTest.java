@@ -4,6 +4,7 @@ import akka.NotUsed;
 import com.lightbend.lagom.javadsl.api.transport.RequestHeader;
 import com.lightbend.lagom.javadsl.server.HeaderServiceCall;
 import com.lightbend.lagom.javadsl.testkit.ServiceTest;
+import com.rccl.middleware.common.response.ResponseBody;
 import com.rccl.middleware.guest.accounts.GuestAccountService;
 import com.rccl.middleware.guest.accounts.enriched.EnrichedGuest;
 import com.rccl.middleware.guest.optin.GuestProfileOptinService;
@@ -54,10 +55,11 @@ public class GetGuestAccountServiceTest {
     @Test
     public void testSuccessfulGetGuestAccountEnriched() {
         
-        EnrichedGuest guest = ((HeaderServiceCall<NotUsed, EnrichedGuest>) guestAccountService
+        ResponseBody<EnrichedGuest> response = ((HeaderServiceCall<NotUsed, ResponseBody<EnrichedGuest>>) guestAccountService
                 .getAccountEnriched("G1234567"))
                 .invokeWithHeaders(RequestHeader.DEFAULT, NotUsed.getInstance()).toCompletableFuture().join().second();
         
+        EnrichedGuest guest = response.getPayload();
         assertTrue(guest != null);
         assertTrue(guest.getOptins().size() > 0);
         assertTrue(guest.getPersonalInformation().getAvatar() != null);
@@ -70,7 +72,7 @@ public class GetGuestAccountServiceTest {
     
     @Test(expected = SaviyntExceptionFactory.ExistingGuestException.class)
     public void testNonExistingGuest() {
-        ((HeaderServiceCall<NotUsed, EnrichedGuest>) guestAccountService
+        ((HeaderServiceCall<NotUsed, ResponseBody<EnrichedGuest>>) guestAccountService
                 .getAccountEnriched("G1111111"))
                 .invokeWithHeaders(RequestHeader.DEFAULT, NotUsed.getInstance()).toCompletableFuture().join().second();
     }
