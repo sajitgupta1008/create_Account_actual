@@ -47,9 +47,9 @@
     <lagom.version>1.3.8</lagom.version>
     <middleware.common.version>1.11.0</middleware.common.version>
     <middleware.saviynt.version>1.0-SNAPSHOT</middleware.saviynt.version>
-    <middleware.forgerock.version>1.0-SNAPSHOT</middleware.forgerock.version>
     <middleware.guestprofiles.version>1.0-SNAPSHOT</middleware.guestprofiles.version>
     <middleware.optins.version>1.0-SNAPSHOT</middleware.optins.version>
+    <middleware.authentication.version>1.0-SNAPSHOT</middleware.authentication.version>
     <org.json.version>20160810</org.json.version>
     <play.version>2.5.15</play.version>
     <saaj.api.version>1.3.5</saaj.api.version>
@@ -153,11 +153,10 @@
         <version>${lagom.version}</version>
         <configuration>
           <unmanagedServices>
-            <cas_native>http://localhost:9042</cas_native>
-            <saviynt>http://stg1.api.rccl.com</saviynt>
-            <forgerock>http://stg1.api.rccl.com</forgerock>
-            <guest-profiles>http://stg1.api.rccl.com/v1</guest-profiles>
-            <guest_profile_optins>http://stg1.api.rccl.com/v1</guest_profile_optins>
+            <saviynt>http://dev1.api.rccl.com</saviynt>
+            <guest-profiles>http://dev1.api.rccl.com/v1</guest-profiles>
+            <guest_profile_optins>http://dev1.api.rccl.com/v1</guest_profile_optins>
+            <guest_accounts_authentication>http://dev1.api.rccl.com/v1</guest_accounts_authentication>
           </unmanagedServices>
           <kafkaEnabled>false</kafkaEnabled>
           <cassandraEnabled>false</cassandraEnabled>
@@ -517,12 +516,6 @@
 
       <dependency>
         <groupId>com.rccl.middleware</groupId>
-        <artifactId>forgerock</artifactId>
-        <version>${middleware.forgerock.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.rccl.middleware</groupId>
         <artifactId>guest-profiles-api</artifactId>
         <version>${middleware.guestprofiles.version}</version>
       </dependency>
@@ -531,6 +524,12 @@
         <groupId>com.rccl.middleware.guest.optin</groupId>
         <artifactId>guest-profiles-optins-api</artifactId>
         <version>${middleware.optins.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.rccl.middleware</groupId>
+        <artifactId>guest-accounts-authentication-api</artifactId>
+        <version>${middleware.authentication.version}</version>
       </dependency>
 
       <dependency>

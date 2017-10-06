@@ -18,24 +18,17 @@ import com.rccl.middleware.common.exceptions.MiddlewareTransportException;
 import com.rccl.middleware.common.response.ResponseBody;
 import com.rccl.middleware.common.validation.MiddlewareValidation;
 import com.rccl.middleware.common.validation.validator.ValidatorConstants;
-import com.rccl.middleware.forgerock.api.ForgeRockService;
-import com.rccl.middleware.forgerock.api.exceptions.ForgeRockExceptionFactory;
-import com.rccl.middleware.forgerock.api.jwt.ForgeRockJWTDecoder;
-import com.rccl.middleware.forgerock.api.jwt.OpenIdTokenInformation;
-import com.rccl.middleware.forgerock.api.requests.ForgeRockCredentials;
-import com.rccl.middleware.forgerock.api.requests.LoginStatusEnum;
-import com.rccl.middleware.forgerock.api.responses.MobileAuthenticationTokens;
-import com.rccl.middleware.guest.accounts.AccountCredentials;
 import com.rccl.middleware.guest.accounts.AccountStatusEnum;
 import com.rccl.middleware.guest.accounts.Guest;
 import com.rccl.middleware.guest.accounts.GuestAccountService;
 import com.rccl.middleware.guest.accounts.GuestEvent;
 import com.rccl.middleware.guest.accounts.enriched.EnrichedGuest;
 import com.rccl.middleware.guest.accounts.exceptions.ExistingGuestException;
-import com.rccl.middleware.guest.accounts.exceptions.GuestAuthenticationException;
 import com.rccl.middleware.guest.accounts.exceptions.GuestNotFoundException;
 import com.rccl.middleware.guest.accounts.exceptions.InvalidEmailFormatException;
 import com.rccl.middleware.guest.accounts.exceptions.InvalidGuestException;
+import com.rccl.middleware.guest.authentication.AccountCredentials;
+import com.rccl.middleware.guest.authentication.GuestAuthenticationService;
 import com.rccl.middleware.guest.optin.GuestProfileOptinService;
 import com.rccl.middleware.guest.optin.Optin;
 import com.rccl.middleware.guest.optin.OptinType;
@@ -46,10 +39,10 @@ import com.rccl.middleware.saviynt.api.SaviyntService;
 import com.rccl.middleware.saviynt.api.exceptions.SaviyntExceptionFactory;
 import com.rccl.middleware.saviynt.api.requests.SaviyntGuest;
 import com.rccl.middleware.saviynt.api.responses.AccountStatus;
+import com.typesafe.config.ConfigFactory;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.inject.Inject;
-import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -63,28 +56,32 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     
+    private static final String APPKEY_HEADER = "AppKey";
+    
+    private static final String DEFAULT_APP_KEY = ConfigFactory.load().getString("apigee.appkey");
+    
     private final PersistentEntityRegistry persistentEntityRegistry;
     
     private final SaviyntService saviyntService;
-    
-    private final ForgeRockService forgeRockService;
     
     private final GuestProfilesService guestProfilesService;
     
     private final GuestProfileOptinService guestProfileOptinService;
     
+    private final GuestAuthenticationService guestAuthenticationService;
+    
     @Inject
     public GuestAccountServiceImpl(SaviyntService saviyntService,
-                                   ForgeRockService forgeRockService,
                                    PersistentEntityRegistry persistentEntityRegistry,
                                    GuestProfilesService guestProfilesService,
-                                   GuestProfileOptinService guestProfileOptinService) {
+                                   GuestProfileOptinService guestProfileOptinService,
+                                   GuestAuthenticationService guestAuthenticationService) {
         
         this.saviyntService = saviyntService;
-        this.forgeRockService = forgeRockService;
         
         this.guestProfilesService = guestProfilesService;
         this.guestProfileOptinService = guestProfileOptinService;
+        this.guestAuthenticationService = guestAuthenticationService;
         
         this.persistentEntityRegistry = persistentEntityRegistry;
         persistentEntityRegistry.register(GuestAccountEntity.class);
@@ -118,8 +115,6 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
                     })
                     .thenCompose(response -> {
-                        
-                        // TODO: Replace this with the vdsId attribute when available.
                         String message = response.getMessage();
                         Pattern pattern = Pattern.compile("vdsid=[a-zA-Z0-9]*");
                         Matcher matcher = pattern.matcher(message);
@@ -130,8 +125,12 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         persistentEntityRegistry.refFor(GuestAccountEntity.class, guest.getEmail())
                                 .ask(new GuestAccountCommand.CreateGuest(Mapper.mapVdsIdWithGuest(vdsId, guest)));
                         
+                        String appKey = requestHeader.getHeader(APPKEY_HEADER).isPresent()
+                                ? requestHeader.getHeader(APPKEY_HEADER).get() : DEFAULT_APP_KEY;
+                        
                         // trigger optin service to store the optins into Cassandra
                         guestProfileOptinService.createOptins(guest.getEmail())
+                                .handleRequestHeader(rh -> rh.withHeader(APPKEY_HEADER, appKey))
                                 .invoke(this.generateCreateOptinsRequest(guest))
                                 .toCompletableFuture().complete(ResponseBody.builder().build());
                         
@@ -145,20 +144,18 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                             .status(201)
                                             .payload(objNode)
                                             .build()));
-                            
                         } else {
                             // automatically authenticate user and include vdsId in the response.
-                            AccountCredentials credentials = AccountCredentials.builder()
-                                    .header(guest.getHeader())
-                                    .username(guest.getEmail())
-                                    .password(guest.getPassword())
-                                    .build();
-                            
-                            return this.authenticateUser()
-                                    .invokeWithHeaders(requestHeader, credentials)
-                                    .thenApply(pair -> Pair.create(ResponseHeader.OK.withStatus(201), pair.second()));
+                            return guestAuthenticationService.authenticateUser()
+                                    .handleRequestHeader(rh -> rh.withHeader(APPKEY_HEADER, appKey))
+                                    .invoke(AccountCredentials.builder()
+                                            .header(guest.getHeader())
+                                            .username(guest.getEmail())
+                                            .password(guest.getPassword())
+                                            .build())
+                                    .thenApply(authResponse ->
+                                            Pair.create(ResponseHeader.OK.withStatus(201), authResponse));
                         }
-                        
                     });
         };
     }
@@ -171,9 +168,13 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                 throw new MiddlewareTransportException(TransportErrorCode.fromHttp(422), "VDS ID is required.");
             }
             
+            String appKey = requestHeader.getHeader(APPKEY_HEADER).isPresent()
+                    ? requestHeader.getHeader(APPKEY_HEADER).get() : DEFAULT_APP_KEY;
+            
             // In case of exception, return null and let the other process go through to return whichever
             // attributes are available.
             final CompletionStage<ResponseBody<Profile>> getProfile = guestProfilesService.getProfile(vdsId)
+                    .handleRequestHeader(rh -> rh.withHeader(APPKEY_HEADER, appKey))
                     .invoke().exceptionally(throwable -> null);
             
             return this.getAccount(vdsId).invoke().exceptionally(throwable -> null)
@@ -182,6 +183,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         
                         if (guest != null && StringUtils.isNotBlank(guest.getEmail())) {
                             optins = guestProfileOptinService.getOptins(guest.getEmail())
+                                    .handleRequestHeader(rh -> rh.withHeader(APPKEY_HEADER, appKey))
                                     .invoke()
                                     .exceptionally(throwable -> null)
                                     .toCompletableFuture()
@@ -208,6 +210,9 @@ public class GuestAccountServiceImpl implements GuestAccountService {
             
             MiddlewareValidation.validate(enrichedGuest);
             
+            String appKey = requestHeader.getHeader(APPKEY_HEADER).isPresent()
+                    ? requestHeader.getHeader(APPKEY_HEADER).get() : DEFAULT_APP_KEY;
+            
             CompletionStage<NotUsed> updateAccountService = CompletableFuture.completedFuture(NotUsed.getInstance());
             Guest.GuestBuilder guestBuilder = Mapper.mapEnrichedGuestToGuest(enrichedGuest);
             
@@ -217,7 +222,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         .email(enrichedGuest.getEmail())
                         .vdsId(enrichedGuest.getVdsId())
                         .build();
-                updateAccountService = this.updateAccount().invoke(guest);
+                updateAccountService = this.updateAccount()
+                        .handleRequestHeader(rh -> rh.withHeader(APPKEY_HEADER, appKey)).invoke(guest);
             }
             
             CompletionStage<ResponseBody<TextNode>> updateProfileService =
@@ -227,7 +233,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
             
             if (!profileBuilder.build().equals(Profile.builder().build())) {
                 final Profile profile = profileBuilder.vdsId(enrichedGuest.getVdsId()).build();
-                updateProfileService = guestProfilesService.updateProfile().invoke(profile);
+                updateProfileService = guestProfilesService.updateProfile()
+                        .handleRequestHeader(rh -> rh.withHeader(APPKEY_HEADER, appKey)).invoke(profile);
             }
             
             CompletionStage<ResponseBody> updateOptinsService = CompletableFuture
@@ -236,7 +243,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
             
             if (optins != null && StringUtils.isNotBlank(enrichedGuest.getEmail())) {
                 updateOptinsService = guestProfileOptinService
-                        .updateOptins(enrichedGuest.getEmail()).invoke(optins);
+                        .updateOptins(enrichedGuest.getEmail())
+                        .handleRequestHeader(rh -> rh.withHeader(APPKEY_HEADER, appKey)).invoke(optins);
             }
             
             final CompletableFuture<NotUsed> accountFuture = updateAccountService.toCompletableFuture();
@@ -409,119 +417,6 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                 .payload(response.put("status", status))
                                 .build());
                     });
-        };
-    }
-    
-    @Override
-    public HeaderServiceCall<AccountCredentials, ResponseBody<JsonNode>> authenticateUser() {
-        return (requestHeader, request) -> {
-            
-            if ("web".equals(request.getHeader().getChannel())) {
-                throw new GuestAuthenticationException("The channel provided is not allowed to access this service.");
-            }
-            
-            MiddlewareValidation.validate(request);
-            
-            ForgeRockCredentials forgeRockCredentials = ForgeRockCredentials.builder()
-                    .username(request.getUsername())
-                    .password(request.getPassword())
-                    .build();
-            
-            return forgeRockService.authenticateMobileUser()
-                    .invoke(forgeRockCredentials)
-                    .exceptionally(exception -> {
-                        Throwable cause = exception.getCause();
-                        
-                        if (cause instanceof ForgeRockExceptionFactory.AuthenticationException) {
-                            ForgeRockExceptionFactory.AuthenticationException ex =
-                                    (ForgeRockExceptionFactory.AuthenticationException) cause;
-                            
-                            // if the error description contains "shopperid", then decrypt the message to
-                            // get the webshopper information
-                            if (StringUtils.contains(ex.getErrorDescription(), "shopperid")) {
-                                try {
-                                    String decodedString = URLDecoder.decode(ex.getErrorDescription(), "UTF-8");
-                                    Pattern pattern = Pattern.compile("\\{.*\\}");
-                                    Matcher matcher = pattern.matcher(decodedString);
-                                    matcher.find();
-                                    
-                                    return OBJECT_MAPPER.readValue(matcher.group(0), MobileAuthenticationTokens.class);
-                                    
-                                } catch (Exception e) {
-                                    throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), e);
-                                }
-                            }
-                            
-                            throw new GuestAuthenticationException(ex.getErrorDescription());
-                        }
-                        
-                        throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
-                    })
-                    .thenCompose(mobileAuthTokens -> {
-                        ObjectNode jsonResponse = OBJECT_MAPPER.createObjectNode();
-                        final String accountLoginStatus = "accountLoginStatus";
-                        
-                        if (StringUtils.isNotBlank(mobileAuthTokens.getAccessToken())) {
-                            jsonResponse.put(accountLoginStatus,
-                                    LoginStatusEnum.NEW_ACCOUNT_AUTHENTICATED.value())
-                                    .put("accessToken", mobileAuthTokens.getAccessToken())
-                                    .put("refreshToken", mobileAuthTokens.getRefreshToken())
-                                    .put("openIdToken", mobileAuthTokens.getIdToken())
-                                    .put("tokenExpiration", mobileAuthTokens.getExpiration());
-                            
-                            OpenIdTokenInformation decryptedInfo = ForgeRockJWTDecoder
-                                    .decodeJwtToken(mobileAuthTokens.getIdToken(), OpenIdTokenInformation.class);
-                            
-                            if (decryptedInfo != null) {
-                                jsonResponse.put("vdsId", decryptedInfo.getVdsId())
-                                        .put("firstName", decryptedInfo.getFirstName())
-                                        .put("lastName", decryptedInfo.getLastName())
-                                        .put("email", decryptedInfo.getEmail())
-                                        .put("birthdate", decryptedInfo.getBirthdate());
-                            }
-                            
-                        } else if (StringUtils.isNotBlank(mobileAuthTokens.getWebShopperId())) {
-                            jsonResponse.put(accountLoginStatus,
-                                    LoginStatusEnum.LEGACY_ACCOUNT_VERIFIED.value())
-                                    .put("webShopperId", mobileAuthTokens.getWebShopperId())
-                                    .put("webShopperUsername", mobileAuthTokens.getWebShopperUsername())
-                                    .put("webShopperFirstName", mobileAuthTokens.getWebShopperFirstName())
-                                    .put("webShopperLastName", mobileAuthTokens.getWebShopperLastName())
-                                    .put("webShopperEmail", mobileAuthTokens.getWebShopperEmail());
-                            
-                        } else {
-                            // in case of temporary password scenario, Saviynt AccountStatus service 
-                            // with generateToken=True must be invoked to retrieve all the necessary attributes
-                            // for eventually updating the guest password.
-                            return saviyntService
-                                    .getAccountStatus(request.getUsername(), "email", "True").invoke()
-                                    .exceptionally(throwable -> {
-                                        throw new MiddlewareTransportException(
-                                                TransportErrorCode.fromHttp(500), throwable);
-                                    })
-                                    .thenApply(accountStatus -> {
-                                        jsonResponse.put(accountLoginStatus,
-                                                LoginStatusEnum.LEGACY_ACCOUNT_VERIFIED.value())
-                                                .put("vdsId", accountStatus.getVdsId())
-                                                .put("email", request.getUsername())
-                                                .put("token", accountStatus.getToken());
-                                        
-                                        return Pair.create(ResponseHeader.OK, ResponseBody
-                                                .<JsonNode>builder()
-                                                .status(ResponseHeader.OK.status())
-                                                .payload(jsonResponse)
-                                                .build());
-                                    });
-                        }
-                        
-                        return CompletableFuture.completedFuture(
-                                Pair.create(ResponseHeader.OK.withStatus(200), ResponseBody
-                                        .<JsonNode>builder()
-                                        .status(ResponseHeader.OK.status())
-                                        .payload(jsonResponse)
-                                        .build()));
-                    });
-            
         };
     }
     

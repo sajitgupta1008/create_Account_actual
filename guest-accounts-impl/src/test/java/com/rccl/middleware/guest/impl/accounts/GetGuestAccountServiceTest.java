@@ -29,7 +29,6 @@ public class GetGuestAccountServiceTest {
     
     private static GuestAccountService guestAccountService;
     
-    
     @BeforeClass
     public static void setUp() {
         final ServiceTest.Setup setup = defaultSetup()

@@ -10,13 +10,13 @@ import com.rccl.middleware.common.exceptions.MiddlewareError;
 import com.rccl.middleware.common.header.Header;
 import com.rccl.middleware.common.response.ResponseBody;
 import com.rccl.middleware.common.validation.MiddlewareValidationException;
-import com.rccl.middleware.forgerock.api.ForgeRockService;
-import com.rccl.middleware.forgerock.api.ForgeRockServiceImplStub;
 import com.rccl.middleware.guest.accounts.Guest;
 import com.rccl.middleware.guest.accounts.GuestAccountService;
 import com.rccl.middleware.guest.accounts.Optin;
 import com.rccl.middleware.guest.accounts.SecurityQuestion;
 import com.rccl.middleware.guest.accounts.TermsAndConditionsAgreement;
+import com.rccl.middleware.guest.authentication.GuestAuthenticationService;
+import com.rccl.middleware.guest.authentication.GuestAuthenticationServiceStub;
 import com.rccl.middleware.guest.optin.GuestProfileOptinService;
 import com.rccl.middleware.guest.optin.GuestProfileOptinsStub;
 import com.rccl.middleware.guestprofiles.GuestProfileServiceStub;
@@ -57,7 +57,7 @@ public class GuestAccountServiceTest {
                 .withCassandra(true)
                 .configureBuilder(builder -> builder.overrides(
                         bind(SaviyntService.class).to(SaviyntServiceImplStub.class),
-                        bind(ForgeRockService.class).to(ForgeRockServiceImplStub.class),
+                        bind(GuestAuthenticationService.class).to(GuestAuthenticationServiceStub.class),
                         bind(GuestAccountService.class).to(GuestAccountServiceImpl.class),
                         bind(GuestProfileOptinService.class).to(GuestProfileOptinsStub.class),
                         bind(GuestProfilesService.class).to(GuestProfileServiceStub.class)
@@ -90,7 +90,7 @@ public class GuestAccountServiceTest {
         
         assertTrue("The status code for success should be 201 Created.",
                 responseBody.first().status() == 201);
-        assertEquals("G8038782", response.get("vdsId").asText());
+        assertEquals("G1234567", response.get("vdsId").asText());
         assertTrue(response.get("accessToken") != null);
         assertTrue(response.get("openIdToken") != null);
         assertTrue(response.get("refreshToken") != null);
