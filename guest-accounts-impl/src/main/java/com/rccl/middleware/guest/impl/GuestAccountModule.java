@@ -2,8 +2,8 @@ package com.rccl.middleware.guest.impl;
 
 import com.google.inject.AbstractModule;
 import com.lightbend.lagom.javadsl.server.ServiceGuiceSupport;
-import com.rccl.middleware.forgerock.api.ForgeRockService;
 import com.rccl.middleware.guest.accounts.GuestAccountService;
+import com.rccl.middleware.guest.authentication.GuestAuthenticationService;
 import com.rccl.middleware.guest.impl.accounts.GuestAccountServiceImpl;
 import com.rccl.middleware.guest.optin.GuestProfileOptinService;
 import com.rccl.middleware.guestprofiles.GuestProfilesService;
@@ -15,8 +15,8 @@ public class GuestAccountModule extends AbstractModule implements ServiceGuiceSu
     protected void configure() {
         bindService(GuestAccountService.class, GuestAccountServiceImpl.class);
         bindClient(SaviyntService.class);
-        bindClient(ForgeRockService.class);
         bindClient(GuestProfilesService.class);
         bindClient(GuestProfileOptinService.class);
+        bindClient(GuestAuthenticationService.class);
     }
 }

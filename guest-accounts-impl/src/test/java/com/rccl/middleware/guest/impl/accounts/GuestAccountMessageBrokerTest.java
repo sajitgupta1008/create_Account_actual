@@ -9,8 +9,6 @@ import com.lightbend.lagom.javadsl.testkit.PersistentEntityTestDriver;
 import com.lightbend.lagom.javadsl.testkit.PersistentEntityTestDriver.Outcome;
 import com.lightbend.lagom.javadsl.testkit.ServiceTest;
 import com.rccl.middleware.common.header.Header;
-import com.rccl.middleware.forgerock.api.ForgeRockService;
-import com.rccl.middleware.forgerock.api.ForgeRockServiceImplStub;
 import com.rccl.middleware.guest.accounts.Guest;
 import com.rccl.middleware.guest.accounts.GuestAccountService;
 import com.rccl.middleware.guest.accounts.GuestEvent;
@@ -23,6 +21,8 @@ import com.rccl.middleware.guest.accounts.enriched.LoyaltyInformation;
 import com.rccl.middleware.guest.accounts.enriched.SignInInformation;
 import com.rccl.middleware.guest.accounts.enriched.TravelDocumentInformation;
 import com.rccl.middleware.guest.accounts.enriched.WebshopperInformation;
+import com.rccl.middleware.guest.authentication.GuestAuthenticationService;
+import com.rccl.middleware.guest.authentication.GuestAuthenticationServiceStub;
 import com.rccl.middleware.guest.optin.GuestProfileOptinService;
 import com.rccl.middleware.guest.optin.GuestProfileOptinsStub;
 import com.rccl.middleware.guestprofiles.GuestProfileServiceStub;
@@ -65,7 +65,7 @@ public class GuestAccountMessageBrokerTest {
         final ServiceTest.Setup setup = defaultSetup()
                 .configureBuilder(builder -> builder.overrides(
                         bind(SaviyntService.class).to(SaviyntServiceImplStub.class),
-                        bind(ForgeRockService.class).to(ForgeRockServiceImplStub.class),
+                        bind(GuestAuthenticationService.class).to(GuestAuthenticationServiceStub.class),
                         bind(GuestProfileOptinService.class).to(GuestProfileOptinsStub.class),
                         bind(GuestProfilesService.class).to(GuestProfileServiceStub.class)
                 ));
