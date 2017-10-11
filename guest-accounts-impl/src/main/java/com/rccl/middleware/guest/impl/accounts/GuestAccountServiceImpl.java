@@ -125,8 +125,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         persistentEntityRegistry.refFor(GuestAccountEntity.class, guest.getEmail())
                                 .ask(new GuestAccountCommand.CreateGuest(Mapper.mapVdsIdWithGuest(vdsId, guest)));
                         
-                        String appKey = requestHeader.getHeader(APPKEY_HEADER).isPresent()
-                                ? requestHeader.getHeader(APPKEY_HEADER).get() : DEFAULT_APP_KEY;
+                        String appKey = requestHeader.getHeader(APPKEY_HEADER).orElse(DEFAULT_APP_KEY);
                         
                         // trigger optin service to store the optins into Cassandra
                         guestProfileOptinService.createOptins(guest.getEmail())
@@ -168,8 +167,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                 throw new MiddlewareTransportException(TransportErrorCode.fromHttp(422), "VDS ID is required.");
             }
             
-            String appKey = requestHeader.getHeader(APPKEY_HEADER).isPresent()
-                    ? requestHeader.getHeader(APPKEY_HEADER).get() : DEFAULT_APP_KEY;
+            String appKey = requestHeader.getHeader(APPKEY_HEADER).orElse(DEFAULT_APP_KEY);
             
             // In case of exception, return null and let the other process go through to return whichever
             // attributes are available.
@@ -210,8 +208,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
             
             MiddlewareValidation.validate(enrichedGuest);
             
-            String appKey = requestHeader.getHeader(APPKEY_HEADER).isPresent()
-                    ? requestHeader.getHeader(APPKEY_HEADER).get() : DEFAULT_APP_KEY;
+            String appKey = requestHeader.getHeader(APPKEY_HEADER).orElse(DEFAULT_APP_KEY);
             
             CompletionStage<NotUsed> updateAccountService = CompletableFuture.completedFuture(NotUsed.getInstance());
             Guest.GuestBuilder guestBuilder = Mapper.mapEnrichedGuestToGuest(enrichedGuest);
