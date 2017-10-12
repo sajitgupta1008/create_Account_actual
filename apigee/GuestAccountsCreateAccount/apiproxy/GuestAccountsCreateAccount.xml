@@ -12,7 +12,6 @@
         <ProxyEndpoint>CreateAccount</ProxyEndpoint>
         <ProxyEndpoint>EmailValidation</ProxyEndpoint>
         <ProxyEndpoint>GetAccount</ProxyEndpoint>
-        <ProxyEndpoint>Login</ProxyEndpoint>
         <ProxyEndpoint>UpdateAccount</ProxyEndpoint>
     </ProxyEndpoints>
     <TargetEndpoints>
