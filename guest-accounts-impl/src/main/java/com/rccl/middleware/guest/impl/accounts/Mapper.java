@@ -99,8 +99,7 @@ public class Mapper {
         
         // only map the account creation specific attributes
         if (isCreate) {
-            builder.username(guest.getEmail())
-                    .userType(SaviyntUserType.Guest);
+            builder.userType(SaviyntUserType.Guest);
         }
         
         List<SecurityQuestion> securityQuestions = guest.getSecurityQuestions();
