@@ -12,7 +12,7 @@ import javax.validation.constraints.Size;
 
 @Builder
 @Value
-@JsonInclude(JsonInclude.Include.NON_EMPTY)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class PersonalInformation implements Jsonable {
     
     @Pattern(regexp = "^(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]",
@@ -29,12 +29,11 @@ public class PersonalInformation implements Jsonable {
             + " and maximum of fifty (50) characters.")
     String firstName;
     
-    @Size(min = 1, max = 50, message = "The last name must be at least two (2) characters"
+    @Size(min = 1, max = 50, message = "The last name must be at least one (1) character"
             + " and maximum of fifty (50) characters.")
     String lastName;
     
-    @Size(min = 1, max = 50, message = "The middle name must be at least two (2) characters"
-            + " and maximum of fifty (50) characters.")
+    @Size(max = 50, message = "The middle name must have a maximum of fifty (50) characters.")
     String middleName;
     
     String suffix;

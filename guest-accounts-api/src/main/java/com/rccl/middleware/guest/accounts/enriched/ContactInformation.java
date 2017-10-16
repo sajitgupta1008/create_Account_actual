@@ -12,7 +12,7 @@ import javax.validation.constraints.Size;
 
 @Builder
 @Value
-@JsonInclude(JsonInclude.Include.NON_EMPTY)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ContactInformation implements Jsonable {
     
     String phoneCountryCode;

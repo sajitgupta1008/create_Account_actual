@@ -10,7 +10,7 @@ import javax.validation.constraints.Pattern;
 
 @Builder
 @Value
-@JsonInclude(JsonInclude.Include.NON_EMPTY)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class TravelDocumentInformation implements Jsonable {
     
     String passportNumber;

@@ -13,7 +13,7 @@ import javax.validation.constraints.Pattern;
 
 @Builder
 @Value
-@JsonInclude(JsonInclude.Include.NON_EMPTY)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class LoyaltyInformation implements Jsonable {
     
     @Pattern(regexp = "\\d*", message = "Crown and Anchor Loyalty ID must be in numeric format.")
