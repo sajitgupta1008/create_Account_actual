@@ -8,7 +8,6 @@ import com.rccl.middleware.guest.optin.Optin;
 import com.rccl.middleware.guestprofiles.models.EmergencyContact;
 import lombok.Builder;
 import lombok.Value;
-import org.hibernate.validator.constraints.Email;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -53,8 +52,8 @@ public class EnrichedGuest implements Jsonable {
     String consumerId;
     
     @NotNull(message = "An email is required.")
-    @Size(min = 5, max = 256, message = "The email can only have up to 256 characters.")
-    @Email(regexp = ValidatorConstants.EMAIL_REGEXP, message = "The email is invalidly formatted.")
+    @Size(min = 5, max = 100, message = "The email can have a minimum of 5 characters and a maximum of 100 characters.")
+    @Pattern(regexp = ValidatorConstants.EMAIL_REGEXP, message = "The email is invalidly formatted.")
     String email;
     
     @NotNull(message = "A VDS ID is required.")
