@@ -30,12 +30,14 @@ public class Guest implements Jsonable {
     Header header;
     
     @NotBlank(message = "An email is required.", groups = DefaultChecks.class)
-    @Size(min = 5, max = 100, message = "The email can have a minimum of 5 characters and " 
+    @Size(min = 5, max = 100, message = "The email can have a minimum of 5 characters and "
             + "a maximum of 100 characters.", groups = DefaultChecks.class)
     @Pattern(regexp = ValidatorConstants.EMAIL_REGEXP, message = "The email is invalidly formatted.",
             groups = DefaultChecks.class)
     String email;
     
+    @Pattern(regexp = "([GEC])\\d+", message = "The VDS ID is invalidly formatted.", groups = DefaultChecks.class)
+    @Size(max = 9, message = "The VDS ID can have a maximum of 9 characters.", groups = DefaultChecks.class)
     String vdsId;
     
     @NotNull(message = "A first name is required.", groups = CreateChecks.class)

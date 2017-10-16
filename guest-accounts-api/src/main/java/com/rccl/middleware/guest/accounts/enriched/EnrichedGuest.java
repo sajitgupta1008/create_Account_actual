@@ -57,5 +57,7 @@ public class EnrichedGuest implements Jsonable {
     String email;
     
     @NotNull(message = "A VDS ID is required.")
+    @Pattern(regexp = "([GEC])\\d+", message = "The VDS ID is invalidly formatted.")
+    @Size(max = 9, message = "The VDS ID can have a maximum of 9 characters.")
     String vdsId;
 }
