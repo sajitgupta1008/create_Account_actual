@@ -45,6 +45,7 @@
     <lightbend.cinnamon.version>2.4.0</lightbend.cinnamon.version>
     <lombok.version>1.16.18</lombok.version>
     <lagom.version>1.3.8</lagom.version>
+    <middleware.aem.version>1.0-SNAPSHOT</middleware.aem.version>
     <middleware.common.version>1.11.0</middleware.common.version>
     <middleware.saviynt.version>1.0-SNAPSHOT</middleware.saviynt.version>
     <middleware.guestprofiles.version>1.0-SNAPSHOT</middleware.guestprofiles.version>
@@ -58,10 +59,17 @@
 
   <distributionManagement>
 
+    <snapshotRepository>
+      <uniqueVersion>false</uniqueVersion>
+      <id>middleware-nexus</id>
+      <name>Microservices Snapshot Repository</name>
+      <url>http://10.16.4.8:10118/repository/excalibur-snapshot</url>
+    </snapshotRepository>
+
     <repository>
       <uniqueVersion>false</uniqueVersion>
       <id>middleware-nexus</id>
-      <name>Middleware Nexus Snapshot Repository</name>
+      <name>Microservices Release Repository</name>
       <url>http://10.16.4.8:10118/repository/excalibur-snapshot</url>
     </repository>
 
@@ -71,7 +79,7 @@
 
     <repository>
       <id>lightbend-commercial</id>
-      <name>Lightbend Commercial</name>
+      <name>Lightbend Commercial Proxy Repository</name>
       <url>http://10.16.4.8:10118/repository/lightbendproxy/</url>
       <releases>
         <enabled>true</enabled>
@@ -87,7 +95,7 @@
 
     <repository>
       <id>middleware-nexus-release</id>
-      <name>Middleware Nexus Release Repository</name>
+      <name>Microservices Release Repository</name>
       <url>http://10.16.4.8:10118/repository/excalibur-release</url>
       <releases>
         <enabled>true</enabled>
@@ -103,7 +111,7 @@
 
     <repository>
       <id>middleware-nexus-snapshot</id>
-      <name>Middleware Nexus Snapshot Repository</name>
+      <name>Microservices Snapshot Repository</name>
       <url>http://10.16.4.8:10118/repository/excalibur-snapshot</url>
       <releases>
         <enabled>false</enabled>
@@ -500,6 +508,12 @@
         <groupId>org.json</groupId>
         <artifactId>json</artifactId>
         <version>${org.json.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.rccl.middleware</groupId>
+        <artifactId>aem-lagom-services</artifactId>
+        <version>${middleware.aem.version}</version>
       </dependency>
 
       <dependency>
