@@ -32,6 +32,7 @@ import com.rccl.middleware.guest.authentication.AccountCredentials;
 import com.rccl.middleware.guest.authentication.GuestAuthenticationService;
 import com.rccl.middleware.guest.impl.accounts.email.AccountCreatedConfirmationEmail;
 import com.rccl.middleware.guest.impl.accounts.email.EmailNotificationTag;
+import com.rccl.middleware.guest.impl.accounts.email.EmailUpdatedConfirmationEmail;
 import com.rccl.middleware.guest.optin.GuestProfileOptinService;
 import com.rccl.middleware.guest.optin.Optin;
 import com.rccl.middleware.guest.optin.OptinType;
@@ -65,6 +66,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     
     private final AccountCreatedConfirmationEmail accountCreatedConfirmationEmail;
     
+    private final EmailUpdatedConfirmationEmail emailUpdatedConfirmationEmail;
+    
     private final PersistentEntityRegistry persistentEntityRegistry;
     
     private final SaviyntService saviyntService;
@@ -77,6 +80,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     
     @Inject
     public GuestAccountServiceImpl(AccountCreatedConfirmationEmail accountCreatedConfirmationEmail,
+                                   EmailUpdatedConfirmationEmail emailUpdatedConfirmationEmail,
                                    SaviyntService saviyntService,
                                    PersistentEntityRegistry persistentEntityRegistry,
                                    GuestProfilesService guestProfilesService,
@@ -93,6 +97,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
         persistentEntityRegistry.register(GuestAccountEntity.class);
         
         this.accountCreatedConfirmationEmail = accountCreatedConfirmationEmail;
+        this.emailUpdatedConfirmationEmail = emailUpdatedConfirmationEmail;
     }
     
     @Override
@@ -306,6 +311,12 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                     .payload(objectNode)
                                     .build());
                         } else {
+                            // TODO: Updated logic to determine if the email is being updated; and then
+                            // TODO: send the email.
+                            if (enrichedGuest.getEmail() != null) {
+                                emailUpdatedConfirmationEmail.send(enrichedGuest);
+                            }
+                            
                             return Pair.create(ResponseHeader.OK, ResponseBody
                                     .<JsonNode>builder()
                                     .status(ResponseHeader.OK.status())
