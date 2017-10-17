@@ -29,7 +29,7 @@ public class AccountCreatedConfirmationEmail {
     }
     
     public void send(Guest guest) {
-        this.getAccountCreatedEmailTemplate()
+        this.getAccountCreatedConfirmationEmailTemplate()
                 .thenAccept(aemTemplateResponse -> {
                     String content = this.getPopulatedEmailTemplate(aemTemplateResponse);
                     String sender = "notifications@rccl.com";
@@ -46,19 +46,20 @@ public class AccountCreatedConfirmationEmail {
                 });
     }
     
-    private CompletionStage<JsonNode> getAccountCreatedEmailTemplate() {
+    private CompletionStage<JsonNode> getAccountCreatedConfirmationEmailTemplate() {
         // TODO: Add new call for new template.
+        // TODO: aemService.getAccountCreatedConfirmationEmailTemplate()
         return aemService.getResetPasswordEmailMigration()
                 .invoke()
                 .exceptionally(throwable -> {
-                    LOGGER.error("#getAccountCreatedEmailTemplate:", throwable);
+                    LOGGER.error("#getAccountCreatedConfirmationEmailTemplate:", throwable);
                     throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), throwable);
                 });
     }
     
     private String getPopulatedEmailTemplate(JsonNode aemTemplateResponse) {
         // TODO: Add logic for populating.
-        return aemTemplateResponse.get("text").asText();
+        return aemTemplateResponse.get("htmlMessage").asText();
     }
     
     private void sendToTopic(EmailNotification emailNotification) {
