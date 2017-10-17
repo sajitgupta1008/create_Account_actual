@@ -8,6 +8,7 @@ import com.lightbend.lagom.javadsl.api.Service;
 import com.lightbend.lagom.javadsl.api.ServiceCall;
 import com.lightbend.lagom.javadsl.api.broker.Topic;
 import com.rccl.middleware.common.response.ResponseBody;
+import com.rccl.middleware.guest.accounts.email.EmailNotification;
 import com.rccl.middleware.guest.accounts.enriched.EnrichedGuest;
 import com.typesafe.config.ConfigFactory;
 
@@ -19,6 +20,8 @@ import static com.lightbend.lagom.javadsl.api.transport.Method.POST;
 import static com.lightbend.lagom.javadsl.api.transport.Method.PUT;
 
 public interface GuestAccountService extends Service {
+    
+    String NOTIFICATIONS_KAFKA_TOPIC = ConfigFactory.load().getString("kafka.notifications.topic.name");
     
     String LINK_LOYALTY_KAFKA_TOPIC = ConfigFactory.load().getString("kafka.link-loyalty.topic.name");
     
@@ -38,6 +41,8 @@ public interface GuestAccountService extends Service {
     
     Topic<EnrichedGuest> verifyLoyaltyTopic();
     
+    Topic<EmailNotification> sendEmailNotificationTopic();
+    
     @Override
     default Descriptor descriptor() {
         return named("guest_accounts")
@@ -51,7 +56,8 @@ public interface GuestAccountService extends Service {
                 )
                 .withTopics(
                         topic(LINK_LOYALTY_KAFKA_TOPIC, this::linkLoyaltyTopic),
-                        topic(VERIFY_LOYALTY_KAFKA_TOPIC, this::verifyLoyaltyTopic)
+                        topic(VERIFY_LOYALTY_KAFKA_TOPIC, this::verifyLoyaltyTopic),
+                        topic(NOTIFICATIONS_KAFKA_TOPIC, this::sendEmailNotificationTopic)
                 )
                 .withCircuitBreaker(CircuitBreaker.identifiedBy("guest_accounts"))
                 .withAutoAcl(true);

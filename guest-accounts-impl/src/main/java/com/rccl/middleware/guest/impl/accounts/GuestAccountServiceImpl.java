@@ -19,6 +19,7 @@ import com.rccl.middleware.common.response.ResponseBody;
 import com.rccl.middleware.common.validation.MiddlewareValidation;
 import com.rccl.middleware.common.validation.validator.ValidatorConstants;
 import com.rccl.middleware.guest.accounts.AccountStatusEnum;
+import com.rccl.middleware.guest.accounts.email.EmailNotification;
 import com.rccl.middleware.guest.accounts.Guest;
 import com.rccl.middleware.guest.accounts.GuestAccountService;
 import com.rccl.middleware.guest.accounts.GuestEvent;
@@ -29,6 +30,8 @@ import com.rccl.middleware.guest.accounts.exceptions.InvalidEmailFormatException
 import com.rccl.middleware.guest.accounts.exceptions.InvalidGuestException;
 import com.rccl.middleware.guest.authentication.AccountCredentials;
 import com.rccl.middleware.guest.authentication.GuestAuthenticationService;
+import com.rccl.middleware.guest.impl.accounts.email.AccountCreatedConfirmationEmail;
+import com.rccl.middleware.guest.impl.accounts.email.EmailNotificationTag;
 import com.rccl.middleware.guest.optin.GuestProfileOptinService;
 import com.rccl.middleware.guest.optin.Optin;
 import com.rccl.middleware.guest.optin.OptinType;
@@ -60,6 +63,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     
     private static final String DEFAULT_APP_KEY = ConfigFactory.load().getString("apigee.appkey");
     
+    private final AccountCreatedConfirmationEmail accountCreatedConfirmationEmail;
+    
     private final PersistentEntityRegistry persistentEntityRegistry;
     
     private final SaviyntService saviyntService;
@@ -71,7 +76,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     private final GuestAuthenticationService guestAuthenticationService;
     
     @Inject
-    public GuestAccountServiceImpl(SaviyntService saviyntService,
+    public GuestAccountServiceImpl(AccountCreatedConfirmationEmail accountCreatedConfirmationEmail,
+                                   SaviyntService saviyntService,
                                    PersistentEntityRegistry persistentEntityRegistry,
                                    GuestProfilesService guestProfilesService,
                                    GuestProfileOptinService guestProfileOptinService,
@@ -85,6 +91,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
         
         this.persistentEntityRegistry = persistentEntityRegistry;
         persistentEntityRegistry.register(GuestAccountEntity.class);
+        
+        this.accountCreatedConfirmationEmail = accountCreatedConfirmationEmail;
     }
     
     @Override
@@ -152,8 +160,12 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                             .username(guest.getEmail())
                                             .password(guest.getPassword())
                                             .build())
-                                    .thenApply(authResponse ->
-                                            Pair.create(ResponseHeader.OK.withStatus(201), authResponse));
+                                    .thenApply(authResponse -> {
+                                        // Send the account created confirmation email.
+                                        accountCreatedConfirmationEmail.send(guest);
+                                        
+                                        return Pair.create(ResponseHeader.OK.withStatus(201), authResponse);
+                                    });
                         }
                     });
         };
@@ -462,6 +474,25 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                             return CompletableFuture.completedFuture(
                                     new Pair<>(loyalty.getEnrichedGuest(), eventOffset.second()));
                         }));
+    }
+    
+    @Override
+    public Topic<EmailNotification> sendEmailNotificationTopic() {
+        return TopicProducer.singleStreamWithOffset(offset ->
+                persistentEntityRegistry
+                        .eventStream(EmailNotificationTag.EMAIL_NOTIFICATION_TAG, offset)
+                        .map(pair -> {
+                            EmailNotification eventNotification = pair.first().getEmailNotification();
+                            EmailNotification emailNotification = EmailNotification
+                                    .builder()
+                                    .sender(eventNotification.getSender())
+                                    .recipient(eventNotification.getRecipient())
+                                    .subject(eventNotification.getSubject())
+                                    .content(eventNotification.getContent())
+                                    .build();
+                            return new Pair<>(emailNotification, pair.second());
+                        })
+        );
     }
     
     /**
