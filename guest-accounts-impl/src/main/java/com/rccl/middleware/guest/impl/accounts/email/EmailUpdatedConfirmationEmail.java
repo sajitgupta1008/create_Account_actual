@@ -9,6 +9,7 @@ import com.rccl.middleware.common.exceptions.MiddlewareTransportException;
 import com.rccl.middleware.common.logging.RcclLoggerFactory;
 import com.rccl.middleware.guest.accounts.Guest;
 import com.rccl.middleware.guest.accounts.email.EmailNotification;
+import com.rccl.middleware.guest.accounts.enriched.EnrichedGuest;
 
 import javax.inject.Inject;
 import java.util.concurrent.CompletionStage;
@@ -28,7 +29,7 @@ public class EmailUpdatedConfirmationEmail {
         this.persistentEntityRegistry = persistentEntityRegistry;
     }
     
-    public void send(Guest guest) {
+    public void send(EnrichedGuest eg) {
         this.getEmailUpdatedConfirmationEmailTemplate()
                 .thenAccept(aemTemplateResponse -> {
                     String content = this.getPopulatedEmailTemplate(aemTemplateResponse);
@@ -36,7 +37,7 @@ public class EmailUpdatedConfirmationEmail {
                     String subject = aemTemplateResponse.get("subject").asText();
                     
                     EmailNotification en = EmailNotification.builder()
-                            .recipient(guest.getEmail())
+                            .recipient(eg.getEmail())
                             .sender(sender)
                             .subject(subject)
                             .content(content)
