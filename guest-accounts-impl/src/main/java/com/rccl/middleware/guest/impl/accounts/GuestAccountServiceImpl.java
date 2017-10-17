@@ -205,7 +205,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                     .join();
                         }
                         
-                        if (guest == null && profile == null && optins == null) {
+                        if (guest == null && profile == null) {
                             throw new GuestNotFoundException();
                         }
                         
@@ -311,9 +311,9 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                     .payload(objectNode)
                                     .build());
                         } else {
-                            // TODO: Updated logic to determine if the email is being updated; and then
-                            // TODO: send the email.
-                            if (enrichedGuest.getEmail() != null) {
+                            // If the email is passed in, we assume we're updating it and so we confirm the update
+                            // with the user.
+                            if (StringUtils.isNotBlank(enrichedGuest.getEmail())) {
                                 emailUpdatedConfirmationEmail.send(enrichedGuest);
                             }
                             
