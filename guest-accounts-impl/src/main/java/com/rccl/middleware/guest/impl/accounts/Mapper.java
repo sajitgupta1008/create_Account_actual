@@ -199,6 +199,10 @@ public class Mapper {
                     .webshopperBrand(webshopperInfo.getBrand());
         }
         
+        if (StringUtils.isNotBlank(guest.getEmail())) {
+            builder.email(guest.getEmail());
+        }
+        
         return builder;
     }
     
