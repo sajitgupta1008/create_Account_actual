@@ -521,7 +521,7 @@
       </dependency>
 
       <dependency>
-        <groupId>com.rccl.middleware.guest.optin</groupId>
+        <groupId>com.rccl.middleware</groupId>
         <artifactId>guest-profiles-optins-api</artifactId>
         <version>${middleware.optins.version}</version>
       </dependency>
