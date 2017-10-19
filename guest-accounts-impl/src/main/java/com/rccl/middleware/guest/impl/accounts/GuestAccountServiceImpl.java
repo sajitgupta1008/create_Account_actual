@@ -149,6 +149,9 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         if ("web".equals(guest.getHeader().getChannel())) {
                             ObjectNode objNode = OBJECT_MAPPER.createObjectNode();
                             objNode.put("vdsId", vdsId);
+    
+                            // Send the account created confirmation email.
+                            accountCreatedConfirmationEmail.send(guest);
                             
                             return CompletableFuture.completedFuture(
                                     Pair.create(ResponseHeader.OK.withStatus(201), ResponseBody
