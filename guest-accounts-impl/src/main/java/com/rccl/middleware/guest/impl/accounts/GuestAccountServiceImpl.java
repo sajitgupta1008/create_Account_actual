@@ -488,7 +488,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     }
     
     @Override
-    public Topic<EmailNotification> sendEmailNotificationTopic() {
+    public Topic<EmailNotification> emailNotificationTopic() {
         return TopicProducer.singleStreamWithOffset(offset ->
                 persistentEntityRegistry
                         .eventStream(EmailNotificationTag.EMAIL_NOTIFICATION_TAG, offset)

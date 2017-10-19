@@ -41,7 +41,7 @@ public interface GuestAccountService extends Service {
     
     Topic<EnrichedGuest> verifyLoyaltyTopic();
     
-    Topic<EmailNotification> sendEmailNotificationTopic();
+    Topic<EmailNotification> emailNotificationTopic();
     
     @Override
     default Descriptor descriptor() {
@@ -57,7 +57,7 @@ public interface GuestAccountService extends Service {
                 .withTopics(
                         topic(LINK_LOYALTY_KAFKA_TOPIC, this::linkLoyaltyTopic),
                         topic(VERIFY_LOYALTY_KAFKA_TOPIC, this::verifyLoyaltyTopic),
-                        topic(NOTIFICATIONS_KAFKA_TOPIC, this::sendEmailNotificationTopic)
+                        topic(NOTIFICATIONS_KAFKA_TOPIC, this::emailNotificationTopic)
                 )
                 .withCircuitBreaker(CircuitBreaker.identifiedBy("guest_accounts"))
                 .withAutoAcl(true);
