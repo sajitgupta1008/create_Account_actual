@@ -168,7 +168,7 @@ public class GuestAccountMessageBrokerTest {
             assertTrue(verifyLoyaltyEvent != null);
             
         } catch (Exception e) {
-            assertTrue("The service thrown an exception.", false);
+            assertTrue("The service threw an exception.", false);
         }
     }
     
