@@ -37,7 +37,7 @@ public class EmailUpdatedConfirmationEmail {
         this.getEmailContent(eg)
                 .thenAccept(htmlEmailTemplate -> {
                     String content = htmlEmailTemplate.getHtmlMessage();
-                    String sender = "notifications@rccl.com";
+                    String sender = htmlEmailTemplate.getSender();
                     String subject = htmlEmailTemplate.getSubject();
                     
                     EmailNotification en = EmailNotification.builder()
