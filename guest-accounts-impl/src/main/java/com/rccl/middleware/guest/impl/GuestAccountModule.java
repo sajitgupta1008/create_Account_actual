@@ -2,6 +2,7 @@ package com.rccl.middleware.guest.impl;
 
 import com.google.inject.AbstractModule;
 import com.lightbend.lagom.javadsl.server.ServiceGuiceSupport;
+import com.rccl.middleware.aem.api.email.AemEmailService;
 import com.rccl.middleware.guest.accounts.GuestAccountService;
 import com.rccl.middleware.guest.authentication.GuestAuthenticationService;
 import com.rccl.middleware.guest.impl.accounts.GuestAccountServiceImpl;
@@ -15,6 +16,7 @@ public class GuestAccountModule extends AbstractModule implements ServiceGuiceSu
     protected void configure() {
         bindService(GuestAccountService.class, GuestAccountServiceImpl.class);
         bindClient(SaviyntService.class);
+        bindClient(AemEmailService.class);
         bindClient(GuestProfilesService.class);
         bindClient(GuestProfileOptinService.class);
         bindClient(GuestAuthenticationService.class);
