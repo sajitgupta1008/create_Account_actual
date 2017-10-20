@@ -1,6 +1,5 @@
 package com.rccl.middleware.guest.impl.accounts.email;
 
-
 import com.lightbend.lagom.serialization.CompressedJsonable;
 import com.rccl.middleware.guest.accounts.email.EmailNotification;
 import lombok.Builder;
