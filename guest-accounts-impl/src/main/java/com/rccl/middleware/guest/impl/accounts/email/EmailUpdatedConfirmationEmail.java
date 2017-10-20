@@ -13,6 +13,7 @@ import com.rccl.middleware.guest.accounts.exceptions.GuestNotFoundException;
 import com.rccl.middleware.saviynt.api.SaviyntService;
 import com.rccl.middleware.saviynt.api.exceptions.SaviyntExceptionFactory;
 import com.rccl.middleware.saviynt.api.responses.AccountInformation;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.inject.Inject;
 import java.util.Optional;
@@ -62,6 +63,10 @@ public class EmailUpdatedConfirmationEmail {
     }
     
     private CompletionStage<AccountInformation> getGuestInformation(EnrichedGuest eg) {
+        if (StringUtils.isBlank(eg.getVdsId())) {
+            throw new IllegalArgumentException("The vdsId in the EnrichedGuest is required.");
+        }
+        
         return saviyntService.getGuestAccount("systemUserName", Optional.empty(), Optional.of(eg.getVdsId()))
                 .invoke()
                 .exceptionally(throwable -> {
