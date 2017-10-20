@@ -223,7 +223,7 @@ public class GuestAccountMessageBrokerTest {
                 .get(10, TimeUnit.SECONDS);
         
         GuestEvent updateGuestEvent = linkProbe.request(1).expectNext(TWENTY_SECONDS);
-        assertTrue(updateGuestEvent instanceof GuestEvent.AccountUpdated);
+        assertNotNull(updateGuestEvent);
         
         EnrichedGuest verifyLoyaltyEvent = verifyProbe.request(1).expectNext(TWENTY_SECONDS);
         assertNotNull(verifyLoyaltyEvent);
