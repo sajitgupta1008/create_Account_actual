@@ -1,6 +1,5 @@
 package com.rccl.middleware.guest.impl.accounts.email;
 
-
 import akka.Done;
 import com.lightbend.lagom.javadsl.persistence.PersistentEntity;
 import com.rccl.middleware.guest.accounts.email.EmailNotification;
@@ -36,3 +35,4 @@ public class EmailNotificationEntity extends
         return builder.build();
     }
 }
+
