@@ -31,6 +31,7 @@ import com.rccl.middleware.guest.accounts.exceptions.InvalidGuestException;
 import com.rccl.middleware.guest.authentication.AccountCredentials;
 import com.rccl.middleware.guest.authentication.GuestAuthenticationService;
 import com.rccl.middleware.guest.impl.accounts.email.AccountCreatedConfirmationEmail;
+import com.rccl.middleware.guest.impl.accounts.email.EmailNotificationEntity;
 import com.rccl.middleware.guest.impl.accounts.email.EmailNotificationTag;
 import com.rccl.middleware.guest.impl.accounts.email.EmailUpdatedConfirmationEmail;
 import com.rccl.middleware.guest.optin.GuestProfileOptinService;
@@ -95,6 +96,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
         
         this.persistentEntityRegistry = persistentEntityRegistry;
         persistentEntityRegistry.register(GuestAccountEntity.class);
+        persistentEntityRegistry.register(EmailNotificationEntity.class);
         
         this.accountCreatedConfirmationEmail = accountCreatedConfirmationEmail;
         this.emailUpdatedConfirmationEmail = emailUpdatedConfirmationEmail;
