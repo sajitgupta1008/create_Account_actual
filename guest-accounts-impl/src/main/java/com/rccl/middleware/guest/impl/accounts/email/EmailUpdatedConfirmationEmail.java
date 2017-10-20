@@ -9,8 +9,13 @@ import com.rccl.middleware.common.exceptions.MiddlewareTransportException;
 import com.rccl.middleware.common.logging.RcclLoggerFactory;
 import com.rccl.middleware.guest.accounts.email.EmailNotification;
 import com.rccl.middleware.guest.accounts.enriched.EnrichedGuest;
+import com.rccl.middleware.guest.accounts.exceptions.GuestNotFoundException;
+import com.rccl.middleware.saviynt.api.SaviyntService;
+import com.rccl.middleware.saviynt.api.exceptions.SaviyntExceptionFactory;
+import com.rccl.middleware.saviynt.api.responses.AccountInformation;
 
 import javax.inject.Inject;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
@@ -22,11 +27,15 @@ public class EmailUpdatedConfirmationEmail {
     
     private PersistentEntityRegistry persistentEntityRegistry;
     
+    private SaviyntService saviyntService;
+    
     @Inject
     public EmailUpdatedConfirmationEmail(AemEmailService aemEmailService,
-                                         PersistentEntityRegistry persistentEntityRegistry) {
+                                         PersistentEntityRegistry persistentEntityRegistry,
+                                         SaviyntService saviyntService) {
         this.aemEmailService = aemEmailService;
         this.persistentEntityRegistry = persistentEntityRegistry;
+        this.saviyntService = saviyntService;
     }
     
     public void send(EnrichedGuest eg) {
@@ -34,24 +43,40 @@ public class EmailUpdatedConfirmationEmail {
             throw new IllegalArgumentException("The EnrichedGuest argument is required.");
         }
         
-        this.getEmailContent(eg)
-                .thenAccept(htmlEmailTemplate -> {
-                    String content = htmlEmailTemplate.getHtmlMessage();
-                    String sender = htmlEmailTemplate.getSender();
-                    String subject = htmlEmailTemplate.getSubject();
+        this.getGuestInformation(eg)
+                .thenAccept(accountInformation -> this.getEmailContent(eg, accountInformation.getGuest().getFirstName())
+                        .thenAccept(htmlEmailTemplate -> {
+                            String content = htmlEmailTemplate.getHtmlMessage();
+                            String sender = htmlEmailTemplate.getSender();
+                            String subject = htmlEmailTemplate.getSubject();
+                            
+                            EmailNotification en = EmailNotification.builder()
+                                    .recipient(eg.getEmail())
+                                    .sender(sender)
+                                    .subject(subject)
+                                    .content(content)
+                                    .build();
+                            
+                            this.sendToTopic(en);
+                        }));
+    }
+    
+    private CompletionStage<AccountInformation> getGuestInformation(EnrichedGuest eg) {
+        return saviyntService.getGuestAccount("systemUserName", Optional.empty(), Optional.of(eg.getVdsId()))
+                .invoke()
+                .exceptionally(throwable -> {
+                    Throwable cause = throwable.getCause();
                     
-                    EmailNotification en = EmailNotification.builder()
-                            .recipient(eg.getEmail())
-                            .sender(sender)
-                            .subject(subject)
-                            .content(content)
-                            .build();
+                    if (cause instanceof SaviyntExceptionFactory.ExistingGuestException
+                            || cause instanceof SaviyntExceptionFactory.NoSuchGuestException) {
+                        throw new GuestNotFoundException();
+                    }
                     
-                    this.sendToTopic(en);
+                    throw new MiddlewareTransportException(TransportErrorCode.BadRequest, throwable);
                 });
     }
     
-    private CompletionStage<HtmlEmailTemplate> getEmailContent(EnrichedGuest eg) {
+    private CompletionStage<HtmlEmailTemplate> getEmailContent(EnrichedGuest eg, String firstName) {
         if (eg.getHeader() == null) {
             throw new IllegalArgumentException("The header property in the EnrichedGuest must not be null.");
         }
@@ -62,7 +87,6 @@ public class EmailUpdatedConfirmationEmail {
             throw new IllegalArgumentException("The brand header property in the EnrichedGuest must not be null.");
         }
         
-        String firstName = eg.getPersonalInformation().getFirstName();
         Function<Throwable, ? extends HtmlEmailTemplate> exceptionally = throwable -> {
             LOGGER.error("#getEmailContent:", throwable);
             throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), throwable);
