@@ -6,6 +6,8 @@ import com.lightbend.lagom.javadsl.api.transport.RequestHeader;
 import com.lightbend.lagom.javadsl.api.transport.ResponseHeader;
 import com.lightbend.lagom.javadsl.server.HeaderServiceCall;
 import com.lightbend.lagom.javadsl.testkit.ServiceTest;
+import com.rccl.middleware.aem.api.email.AemEmailService;
+import com.rccl.middleware.aem.api.email.AemEmailServiceStub;
 import com.rccl.middleware.common.exceptions.MiddlewareTransportException;
 import com.rccl.middleware.common.header.Header;
 import com.rccl.middleware.common.response.ResponseBody;
@@ -48,6 +50,7 @@ public class GuestAccountUpdateServiceTest {
     public static void setUp() {
         final ServiceTest.Setup setup = defaultSetup()
                 .configureBuilder(builder -> builder.overrides(
+                        bind(AemEmailService.class).to(AemEmailServiceStub.class),
                         bind(SaviyntService.class).to(SaviyntServiceImplStub.class),
                         bind(GuestProfileOptinService.class).to(GuestProfileOptinsStub.class),
                         bind(GuestProfilesService.class).to(GuestProfileServiceStub.class),
@@ -93,19 +96,14 @@ public class GuestAccountUpdateServiceTest {
         EnrichedGuest guest = this.createSampleEnrichedGuest().vdsId("G765432").build();
         
         try {
-            HeaderServiceCall<EnrichedGuest, ResponseBody<JsonNode>> updateAccount =
-                    (HeaderServiceCall<EnrichedGuest, ResponseBody<JsonNode>>) guestAccountService.updateAccountEnriched();
-            
-            Pair<ResponseHeader, ResponseBody<JsonNode>> response = updateAccount
+            ((HeaderServiceCall<EnrichedGuest, ResponseBody<JsonNode>>) guestAccountService
+                    .updateAccountEnriched())
                     .invokeWithHeaders(RequestHeader.DEFAULT, guest)
                     .toCompletableFuture()
                     .get(5, TimeUnit.SECONDS);
-            
-            assertTrue(response != null);
-            
         } catch (Exception e) {
-            assertTrue("Exception must be an instance of NoSuchGuestException.",
-                    e instanceof SaviyntExceptionFactory.NoSuchGuestException);
+            Throwable t = e.getCause();
+            assertTrue(t instanceof SaviyntExceptionFactory.NoSuchGuestException || t instanceof SaviyntExceptionFactory.ExistingGuestException);
         }
     }
     

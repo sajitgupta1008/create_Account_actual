@@ -2,6 +2,8 @@ package com.rccl.middleware.guest.impl.accounts;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.lightbend.lagom.javadsl.testkit.ServiceTest;
+import com.rccl.middleware.aem.api.email.AemEmailService;
+import com.rccl.middleware.aem.api.email.AemEmailServiceStub;
 import com.rccl.middleware.common.response.ResponseBody;
 import com.rccl.middleware.guest.accounts.AccountStatusEnum;
 import com.rccl.middleware.guest.accounts.GuestAccountService;
@@ -30,6 +32,7 @@ public class GuestAccountEmailValidationServiceTest {
     public static void setUp() {
         final ServiceTest.Setup setup = defaultSetup()
                 .configureBuilder(builder -> builder.overrides(
+                        bind(AemEmailService.class).to(AemEmailServiceStub.class),
                         bind(SaviyntService.class).to(SaviyntServiceImplStub.class)
                 ));
         
