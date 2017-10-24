@@ -1,0 +1,215 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                      http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.rccl.middleware</groupId>
+    <artifactId>guest-accounts-create-account</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>guest-accounts-create-account-impl</artifactId>
+
+  <packaging>jar</packaging>
+
+  <dependencies>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>guest-accounts-create-account-api</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.lightbend.lagom</groupId>
+      <artifactId>lagom-javadsl-server_2.11</artifactId>
+      <version>${lagom.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.lightbend.lagom</groupId>
+      <artifactId>lagom-javadsl-persistence-cassandra_2.11</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.lightbend.lagom</groupId>
+      <artifactId>lagom-logback_2.11</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.typesafe.play</groupId>
+      <artifactId>play-netty-server_2.11</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.lightbend.lagom</groupId>
+      <artifactId>lagom-javadsl-testkit_2.11</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.lightbend.lagom</groupId>
+      <artifactId>lagom-javadsl-jackson_2.11</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.lightbend.lagom</groupId>
+      <artifactId>lagom-javadsl-kafka-broker_2.11</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.json</groupId>
+      <artifactId>json</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.rccl.middleware</groupId>
+      <artifactId>aem-lagom-services</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.rccl.middleware</groupId>
+      <artifactId>middleware-common</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.rccl.middleware</groupId>
+      <artifactId>saviynt</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.rccl.middleware</groupId>
+      <artifactId>guest-profiles-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.rccl.middleware</groupId>
+      <artifactId>guest-profiles-optins-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.rccl.middleware</groupId>
+      <artifactId>guest-accounts-authentication-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.lightbend.cinnamon</groupId>
+      <artifactId>cinnamon-chmetrics-statsd-reporter_2.11</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.lightbend.cinnamon</groupId>
+      <artifactId>cinnamon-lagom_2.11</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.lightbend.cinnamon</groupId>
+      <artifactId>cinnamon-agent</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.lightbend.cinnamon</groupId>
+      <artifactId>cinnamon-opentracing-jaeger_2.11</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.lightbend.cinnamon</groupId>
+      <artifactId>cinnamon-chmetrics-jvm-metrics_2.11</artifactId>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+
+    <plugins>
+
+      <plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <configuration>
+          <descriptors>
+            <descriptor>src/assembly/standalone-bundle.xml</descriptor>
+          </descriptors>
+        </configuration>
+        <executions>
+          <execution>
+            <id>standalone-bundle</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>com.lightbend.lagom</groupId>
+        <artifactId>lagom-maven-plugin</artifactId>
+        <configuration>
+          <lagomService>true</lagomService>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <forkCount>3</forkCount>
+          <reuseForks>true</reuseForks>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>io.fabric8</groupId>
+        <artifactId>docker-maven-plugin</artifactId>
+        <version>${maven.docker.plugin.version}</version>
+        <configuration>
+          <skip>false</skip>
+          <logStdout>true</logStdout>
+          <useColor>true</useColor>
+          <images>
+            <image>
+              <name>${project.parent.artifactId}</name>
+              <build>
+                <dockerFile>Dockerfile</dockerFile>
+                <tags>
+                  <tag>${project.parent.version}</tag>
+                </tags>
+                <assembly>
+                  <mode>dir</mode>
+                  <descriptor>docker-bundle.xml</descriptor>
+                </assembly>
+              </build>
+            </image>
+          </images>
+        </configuration>
+        <executions>
+          <execution>
+            <id>container-build</id>
+            <goals>
+              <goal>build</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+    </plugins>
+
+  </build>
+
+</project>
