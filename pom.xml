@@ -134,20 +134,6 @@
 
   </pluginRepositories>
 
-  <profiles>
-
-    <profile>
-      <id>sonar</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-      <properties>
-        <sonar.host.url>http://localhost:9000</sonar.host.url>
-      </properties>
-    </profile>
-
-  </profiles>
-
   <build>
 
     <plugins>
@@ -158,6 +144,7 @@
         <version>${lagom.version}</version>
         <configuration>
           <unmanagedServices>
+            <aem-email>http://dev1.api.rccl.com</aem-email>
             <saviynt>http://dev1.api.rccl.com</saviynt>
             <guest-profiles>http://dev1.api.rccl.com/v1</guest-profiles>
             <guest_profile_optins>http://dev1.api.rccl.com/v1</guest_profile_optins>
