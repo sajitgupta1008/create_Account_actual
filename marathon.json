@@ -5,6 +5,7 @@
   "args": null,
   "user": null,
   "env": {
+    "AEM_EMAIL": "http://dev1.api.rccl.com",
     "GUEST_PROFILES_OPTINS": "http://dev1-int.api.rccl.com/v1",
     "CAS_CONTACT_POINT_THREE": "10.16.6.162",
     "CAS_CONTACT_POINT_ONE": "10.16.4.106",
