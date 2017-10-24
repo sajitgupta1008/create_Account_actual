@@ -25,6 +25,6 @@
                 <IsFallback>true</IsFallback>
             </Server>
         </LoadBalancer>
-        <Path>/guest-accounts/v1/{path}</Path>
+        <Path>/guest-accounts-create-account/v1/{path}</Path>
     </HTTPTargetConnection>
 </TargetEndpoint>
