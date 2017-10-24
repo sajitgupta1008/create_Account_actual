@@ -17,6 +17,8 @@ public interface GuestAccountEvent extends Jsonable, AggregateEvent<GuestAccount
     
     @Value
     final class GuestCreated implements GuestAccountEvent {
+    
+        private static final long serialVersionUID = 1L;
         
         public final Guest guest;
         
@@ -28,6 +30,8 @@ public interface GuestAccountEvent extends Jsonable, AggregateEvent<GuestAccount
     
     @Value
     final class GuestUpdated implements GuestAccountEvent {
+    
+        private static final long serialVersionUID = 1L;
         
         public final EnrichedGuest enrichedGuest;
         
@@ -39,6 +43,8 @@ public interface GuestAccountEvent extends Jsonable, AggregateEvent<GuestAccount
     
     @Value
     final class VerifyLoyalty implements GuestAccountEvent {
+    
+        private static final long serialVersionUID = 1L;
         
         public final EnrichedGuest enrichedGuest;
         

@@ -43,6 +43,8 @@ public class InvalidGuestException extends MiddlewareTransportException {
     }
     
     public static final class InvalidGuestExceptionMessage extends MiddlewareExceptionMessage {
+    
+        private static final long serialVersionUID = 1L;
         
         private Map<String, String> validationErrors;
         

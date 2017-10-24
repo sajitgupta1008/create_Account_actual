@@ -3,11 +3,7 @@ package com.rccl.middleware.guest.accounts;
 import org.apache.commons.lang3.StringUtils;
 
 /**
- * <<<<<<< HEAD
  * An enumeration of available guest account statuses.
- * =======
- * Enumeration of available guest account statuses:
- * >>>>>>> develop
  * <p>
  * <li><b>Existing</b> - If account is already existing in IAM</li>
  * <li><b>DoesNotExist</b> - If account doesn't exists in both IAM and WebShopper</li>
@@ -31,14 +27,10 @@ public enum AccountStatusEnum {
             return null;
         }
         
-        try {
-            for (AccountStatusEnum accountStatusEnum : AccountStatusEnum.values()) {
-                if (accountStatusEnum.value.equalsIgnoreCase(value)) {
-                    return accountStatusEnum;
-                }
+        for (AccountStatusEnum accountStatusEnum : AccountStatusEnum.values()) {
+            if (accountStatusEnum.value.equalsIgnoreCase(value)) {
+                return accountStatusEnum;
             }
-        } catch (Exception e) {
-            // No-op
         }
         
         return null;

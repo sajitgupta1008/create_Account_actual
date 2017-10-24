@@ -12,6 +12,8 @@ import javax.validation.constraints.NotNull;
 @Builder
 public class TermsAndConditionsAgreement implements Jsonable {
     
+    private static final long serialVersionUID = 1L;
+    
     @NotBlank(message = "The acceptance time in ISO-8601 date format (yyyyMMddThhmmssz) is required.",
             groups = Guest.CreateChecks.class)
     @NotNull(message = "The acceptance time in ISO-8601 date format (yyyyMMddThhmmssz) is required.",

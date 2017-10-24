@@ -1,5 +1,6 @@
 package com.rccl.middleware.guest.accounts;
 
+import com.lightbend.lagom.serialization.Jsonable;
 import com.rccl.middleware.common.validation.validator.DateFormat;
 import com.rccl.middleware.guest.optin.validation.ValidOptin;
 import lombok.Builder;
@@ -10,7 +11,9 @@ import javax.validation.constraints.Pattern;
 
 @Value
 @Builder
-public class Optin {
+public class Optin implements Jsonable {
+    
+    private static final long serialVersionUID = 1L;
     
     @ValidOptin(groups = Guest.DefaultChecks.class)
     String type;

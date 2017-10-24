@@ -13,6 +13,8 @@ import javax.validation.constraints.Pattern;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class WebshopperInformation implements Jsonable {
     
+    private static final long serialVersionUID = 1L;
+    
     @Pattern(regexp = "\\d*", message = "Webshopper ID must be in numeric format.")
     String shopperId;
     

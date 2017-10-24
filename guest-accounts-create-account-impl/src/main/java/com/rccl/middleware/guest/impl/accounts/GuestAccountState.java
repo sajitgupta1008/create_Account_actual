@@ -12,6 +12,8 @@ import java.time.LocalDateTime;
 @Builder
 public class GuestAccountState implements CompressedJsonable {
     
+    private static final long serialVersionUID = 1L;
+    
     private final Guest guest;
     
     private final EnrichedGuest enrichedGuest;

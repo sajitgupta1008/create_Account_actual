@@ -16,6 +16,8 @@ import javax.validation.constraints.Pattern;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class LoyaltyInformation implements Jsonable {
     
+    private static final long serialVersionUID = 1L;
+    
     @Pattern(regexp = "\\d*", message = "Crown and Anchor Loyalty ID must be in numeric format.")
     String crownAndAnchorId;
     

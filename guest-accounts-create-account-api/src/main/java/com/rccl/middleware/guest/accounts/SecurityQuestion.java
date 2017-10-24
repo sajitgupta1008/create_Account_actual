@@ -13,6 +13,8 @@ import javax.validation.constraints.Size;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class SecurityQuestion implements Jsonable {
     
+    private static final long serialVersionUID = 1L;
+    
     /**
      * The provided answer to the security question.
      */

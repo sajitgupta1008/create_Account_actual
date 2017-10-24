@@ -13,6 +13,8 @@ import javax.validation.constraints.Pattern;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class TravelDocumentInformation implements Jsonable {
     
+    private static final long serialVersionUID = 1L;
+    
     String passportNumber;
     
     @DateFormat

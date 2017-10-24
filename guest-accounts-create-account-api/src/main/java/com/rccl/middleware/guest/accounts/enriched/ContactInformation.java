@@ -15,6 +15,8 @@ import javax.validation.constraints.Size;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ContactInformation implements Jsonable {
     
+    private static final long serialVersionUID = 1L;
+    
     String phoneCountryCode;
     
     @Size(min = 7, max = 30, message = "The phone number must be at least seven (7) characters"

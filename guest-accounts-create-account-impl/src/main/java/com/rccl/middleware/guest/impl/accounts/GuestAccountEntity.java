@@ -27,7 +27,7 @@ public class GuestAccountEntity extends PersistentEntity<GuestAccountCommand, Gu
         builder.setCommandHandler(GuestAccountCommand.UpdateGuest.class, (cmd, ctx) -> {
             if (cmd.getEnrichedGuest() == null) {
                 ctx.invalidCommand("Guest cannot be null.");
-                ctx.done();
+                return ctx.done();
             }
             
             List<GuestAccountEvent> events = new ArrayList<>();

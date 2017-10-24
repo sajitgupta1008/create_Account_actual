@@ -15,6 +15,8 @@ import javax.validation.constraints.Size;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PersonalInformation implements Jsonable {
     
+    private static final long serialVersionUID = 1L;
+    
     @Pattern(regexp = "^(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]",
             message = "A valid avatar URL path is required, if being provided.")
     String avatar;

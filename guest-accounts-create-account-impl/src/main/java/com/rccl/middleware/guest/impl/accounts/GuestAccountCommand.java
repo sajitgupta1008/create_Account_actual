@@ -14,6 +14,8 @@ public interface GuestAccountCommand extends Jsonable {
     @Builder
     @Value
     final class CreateGuest implements GuestAccountCommand, CompressedJsonable, PersistentEntity.ReplyType<Done> {
+    
+        private static final long serialVersionUID = 1L;
         
         final Guest guest;
     }
@@ -21,6 +23,8 @@ public interface GuestAccountCommand extends Jsonable {
     @Builder
     @Value
     final class UpdateGuest implements GuestAccountCommand, CompressedJsonable, PersistentEntity.ReplyType<Done> {
+    
+        private static final long serialVersionUID = 1L;
         
         final EnrichedGuest enrichedGuest;
     }

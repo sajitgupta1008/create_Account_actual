@@ -25,6 +25,8 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Guest implements Jsonable {
     
+    private static final long serialVersionUID = 1L;
+    
     @NotNull(message = "A header is required.", groups = DefaultChecks.class)
     @Valid
     Header header;
