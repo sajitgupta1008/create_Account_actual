@@ -43,6 +43,8 @@ public class EmailUpdatedConfirmationEmail {
         if (eg == null) {
             throw new IllegalArgumentException("The EnrichedGuest argument is required.");
         }
+    
+        LOGGER.info("#send - Attempting to send the email to: " + eg.getEmail());
         
         this.getGuestInformation(eg)
                 .thenAccept(accountInformation -> this.getEmailContent(eg, accountInformation.getGuest().getFirstName())

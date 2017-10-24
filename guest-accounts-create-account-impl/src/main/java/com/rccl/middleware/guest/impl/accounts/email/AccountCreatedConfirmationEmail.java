@@ -34,6 +34,8 @@ public class AccountCreatedConfirmationEmail {
             throw new IllegalArgumentException("The Guest argument is required.");
         }
         
+        LOGGER.info("#send - Attempting to send the email to: " + guest.getEmail());
+        
         this.getEmailContent(guest)
                 .thenAccept(htmlEmailTemplate -> {
                     String content = htmlEmailTemplate.getHtmlMessage();
