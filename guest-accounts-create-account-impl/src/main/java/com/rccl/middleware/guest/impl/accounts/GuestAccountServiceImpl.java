@@ -46,6 +46,7 @@ import com.rccl.middleware.saviynt.api.requests.SaviyntGuest;
 import com.rccl.middleware.saviynt.api.responses.AccountStatus;
 import com.typesafe.config.ConfigFactory;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.util.CollectionUtils;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
@@ -143,10 +144,12 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         String appKey = requestHeader.getHeader(APPKEY_HEADER).orElse(DEFAULT_APP_KEY);
                         
                         // trigger optin service to store the optins into Cassandra
-                        guestProfileOptinService.createOptins(guest.getEmail())
-                                .handleRequestHeader(rh -> rh.withHeader(APPKEY_HEADER, appKey))
-                                .invoke(this.generateCreateOptinsRequest(guest))
-                                .toCompletableFuture().complete(ResponseBody.builder().build());
+                        if (!CollectionUtils.isEmpty(guest.getOptins())) {
+                            guestProfileOptinService.createOptins(guest.getEmail())
+                                    .handleRequestHeader(rh -> rh.withHeader(APPKEY_HEADER, appKey))
+                                    .invoke(this.generateCreateOptinsRequest(guest))
+                                    .toCompletableFuture().complete(ResponseBody.builder().build());
+                        }
                         
                         if ("web".equals(guest.getHeader().getChannel())) {
                             ObjectNode objNode = OBJECT_MAPPER.createObjectNode();
