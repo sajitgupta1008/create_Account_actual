@@ -90,17 +90,17 @@
 
     <dependency>
       <groupId>com.rccl.middleware</groupId>
-      <artifactId>saviynt</artifactId>
+      <artifactId>guest-accounts-saviynt</artifactId>
     </dependency>
 
     <dependency>
       <groupId>com.rccl.middleware</groupId>
-      <artifactId>guest-profiles-api</artifactId>
+      <artifactId>guest-accounts-profiles-api</artifactId>
     </dependency>
 
     <dependency>
       <groupId>com.rccl.middleware</groupId>
-      <artifactId>guest-profiles-optins-api</artifactId>
+      <artifactId>guest-accounts-profiles-optins-api</artifactId>
     </dependency>
 
     <dependency>
