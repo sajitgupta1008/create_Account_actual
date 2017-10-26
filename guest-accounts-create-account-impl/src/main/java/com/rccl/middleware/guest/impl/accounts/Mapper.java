@@ -102,6 +102,15 @@ public class Mapper {
             builder.userType(SaviyntUserType.Guest);
         }
         
+        // if password is specified for update service, map the following attributes with values which 
+        // are not supposed to change. See {@link SaviyntGuest} Java-Doc for documentation.
+        if (!isCreate && guest.getPassword() != null && StringUtils.isNotBlank(guest.getPassword().toString())) {
+            builder.passwordInetUserStatus("Active")
+                    .passwordInvalidAttemptsData("[]")
+                    .passwordAccountLock("False")
+                    .passwordReset("false");
+        }
+        
         List<SecurityQuestion> securityQuestions = guest.getSecurityQuestions();
         
         if (securityQuestions != null && !securityQuestions.isEmpty()) {
@@ -266,7 +275,7 @@ public class Mapper {
     /**
      * Maps the individual model values into the {@link EnrichedGuest} model.
      *
-     * @param guest   the {@link Guest} model from accounts service.
+     * @param guest               the {@link Guest} model from accounts service.
      * @param profileResponseBody the {@link ResponseBody}<{@link Profile}> model from profiles service.
      * @param optinsResponseBody  the {@link ResponseBody}<{@link Optins}> model from optins service.
      * @return {@link EnrichedGuest}
