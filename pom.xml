@@ -536,13 +536,13 @@
 
       <dependency>
         <groupId>com.rccl.middleware</groupId>
-        <artifactId>guest-profiles-api</artifactId>
+        <artifactId>guest-accounts-profiles-api</artifactId>
         <version>${middleware.guestprofiles.version}</version>
       </dependency>
 
       <dependency>
         <groupId>com.rccl.middleware</groupId>
-        <artifactId>guest-profiles-optins-api</artifactId>
+        <artifactId>guest-accounts-profiles-optins-api</artifactId>
         <version>${middleware.optins.version}</version>
       </dependency>
 
