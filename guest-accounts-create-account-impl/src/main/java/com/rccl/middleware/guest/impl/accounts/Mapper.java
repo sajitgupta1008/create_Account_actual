@@ -79,7 +79,6 @@ public class Mapper {
                 .lastName(guest.getLastName())
                 .middleName(guest.getMiddleName())
                 .suffix(guest.getSuffix())
-                .displayName(guest.getFirstName() + " " + guest.getLastName())
                 .email(guest.getEmail())
                 .password(guest.getPassword())
                 .birthdate(guest.getBirthdate())
