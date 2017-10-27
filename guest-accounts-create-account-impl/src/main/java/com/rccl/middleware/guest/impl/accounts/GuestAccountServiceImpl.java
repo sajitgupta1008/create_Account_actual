@@ -19,10 +19,10 @@ import com.rccl.middleware.common.response.ResponseBody;
 import com.rccl.middleware.common.validation.MiddlewareValidation;
 import com.rccl.middleware.common.validation.validator.ValidatorConstants;
 import com.rccl.middleware.guest.accounts.AccountStatusEnum;
-import com.rccl.middleware.guest.accounts.email.EmailNotification;
 import com.rccl.middleware.guest.accounts.Guest;
 import com.rccl.middleware.guest.accounts.GuestAccountService;
 import com.rccl.middleware.guest.accounts.GuestEvent;
+import com.rccl.middleware.guest.accounts.email.EmailNotification;
 import com.rccl.middleware.guest.accounts.enriched.EnrichedGuest;
 import com.rccl.middleware.guest.accounts.exceptions.ExistingGuestException;
 import com.rccl.middleware.guest.accounts.exceptions.GuestNotFoundException;
@@ -154,7 +154,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         if ("web".equals(guest.getHeader().getChannel())) {
                             ObjectNode objNode = OBJECT_MAPPER.createObjectNode();
                             objNode.put("vdsId", vdsId);
-    
+                            
                             // Send the account created confirmation email.
                             accountCreatedConfirmationEmail.send(guest);
                             
@@ -303,6 +303,13 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         
                         ObjectNode objectNode = OBJECT_MAPPER.createObjectNode();
                         
+                        // If the email is passed in, we assume we're updating it and so we confirm the update
+                        // with the user.
+                        if (!accountFuture.isCompletedExceptionally()
+                                && StringUtils.isNotBlank(enrichedGuest.getEmail())) {
+                            emailUpdatedConfirmationEmail.send(enrichedGuest);
+                        }
+                        
                         if (accountFuture.isCompletedExceptionally() || profileFuture.isCompletedExceptionally()
                                 || optinsFuture.isCompletedExceptionally()) {
                             objectNode.put("status", "The service completed with some exceptions.");
@@ -319,12 +326,6 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                     .payload(objectNode)
                                     .build());
                         } else {
-                            // If the email is passed in, we assume we're updating it and so we confirm the update
-                            // with the user.
-                            if (StringUtils.isNotBlank(enrichedGuest.getEmail())) {
-                                emailUpdatedConfirmationEmail.send(enrichedGuest);
-                            }
-                            
                             return Pair.create(ResponseHeader.OK, ResponseBody
                                     .<JsonNode>builder()
                                     .status(ResponseHeader.OK.status())
