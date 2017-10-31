@@ -15,6 +15,7 @@ import com.lightbend.lagom.javadsl.persistence.PersistentEntityRegistry;
 import com.lightbend.lagom.javadsl.server.HeaderServiceCall;
 import com.rccl.middleware.common.exceptions.MiddlewareError;
 import com.rccl.middleware.common.exceptions.MiddlewareTransportException;
+import com.rccl.middleware.common.logging.RcclLoggerFactory;
 import com.rccl.middleware.common.response.ResponseBody;
 import com.rccl.middleware.common.validation.MiddlewareValidation;
 import com.rccl.middleware.common.validation.validator.ValidatorConstants;
@@ -58,10 +59,15 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+
+import ch.qos.logback.classic.Logger;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class GuestAccountServiceImpl implements GuestAccountService {
+    
+    private static final Logger LOGGER = RcclLoggerFactory.getLogger(GuestAccountServiceImpl.class);
     
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     
@@ -318,25 +324,35 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         
                         // If the update occurred successfully...
                         if (!accountFuture.isCompletedExceptionally()) {
+                            LOGGER.info("The account future completed successfully.");
+                            
                             // Using the original account information PRIOR to update...
-                            originalSaviyntAccount.thenAccept(accountInformation -> {
-                                String originalEmail = accountInformation.getGuest().getEmail();
-                                String updatedEmail = enrichedGuest.getEmail();
-                                
-                                // Check if the email was updated. If so, send the notification.
-                                if (StringUtils.isNoneBlank(originalEmail, updatedEmail)
-                                        && !originalEmail.equalsIgnoreCase(updatedEmail)) {
-                                    emailUpdatedConfirmationEmail.send(enrichedGuest);
-                                }
-                                
-                                // Check if the password was updated. If so, send the notification.
-                                if (!ArrayUtils.isEmpty(enrichedGuest.getSignInInformation().getPassword())) {
-                                    passwordUpdatedConfirmationEmail.send(enrichedGuest.getEmail(),
-                                            enrichedGuest.getPersonalInformation().getFirstName(),
-                                            enrichedGuest.getHeader());
-                                }
-                            })
+                            originalSaviyntAccount
+                                    .thenAccept(accountInformation -> {
+                                        String originalEmail = accountInformation.getGuest().getEmail();
+                                        String updatedEmail = enrichedGuest.getEmail();
+                                        
+                                        LOGGER.info("Comparing original email to supposedly updated email.");
+                                        LOGGER.info("originalEmail := " + originalEmail);
+                                        LOGGER.info("updatedEmail := " + updatedEmail);
+                                        
+                                        // Check if the email was updated. If so, send the notification.
+                                        if (StringUtils.isNoneBlank(originalEmail, updatedEmail)
+                                                && !originalEmail.equalsIgnoreCase(updatedEmail)) {
+                                            emailUpdatedConfirmationEmail.send(enrichedGuest);
+                                        }
+                                        
+                                        LOGGER.info("The password was updated.");
+                                        
+                                        // Check if the password was updated. If so, send the notification.
+                                        if (!ArrayUtils.isEmpty(enrichedGuest.getSignInInformation().getPassword())) {
+                                            passwordUpdatedConfirmationEmail.send(enrichedGuest.getEmail(),
+                                                    enrichedGuest.getPersonalInformation().getFirstName(),
+                                                    enrichedGuest.getHeader());
+                                        }
+                                    })
                                     .exceptionally(throwable -> {
+                                        LOGGER.error("The original account retrieval failed.");
                                         throw new MiddlewareTransportException(TransportErrorCode.InternalServerError,
                                                 "Retrieving the original account failed: "
                                                         + throwable.getCause().getMessage());
