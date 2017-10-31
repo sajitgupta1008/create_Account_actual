@@ -102,18 +102,18 @@ public class GuestAccountUpdateServiceTest {
                     .toCompletableFuture()
                     .get(5, TimeUnit.SECONDS);
         } catch (Exception e) {
-            Throwable t = e.getCause();
-            assertTrue(t instanceof SaviyntExceptionFactory.NoSuchGuestException || t instanceof SaviyntExceptionFactory.ExistingGuestException);
+            assertTrue(e instanceof SaviyntExceptionFactory.ExistingGuestException);
         }
     }
     
     @Test(expected = MiddlewareValidationException.class)
     public void shouldFailUpdateWithInvalidFields() throws Exception {
         EnrichedGuest guest = this.createSampleEnrichedGuest()
+                .vdsId("G1234567")
                 .signInInformation(SignInInformation.builder()
                         .password("123".toCharArray())
                         .build())
-                .email("invalidemail")
+                .email("successful@domain.com")
                 .build();
         
         HeaderServiceCall<EnrichedGuest, ResponseBody<JsonNode>> updateAccount =

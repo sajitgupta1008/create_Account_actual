@@ -240,8 +240,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
             
             CompletionStage<AccountInformation> originalSaviyntAccount = saviyntService
                     .getGuestAccount("systemUserName",
-                            Optional.of(enrichedGuest.getVdsId()),
-                            Optional.empty())
+                            Optional.empty(),
+                            Optional.of(enrichedGuest.getVdsId()))
                     .invoke();
             
             MiddlewareValidation.validate(enrichedGuest);
@@ -324,7 +324,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                 String updatedEmail = enrichedGuest.getEmail();
                                 
                                 // Check if the email was updated. If so, send the notification.
-                                if (StringUtils.isNoneBlank(originalEmail, updatedEmail) && !originalEmail.equalsIgnoreCase(updatedEmail)) {
+                                if (StringUtils.isNoneBlank(originalEmail, updatedEmail)
+                                        && !originalEmail.equalsIgnoreCase(updatedEmail)) {
                                     emailUpdatedConfirmationEmail.send(enrichedGuest);
                                 }
                                 

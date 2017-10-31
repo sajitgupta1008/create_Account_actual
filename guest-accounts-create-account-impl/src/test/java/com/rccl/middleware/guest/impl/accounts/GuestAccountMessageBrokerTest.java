@@ -162,7 +162,7 @@ public class GuestAccountMessageBrokerTest {
         Sink<EmailNotification, TestSubscriber.Probe<EmailNotification>> ts = TestSink.probe(testServer.system());
         TestSubscriber.Probe<EmailNotification> probe = source.runWith(ts, testServer.materializer());
         
-        EnrichedGuest enrichedGuest = this.createSampleEnrichedGuest().build();
+        EnrichedGuest enrichedGuest = this.createSampleEnrichedGuest().email("poot@email.com").build();
         
         guestAccountService.updateAccountEnriched()
                 .invoke(enrichedGuest)
