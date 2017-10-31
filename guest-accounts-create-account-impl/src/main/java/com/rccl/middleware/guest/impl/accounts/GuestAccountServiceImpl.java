@@ -34,6 +34,7 @@ import com.rccl.middleware.guest.impl.accounts.email.AccountCreatedConfirmationE
 import com.rccl.middleware.guest.impl.accounts.email.EmailNotificationEntity;
 import com.rccl.middleware.guest.impl.accounts.email.EmailNotificationTag;
 import com.rccl.middleware.guest.impl.accounts.email.EmailUpdatedConfirmationEmail;
+import com.rccl.middleware.guest.impl.accounts.email.PasswordUpdatedConfirmationEmail;
 import com.rccl.middleware.guest.optin.GuestProfileOptinService;
 import com.rccl.middleware.guest.optin.Optin;
 import com.rccl.middleware.guest.optin.OptinType;
@@ -43,8 +44,10 @@ import com.rccl.middleware.guestprofiles.models.Profile;
 import com.rccl.middleware.saviynt.api.SaviyntService;
 import com.rccl.middleware.saviynt.api.exceptions.SaviyntExceptionFactory;
 import com.rccl.middleware.saviynt.api.requests.SaviyntGuest;
+import com.rccl.middleware.saviynt.api.responses.AccountInformation;
 import com.rccl.middleware.saviynt.api.responses.AccountStatus;
 import com.typesafe.config.ConfigFactory;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.CollectionUtils;
 
@@ -70,6 +73,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     
     private final EmailUpdatedConfirmationEmail emailUpdatedConfirmationEmail;
     
+    private final PasswordUpdatedConfirmationEmail passwordUpdatedConfirmationEmail;
+    
     private final PersistentEntityRegistry persistentEntityRegistry;
     
     private final SaviyntService saviyntService;
@@ -83,6 +88,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     @Inject
     public GuestAccountServiceImpl(AccountCreatedConfirmationEmail accountCreatedConfirmationEmail,
                                    EmailUpdatedConfirmationEmail emailUpdatedConfirmationEmail,
+                                   PasswordUpdatedConfirmationEmail passwordUpdatedConfirmationEmail,
                                    SaviyntService saviyntService,
                                    PersistentEntityRegistry persistentEntityRegistry,
                                    GuestProfilesService guestProfilesService,
@@ -101,6 +107,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
         
         this.accountCreatedConfirmationEmail = accountCreatedConfirmationEmail;
         this.emailUpdatedConfirmationEmail = emailUpdatedConfirmationEmail;
+        this.passwordUpdatedConfirmationEmail = passwordUpdatedConfirmationEmail;
     }
     
     @Override
@@ -231,6 +238,12 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     public HeaderServiceCall<EnrichedGuest, ResponseBody<JsonNode>> updateAccountEnriched() {
         return (requestHeader, enrichedGuest) -> {
             
+            CompletionStage<AccountInformation> originalSaviyntAccount = saviyntService
+                    .getGuestAccount("systemUserName",
+                            Optional.of(enrichedGuest.getVdsId()),
+                            Optional.empty())
+                    .invoke();
+            
             MiddlewareValidation.validate(enrichedGuest);
             
             String appKey = requestHeader.getHeader(APPKEY_HEADER).orElse(DEFAULT_APP_KEY);
@@ -303,11 +316,25 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         
                         ObjectNode objectNode = OBJECT_MAPPER.createObjectNode();
                         
-                        // If the email is passed in, we assume we're updating it and so we confirm the update
-                        // with the user.
-                        if (!accountFuture.isCompletedExceptionally()
-                                && StringUtils.isNotBlank(enrichedGuest.getEmail())) {
-                            emailUpdatedConfirmationEmail.send(enrichedGuest);
+                        // If the update occurred successfully...
+                        if (!accountFuture.isCompletedExceptionally()) {
+                            // Using the original account information PRIOR to update...
+                            originalSaviyntAccount.thenAccept(accountInformation -> {
+                                String originalEmail = accountInformation.getGuest().getEmail();
+                                String updatedEmail = enrichedGuest.getEmail();
+                                
+                                // Check if the email was updated. If so, send the notification.
+                                if (StringUtils.isNoneBlank(originalEmail, updatedEmail) && !originalEmail.equalsIgnoreCase(updatedEmail)) {
+                                    emailUpdatedConfirmationEmail.send(enrichedGuest);
+                                }
+                                
+                                // Check if the password was updated. If so, send the notification.
+                                if (!ArrayUtils.isEmpty(enrichedGuest.getSignInInformation().getPassword())) {
+                                    passwordUpdatedConfirmationEmail.send(enrichedGuest.getEmail(),
+                                            enrichedGuest.getPersonalInformation().getFirstName(),
+                                            enrichedGuest.getHeader());
+                                }
+                            });
                         }
                         
                         if (accountFuture.isCompletedExceptionally() || profileFuture.isCompletedExceptionally()
