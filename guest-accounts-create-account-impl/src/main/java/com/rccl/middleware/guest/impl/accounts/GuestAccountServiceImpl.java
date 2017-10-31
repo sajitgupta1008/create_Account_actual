@@ -335,7 +335,12 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                             enrichedGuest.getPersonalInformation().getFirstName(),
                                             enrichedGuest.getHeader());
                                 }
-                            });
+                            })
+                                    .exceptionally(throwable -> {
+                                        throw new MiddlewareTransportException(TransportErrorCode.InternalServerError,
+                                                "Retrieving the original account failed: "
+                                                        + throwable.getCause().getMessage());
+                                    });
                         }
                         
                         if (accountFuture.isCompletedExceptionally() || profileFuture.isCompletedExceptionally()
