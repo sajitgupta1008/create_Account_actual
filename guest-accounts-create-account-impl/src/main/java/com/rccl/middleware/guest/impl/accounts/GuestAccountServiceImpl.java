@@ -2,6 +2,7 @@ package com.rccl.middleware.guest.impl.accounts;
 
 import akka.NotUsed;
 import akka.japi.Pair;
+import ch.qos.logback.classic.Logger;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -48,7 +49,6 @@ import com.rccl.middleware.saviynt.api.requests.SaviyntGuest;
 import com.rccl.middleware.saviynt.api.responses.AccountInformation;
 import com.rccl.middleware.saviynt.api.responses.AccountStatus;
 import com.typesafe.config.ConfigFactory;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.CollectionUtils;
 
@@ -59,9 +59,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-
-import ch.qos.logback.classic.Logger;
-
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
