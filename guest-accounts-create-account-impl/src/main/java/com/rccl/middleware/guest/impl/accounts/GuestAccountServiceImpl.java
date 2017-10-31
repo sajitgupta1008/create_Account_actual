@@ -328,6 +328,12 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                             
                             // Using the original account information PRIOR to update...
                             originalSaviyntAccount
+                                    .exceptionally(throwable -> {
+                                        LOGGER.error("The original account retrieval failed.");
+                                        throw new MiddlewareTransportException(TransportErrorCode.InternalServerError,
+                                                "Retrieving the original account failed: "
+                                                        + throwable.getCause().getMessage());
+                                    })
                                     .thenAccept(accountInformation -> {
                                         String originalEmail = accountInformation.getGuest().getEmail();
                                         String updatedEmail = enrichedGuest.getEmail();
@@ -336,26 +342,27 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                         LOGGER.info("originalEmail := " + originalEmail);
                                         LOGGER.info("updatedEmail := " + updatedEmail);
                                         
+                                        boolean emailUpdated = false;
+                                        
                                         // Check if the email was updated. If so, send the notification.
                                         if (StringUtils.isNoneBlank(originalEmail, updatedEmail)
                                                 && !originalEmail.equalsIgnoreCase(updatedEmail)) {
                                             emailUpdatedConfirmationEmail.send(enrichedGuest);
+                                            emailUpdated = true;
                                         }
                                         
                                         LOGGER.info("The password was updated.");
                                         
                                         // Check if the password was updated. If so, send the notification.
                                         if (!ArrayUtils.isEmpty(enrichedGuest.getSignInInformation().getPassword())) {
-                                            passwordUpdatedConfirmationEmail.send(enrichedGuest.getEmail(),
-                                                    enrichedGuest.getPersonalInformation().getFirstName(),
+                                            String email = emailUpdated ? updatedEmail : originalEmail;
+                                            String firstName = StringUtils.defaultIfBlank(enrichedGuest.getPersonalInformation().getFirstName(),
+                                                    accountInformation.getGuest().getFirstName());
+                                            
+                                            passwordUpdatedConfirmationEmail.send(email,
+                                                    firstName,
                                                     enrichedGuest.getHeader());
                                         }
-                                    })
-                                    .exceptionally(throwable -> {
-                                        LOGGER.error("The original account retrieval failed.");
-                                        throw new MiddlewareTransportException(TransportErrorCode.InternalServerError,
-                                                "Retrieving the original account failed: "
-                                                        + throwable.getCause().getMessage());
                                     });
                         }
                         
