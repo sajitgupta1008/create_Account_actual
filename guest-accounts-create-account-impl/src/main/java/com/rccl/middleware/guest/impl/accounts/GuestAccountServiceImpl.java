@@ -351,13 +351,22 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                             emailUpdated = true;
                                         }
                                         
-                                        LOGGER.info("The password was updated.");
-                                        
                                         // Check if the password was updated. If so, send the notification.
-                                        if (!ArrayUtils.isEmpty(enrichedGuest.getSignInInformation().getPassword())) {
+                                        if (enrichedGuest.getSignInInformation() != null
+                                                && enrichedGuest.getSignInInformation().getPassword() != null
+                                                && enrichedGuest.getSignInInformation().getPassword().length > 0) {
+                                            
+                                            LOGGER.info("The password was updated.");
+                                            
                                             String email = emailUpdated ? updatedEmail : originalEmail;
-                                            String firstName = StringUtils.defaultIfBlank(enrichedGuest.getPersonalInformation().getFirstName(),
-                                                    accountInformation.getGuest().getFirstName());
+                                            String firstName;
+                                            
+                                            if (enrichedGuest.getPersonalInformation() != null) {
+                                                firstName = StringUtils.defaultIfBlank(enrichedGuest.getPersonalInformation().getFirstName(),
+                                                        accountInformation.getGuest().getFirstName());
+                                            } else {
+                                                firstName = accountInformation.getGuest().getFirstName();
+                                            }
                                             
                                             passwordUpdatedConfirmationEmail.send(email,
                                                     firstName,
