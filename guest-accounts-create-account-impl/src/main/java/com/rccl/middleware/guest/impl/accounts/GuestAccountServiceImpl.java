@@ -462,7 +462,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     }
     
     @Override
-    public HeaderServiceCall<NotUsed, ResponseBody<JsonNode>> validateEmail(String email) {
+    public HeaderServiceCall<NotUsed, ResponseBody<JsonNode>> validateEmail(String email, String inputType) {
         return (requestHeader, notUsed) -> {
             
             Pattern pattern = Pattern.compile(ValidatorConstants.EMAIL_REGEXP);
@@ -472,7 +472,11 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                 throw new InvalidEmailFormatException();
             }
             
-            return saviyntService.getAccountStatus(email, "email", "False").invoke()
+            // propertyToSearch is defaulted to displayName if inputType is null or if passed with "username".
+            String propertyToSearch = StringUtils.isBlank(inputType)
+                    || inputType.equalsIgnoreCase("username") ? "displayName" : "email";
+            
+            return saviyntService.getAccountStatus(email, propertyToSearch, "False").invoke()
                     .exceptionally(exception -> {
                         Throwable cause = exception.getCause();
                         

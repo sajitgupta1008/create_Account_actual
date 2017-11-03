@@ -33,7 +33,7 @@ public interface GuestAccountService extends Service {
     
     ServiceCall<EnrichedGuest, ResponseBody<JsonNode>> updateAccountEnriched();
     
-    ServiceCall<NotUsed, ResponseBody<JsonNode>> validateEmail(String email);
+    ServiceCall<NotUsed, ResponseBody<JsonNode>> validateEmail(String email, String inputType);
     
     ServiceCall<NotUsed, String> healthCheck();
     
@@ -51,7 +51,7 @@ public interface GuestAccountService extends Service {
                         restCall(POST, "/guestAccounts/", this::createAccount),
                         restCall(GET, "/guestAccounts/enriched/:vdsId", this::getAccountEnriched),
                         restCall(PUT, "/guestAccounts/enriched", this::updateAccountEnriched),
-                        restCall(GET, "/guestAccounts/:email/validation", this::validateEmail),
+                        restCall(GET, "/guestAccounts/:email/validation?inputType", this::validateEmail),
                         restCall(GET, "/guestAccounts/health", this::healthCheck)
                 )
                 .withTopics(

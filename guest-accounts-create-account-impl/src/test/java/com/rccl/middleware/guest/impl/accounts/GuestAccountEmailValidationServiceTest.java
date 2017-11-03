@@ -50,7 +50,8 @@ public class GuestAccountEmailValidationServiceTest {
     
     @Test
     public void shouldReturnStatusAccountExists() throws Exception {
-        ResponseBody<JsonNode> response = guestAccountEmailValidationService.validateEmail("successful@domain.com")
+        ResponseBody<JsonNode> response = guestAccountEmailValidationService
+                .validateEmail("successful@domain.com", "username")
                 .invoke().toCompletableFuture().get(5, TimeUnit.SECONDS);
         
         assertNotNull(response);
@@ -60,7 +61,8 @@ public class GuestAccountEmailValidationServiceTest {
     
     @Test(expected = ExecutionException.class)
     public void shouldReturnStatusAccountNonExisting() throws Exception {
-        ResponseBody<JsonNode> response = guestAccountEmailValidationService.validateEmail("notexisting@domain.com")
+        ResponseBody<JsonNode> response = guestAccountEmailValidationService
+                .validateEmail("notexisting@domain.com", "username")
                 .invoke().toCompletableFuture().get(5, TimeUnit.SECONDS);
         
         assertNotNull(response);
@@ -70,7 +72,7 @@ public class GuestAccountEmailValidationServiceTest {
     
     @Test(expected = ExecutionException.class)
     public void shouldReturnInvalidEmailFailureResponse() throws Exception {
-        guestAccountEmailValidationService.validateEmail("this.is.@invalidemail")
+        guestAccountEmailValidationService.validateEmail("this.is.@invalidemail", "username")
                 .invoke().toCompletableFuture().get(5, TimeUnit.SECONDS);
         
     }

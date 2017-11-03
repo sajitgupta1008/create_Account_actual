@@ -22,7 +22,6 @@ import org.springframework.util.CollectionUtils;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -103,7 +102,7 @@ public class Mapper {
         
         // if password is specified for update service, map the following attributes with values which 
         // are not supposed to change. See {@link SaviyntGuest} Java-Doc for documentation.
-        if (!isCreate && guest.getPassword() != null && StringUtils.isNotBlank(guest.getPassword().toString())) {
+        if (!isCreate && guest.getPassword() != null && StringUtils.isNotBlank(String.valueOf(guest.getPassword()))) {
             builder.passwordInetUserStatus("Active")
                     .passwordInvalidAttemptsData("[]")
                     .passwordAccountLock("False")
@@ -365,7 +364,7 @@ public class Mapper {
      */
     private static List<String> mapStringToSaviyntStringList(String attribute) {
         if (StringUtils.isNotBlank(attribute)) {
-            return Arrays.asList("\"" + attribute + "\"");
+            return Collections.singletonList("\"" + attribute + "\"");
         }
         
         return Collections.emptyList();
