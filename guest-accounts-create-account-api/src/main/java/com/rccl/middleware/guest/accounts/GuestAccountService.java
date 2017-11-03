@@ -45,7 +45,7 @@ public interface GuestAccountService extends Service {
     
     @Override
     default Descriptor descriptor() {
-        return named("guest_accounts")
+        return named("guest_accounts_create_account")
                 .withCalls(
                         restCall(POST, "/guestAccounts", this::createAccount),
                         restCall(POST, "/guestAccounts/", this::createAccount),
@@ -59,7 +59,7 @@ public interface GuestAccountService extends Service {
                         topic(VERIFY_LOYALTY_KAFKA_TOPIC, this::verifyLoyaltyTopic),
                         topic(NOTIFICATIONS_KAFKA_TOPIC, this::emailNotificationTopic)
                 )
-                .withCircuitBreaker(CircuitBreaker.identifiedBy("guest_accounts"))
+                .withCircuitBreaker(CircuitBreaker.identifiedBy("guest_accounts_create_account"))
                 .withAutoAcl(true);
     }
 }
