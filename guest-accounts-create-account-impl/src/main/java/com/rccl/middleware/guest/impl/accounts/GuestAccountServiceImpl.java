@@ -472,7 +472,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                 throw new InvalidEmailFormatException();
             }
             
-            return saviyntService.getAccountStatus(email, "displayName", "False").invoke()
+            return saviyntService.getAccountStatus(email, "email", "False").invoke()
                     .exceptionally(exception -> {
                         Throwable cause = exception.getCause();
                         
