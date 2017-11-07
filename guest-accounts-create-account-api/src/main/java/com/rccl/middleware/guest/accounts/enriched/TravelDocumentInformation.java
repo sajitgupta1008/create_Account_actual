@@ -1,6 +1,7 @@
 package com.rccl.middleware.guest.accounts.enriched;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonView;
 import com.lightbend.lagom.serialization.Jsonable;
 import com.rccl.middleware.common.validation.validator.DateFormat;
 import lombok.Builder;
@@ -15,8 +16,10 @@ public class TravelDocumentInformation implements Jsonable {
     
     private static final long serialVersionUID = 1L;
     
+    @JsonView(EnrichedGuest.ExtendedView.class)
     String passportNumber;
     
+    @JsonView(EnrichedGuest.ExtendedView.class)
     @DateFormat
     String passportExpirationDate;
     

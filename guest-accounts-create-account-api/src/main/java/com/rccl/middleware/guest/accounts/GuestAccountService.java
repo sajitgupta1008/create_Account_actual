@@ -12,6 +12,8 @@ import com.rccl.middleware.guest.accounts.email.EmailNotification;
 import com.rccl.middleware.guest.accounts.enriched.EnrichedGuest;
 import com.typesafe.config.ConfigFactory;
 
+import java.util.Optional;
+
 import static com.lightbend.lagom.javadsl.api.Service.named;
 import static com.lightbend.lagom.javadsl.api.Service.restCall;
 import static com.lightbend.lagom.javadsl.api.Service.topic;
@@ -29,7 +31,7 @@ public interface GuestAccountService extends Service {
     
     ServiceCall<Guest, ResponseBody<JsonNode>> createAccount();
     
-    ServiceCall<NotUsed, ResponseBody<EnrichedGuest>> getAccountEnriched(String vdsId);
+    ServiceCall<NotUsed, ResponseBody<EnrichedGuest>> getAccountEnriched(String vdsId, Optional<String> extended);
     
     ServiceCall<EnrichedGuest, ResponseBody<JsonNode>> updateAccountEnriched();
     
@@ -49,7 +51,7 @@ public interface GuestAccountService extends Service {
                 .withCalls(
                         restCall(POST, "/guestAccounts", this::createAccount),
                         restCall(POST, "/guestAccounts/", this::createAccount),
-                        restCall(GET, "/guestAccounts/enriched/:vdsId", this::getAccountEnriched),
+                        restCall(GET, "/guestAccounts/enriched/:vdsId?extended", this::getAccountEnriched),
                         restCall(PUT, "/guestAccounts/enriched", this::updateAccountEnriched),
                         restCall(GET, "/guestAccounts/:email/validation?inputType", this::validateEmail),
                         restCall(GET, "/guestAccounts/health", this::healthCheck)

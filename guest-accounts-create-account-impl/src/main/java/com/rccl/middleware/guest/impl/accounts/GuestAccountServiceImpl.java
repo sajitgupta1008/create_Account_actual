@@ -3,6 +3,7 @@ package com.rccl.middleware.guest.impl.accounts;
 import akka.NotUsed;
 import akka.japi.Pair;
 import ch.qos.logback.classic.Logger;
+import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -195,7 +196,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     }
     
     @Override
-    public HeaderServiceCall<NotUsed, ResponseBody<EnrichedGuest>> getAccountEnriched(String vdsId) {
+    public HeaderServiceCall<NotUsed, ResponseBody<EnrichedGuest>> getAccountEnriched(String vdsId,
+                                                                                      Optional<String> extended) {
         return (requestHeader, notUsed) -> {
             
             if (StringUtils.isBlank(vdsId)) {
@@ -227,7 +229,13 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                             throw new GuestNotFoundException();
                         }
                         
-                        EnrichedGuest enrichedGuest = Mapper.mapToEnrichedGuest(guest, profile, optins);
+                        String extendedView = extended.orElse("false");
+                        
+                        EnrichedGuest enrichedGuest = this.filterObjectView(
+                                Mapper.mapToEnrichedGuest(guest, profile, optins),
+                                extendedView.equalsIgnoreCase("true")
+                                        ? EnrichedGuest.ExtendedView.class : EnrichedGuest.DefaultView.class);
+                        
                         return Pair.create(ResponseHeader.OK, ResponseBody
                                 .<EnrichedGuest>builder()
                                 .status(ResponseHeader.OK.status())
@@ -359,7 +367,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                             String firstName;
                                             
                                             if (enrichedGuest.getPersonalInformation() != null) {
-                                                firstName = StringUtils.defaultIfBlank(enrichedGuest.getPersonalInformation().getFirstName(),
+                                                firstName = StringUtils.defaultIfBlank(
+                                                        enrichedGuest.getPersonalInformation().getFirstName(),
                                                         accountInformation.getGuest().getFirstName());
                                             } else {
                                                 firstName = accountInformation.getGuest().getFirstName();
@@ -615,5 +624,27 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                 .email(guest.getEmail())
                 .optins(optinList)
                 .build();
+    }
+    
+    /**
+     * Filters an object based on the {@code @JsonView} annotation value placed on the attributes.
+     *
+     * @param source   the object where the filter will be applied.
+     * @param jsonView the {@link JsonView} to be applied.
+     * @param <T>      the class type of source passed in the argument.
+     * @return T filtered source object.
+     */
+    @SuppressWarnings("unchecked")
+    private <T> T filterObjectView(T source, Class<?> jsonView) {
+        try {
+            String filteredString = OBJECT_MAPPER
+                    .writerWithView(jsonView)
+                    .writeValueAsString(source);
+            return OBJECT_MAPPER.readValue(filteredString, (Class<T>) source.getClass());
+        } catch (Exception e) {
+            LOGGER.error("Failed to process JsonView.", e);
+        }
+        
+        return source;
     }
 }
