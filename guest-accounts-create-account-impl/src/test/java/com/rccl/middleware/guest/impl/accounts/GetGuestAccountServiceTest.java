@@ -18,6 +18,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.Optional;
+
 import static com.lightbend.lagom.javadsl.testkit.ServiceTest.defaultSetup;
 import static com.lightbend.lagom.javadsl.testkit.ServiceTest.startServer;
 import static org.junit.Assert.assertTrue;
@@ -55,7 +57,7 @@ public class GetGuestAccountServiceTest {
     public void testSuccessfulGetGuestAccountEnriched() {
         
         ResponseBody<EnrichedGuest> response = ((HeaderServiceCall<NotUsed, ResponseBody<EnrichedGuest>>) guestAccountService
-                .getAccountEnriched("G1234567"))
+                .getAccountEnriched("G1234567", Optional.of("true")))
                 .invokeWithHeaders(RequestHeader.DEFAULT, NotUsed.getInstance()).toCompletableFuture().join().second();
         
         EnrichedGuest guest = response.getPayload();
@@ -72,12 +74,12 @@ public class GetGuestAccountServiceTest {
     @Test(expected = SaviyntExceptionFactory.ExistingGuestException.class)
     public void testNonExistingGuest() {
         ((HeaderServiceCall<NotUsed, ResponseBody<EnrichedGuest>>) guestAccountService
-                .getAccountEnriched("G1111111"))
+                .getAccountEnriched("G1111111", Optional.of("true")))
                 .invokeWithHeaders(RequestHeader.DEFAULT, NotUsed.getInstance()).toCompletableFuture().join().second();
     }
     
     @Test(expected = UnsupportedOperationException.class)
     public void testEmptyVdsIdValidation() {
-        guestAccountService.getAccountEnriched("").invoke().toCompletableFuture().join();
+        guestAccountService.getAccountEnriched("", Optional.of("true")).invoke().toCompletableFuture().join();
     }
 }

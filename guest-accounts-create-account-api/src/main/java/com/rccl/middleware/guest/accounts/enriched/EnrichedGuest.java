@@ -62,4 +62,12 @@ public class EnrichedGuest implements Jsonable {
     @Pattern(regexp = "([GEC])\\d+", message = "The VDS ID is invalidly formatted.")
     @Size(max = 9, message = "The VDS ID can have a maximum of 9 characters.")
     String vdsId;
+    
+    public interface DefaultView {
+        // used for Jackson @JSONView annotation
+    }
+    
+    public interface ExtendedView extends DefaultView {
+        // used for Jackson @JSONView annotation
+    }
 }

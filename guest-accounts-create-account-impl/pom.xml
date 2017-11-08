@@ -179,7 +179,7 @@
         <artifactId>docker-maven-plugin</artifactId>
         <version>${maven.docker.plugin.version}</version>
         <configuration>
-          <skip>false</skip>
+          <skip>${skipDockerBuild}</skip>
           <logStdout>true</logStdout>
           <useColor>true</useColor>
           <images>
