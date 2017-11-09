@@ -71,7 +71,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     
     private static final String APPKEY_HEADER = "AppKey";
     
-    private static final String DEFAULT_APP_KEY = ConfigFactory.load().getString("apigee.appkey");
+    private static final String DEFAULT_APP_KEY = ConfigFactory.load().getString("default.apigee.appkey");
     
     private final AccountCreatedConfirmationEmail accountCreatedConfirmationEmail;
     
