@@ -35,7 +35,7 @@ public interface GuestAccountService extends Service {
     
     ServiceCall<EnrichedGuest, ResponseBody<JsonNode>> updateAccountEnriched();
     
-    ServiceCall<NotUsed, ResponseBody<JsonNode>> validateEmail(String email, String inputType);
+    ServiceCall<NotUsed, ResponseBody<JsonNode>> validateEmail(String email, Optional<String> inputType);
     
     ServiceCall<NotUsed, String> healthCheck();
     

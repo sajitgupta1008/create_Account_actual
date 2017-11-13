@@ -13,6 +13,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -51,7 +52,7 @@ public class GuestAccountEmailValidationServiceTest {
     @Test
     public void shouldReturnStatusAccountExists() throws Exception {
         ResponseBody<JsonNode> response = guestAccountEmailValidationService
-                .validateEmail("successful@domain.com", "username")
+                .validateEmail("successful@domain.com", Optional.of("username"))
                 .invoke().toCompletableFuture().get(5, TimeUnit.SECONDS);
         
         assertNotNull(response);
@@ -62,7 +63,7 @@ public class GuestAccountEmailValidationServiceTest {
     @Test(expected = ExecutionException.class)
     public void shouldReturnStatusAccountNonExisting() throws Exception {
         ResponseBody<JsonNode> response = guestAccountEmailValidationService
-                .validateEmail("notexisting@domain.com", "username")
+                .validateEmail("notexisting@domain.com", Optional.of("username"))
                 .invoke().toCompletableFuture().get(5, TimeUnit.SECONDS);
         
         assertNotNull(response);
@@ -72,7 +73,7 @@ public class GuestAccountEmailValidationServiceTest {
     
     @Test(expected = ExecutionException.class)
     public void shouldReturnInvalidEmailFailureResponse() throws Exception {
-        guestAccountEmailValidationService.validateEmail("this.is.@invalidemail", "username")
+        guestAccountEmailValidationService.validateEmail("this.is.@invalidemail", Optional.of("username"))
                 .invoke().toCompletableFuture().get(5, TimeUnit.SECONDS);
         
     }
