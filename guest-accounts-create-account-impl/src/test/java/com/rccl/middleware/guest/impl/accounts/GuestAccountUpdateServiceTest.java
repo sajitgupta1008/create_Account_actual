@@ -102,7 +102,7 @@ public class GuestAccountUpdateServiceTest {
                     .toCompletableFuture()
                     .get(5, TimeUnit.SECONDS);
         } catch (Exception e) {
-            assertTrue(e instanceof SaviyntExceptionFactory.ExistingGuestException);
+            assertTrue(e instanceof SaviyntExceptionFactory.NoSuchGuestException);
         }
     }
     
