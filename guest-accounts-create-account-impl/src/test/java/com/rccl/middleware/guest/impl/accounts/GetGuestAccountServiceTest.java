@@ -71,7 +71,7 @@ public class GetGuestAccountServiceTest {
         assertTrue(guest.getConsumerId() != null);
     }
     
-    @Test(expected = SaviyntExceptionFactory.ExistingGuestException.class)
+    @Test(expected = SaviyntExceptionFactory.NoSuchGuestException.class)
     public void testNonExistingGuest() {
         ((HeaderServiceCall<NotUsed, ResponseBody<EnrichedGuest>>) guestAccountService
                 .getAccountEnriched("G1111111", Optional.of("true")))

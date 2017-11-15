@@ -79,7 +79,6 @@ public class Mapper {
                 .middleName(guest.getMiddleName())
                 .suffix(guest.getSuffix())
                 .email(guest.getEmail())
-                .password(guest.getPassword())
                 .birthdate(guest.getBirthdate())
                 .phoneNumber(guest.getPhoneNumber())
                 .consumerId(guest.getConsumerId())
@@ -97,16 +96,14 @@ public class Mapper {
         
         // only map the account creation specific attributes
         if (isCreate) {
-            builder.userType(SaviyntUserType.Guest);
+            builder.password(guest.getPassword())
+                    .userType(SaviyntUserType.Guest);
         }
         
         // if password is specified for update service, map the following attributes with values which 
         // are not supposed to change. See {@link SaviyntGuest} Java-Doc for documentation.
         if (!isCreate && guest.getPassword() != null && StringUtils.isNotBlank(String.valueOf(guest.getPassword()))) {
-            builder.passwordInetUserStatus("Active")
-                    .passwordInvalidAttemptsData("[]")
-                    .passwordAccountLock("False")
-                    .passwordReset("false");
+            builder.passwordReset("false");
         }
         
         List<SecurityQuestion> securityQuestions = guest.getSecurityQuestions();

@@ -31,6 +31,7 @@ import com.rccl.middleware.guest.accounts.exceptions.ExistingGuestException;
 import com.rccl.middleware.guest.accounts.exceptions.GuestNotFoundException;
 import com.rccl.middleware.guest.accounts.exceptions.InvalidEmailFormatException;
 import com.rccl.middleware.guest.accounts.exceptions.InvalidGuestException;
+import com.rccl.middleware.guest.accounts.exceptions.InvalidPasswordException;
 import com.rccl.middleware.guest.authentication.AccountCredentials;
 import com.rccl.middleware.guest.authentication.GuestAuthenticationService;
 import com.rccl.middleware.guest.impl.accounts.email.AccountCreatedConfirmationEmail;
@@ -46,9 +47,11 @@ import com.rccl.middleware.guestprofiles.GuestProfilesService;
 import com.rccl.middleware.guestprofiles.models.Profile;
 import com.rccl.middleware.saviynt.api.SaviyntService;
 import com.rccl.middleware.saviynt.api.exceptions.SaviyntExceptionFactory;
+import com.rccl.middleware.saviynt.api.requests.SaviyntAuthAccountPassword;
 import com.rccl.middleware.saviynt.api.requests.SaviyntGuest;
 import com.rccl.middleware.saviynt.api.responses.AccountInformation;
 import com.rccl.middleware.saviynt.api.responses.AccountStatus;
+import com.rccl.middleware.saviynt.api.responses.GenericSaviyntResponse;
 import com.typesafe.config.ConfigFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.CollectionUtils;
@@ -422,8 +425,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
             return saviyntService.getGuestAccount("systemUserName", Optional.empty(), Optional.of(vdsId)).invoke()
                     .exceptionally(throwable -> {
                         Throwable cause = throwable.getCause();
-                        if (cause instanceof SaviyntExceptionFactory.ExistingGuestException
-                                || cause instanceof SaviyntExceptionFactory.NoSuchGuestException) {
+                        if (cause instanceof SaviyntExceptionFactory.NoSuchGuestException) {
                             throw new GuestNotFoundException();
                         }
                         
@@ -445,19 +447,54 @@ public class GuestAccountServiceImpl implements GuestAccountService {
             
             final SaviyntGuest saviyntGuest = Mapper.mapGuestToSaviyntGuest(guest, false).build();
             
-            return saviyntService
-                    .updateGuestAccount()
+            // If password is provided then invoke Saviynt changePassword
+            // and pass pwdreset = false in updateUser call.
+            CompletionStage<GenericSaviyntResponse> updatePasswordService = null;
+            if (guest.getPassword() != null) {
+                SaviyntAuthAccountPassword updatePassword = SaviyntAuthAccountPassword
+                        .builder()
+                        .password(guest.getPassword())
+                        .vdsId(guest.getVdsId())
+                        .build();
+                
+                updatePasswordService = saviyntService.updateAuthenticatedAccountPassword()
+                        .invoke(updatePassword)
+                        .exceptionally(exception -> {
+                            Throwable cause = exception.getCause();
+                            
+                            LOGGER.error("Error encountered while trying to update account password for VDS ID={}",
+                                    saviyntGuest.getVdsId(), exception);
+                            
+                            if (cause instanceof SaviyntExceptionFactory.NoSuchGuestException) {
+                                throw new GuestNotFoundException();
+                            }
+                            
+                            if (cause instanceof SaviyntExceptionFactory.InvalidPasswordFormatException) {
+                                throw InvalidGuestException.INVALID_PASSWORD;
+                            }
+                            
+                            if (cause instanceof SaviyntExceptionFactory.PasswordReuseException) {
+                                throw new InvalidPasswordException(InvalidPasswordException.REUSE_ERROR);
+                            }
+                            
+                            throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
+                        });
+            }
+            
+            CompletionStage<GenericSaviyntResponse> updateService = saviyntService.updateGuestAccount()
                     .invoke(saviyntGuest)
                     .exceptionally(exception -> {
                         Throwable cause = exception.getCause();
                         
-                        if (cause instanceof SaviyntExceptionFactory.NoSuchGuestException
-                                || cause instanceof SaviyntExceptionFactory.ExistingGuestException) {
+                        LOGGER.error("Error encountered while trying to update account for VDS ID={}",
+                                saviyntGuest.getVdsId(), exception);
+                        
+                        if (cause instanceof SaviyntExceptionFactory.NoSuchGuestException) {
                             throw new GuestNotFoundException();
                         }
                         
                         if (cause instanceof SaviyntExceptionFactory.InvalidEmailFormatException) {
-                            throw new InvalidGuestException("The email is in an invalid format.", null);
+                            throw new InvalidGuestException("The email is in invalid format.", null);
                         }
                         
                         if (cause instanceof SaviyntExceptionFactory.InvalidPasswordFormatException) {
@@ -465,8 +502,14 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         }
                         
                         throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
-                    })
-                    .thenApply(response -> NotUsed.getInstance());
+                    });
+            
+            if (updatePasswordService != null) {
+                return updatePasswordService.thenCompose(changePasswordResponse ->
+                        updateService.thenApply(notUsed -> NotUsed.getInstance()));
+            } else {
+                return updateService.thenApply(notUsed -> NotUsed.getInstance());
+            }
         };
     }
     
@@ -489,9 +532,12 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                     .exceptionally(exception -> {
                         Throwable cause = exception.getCause();
                         
+                        LOGGER.error("Error encountered while validating account status for given = {}",
+                                email, exception);
+                        
                         // in case of non existing account, return an AccountStatus with DoesNotExist message instead.
                         // So that the service will return a 200 with a status of "DoesNotExist"
-                        if (cause instanceof SaviyntExceptionFactory.ExistingGuestException) {
+                        if (cause instanceof SaviyntExceptionFactory.NoSuchGuestException) {
                             return AccountStatus.builder()
                                     .message(AccountStatusEnum.DOES_NOT_EXIST.value())
                                     .build();
@@ -508,8 +554,9 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         AccountStatusEnum accountStatusEnum = AccountStatusEnum.fromValue(accountStatus.getMessage());
                         
                         String status;
-                        
-                        if (StringUtils.isNotBlank(accountStatus.getMessage()) && accountStatusEnum != null) {
+                        if (accountStatus.getIsAccountLocked() != null && accountStatus.getIsAccountLocked()) {
+                            status = AccountStatusEnum.LOCKED.value();
+                        } else if (StringUtils.isNotBlank(accountStatus.getMessage()) && accountStatusEnum != null) {
                             status = accountStatusEnum.value();
                         } else {
                             status = AccountStatusEnum.DOES_NOT_EXIST.value();
@@ -542,6 +589,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         .filter(param -> param.first() instanceof GuestAccountEvent.GuestCreated
                                 || param.first() instanceof GuestAccountEvent.GuestUpdated)
                         .mapAsync(1, eventOffset -> {
+                            LOGGER.debug("Publishing link loyalty message...");
                             GuestAccountEvent event = eventOffset.first();
                             GuestEvent guestEvent;
                             if (event instanceof GuestAccountEvent.GuestCreated) {
@@ -563,6 +611,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                 persistentEntityRegistry.eventStream(tag, offset)
                         .filter(param -> param.first() instanceof GuestAccountEvent.VerifyLoyalty)
                         .mapAsync(1, eventOffset -> {
+                            LOGGER.debug("Publishing verify loyalty message...");
                             GuestAccountEvent event = eventOffset.first();
                             GuestAccountEvent.VerifyLoyalty loyalty = (GuestAccountEvent.VerifyLoyalty) event;
                             
