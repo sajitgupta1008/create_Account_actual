@@ -14,7 +14,8 @@ public enum AccountStatusEnum {
     
     EXISTING("Exists"),
     DOES_NOT_EXIST("DoesNotExist"),
-    NEEDS_TO_BE_MIGRATED("NeedsToBeMigrated");
+    NEEDS_TO_BE_MIGRATED("NeedsToBeMigrated"),
+    LOCKED("Locked");
     
     private String value;
     
