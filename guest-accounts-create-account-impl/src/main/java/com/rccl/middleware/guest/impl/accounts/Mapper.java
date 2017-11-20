@@ -18,6 +18,7 @@ import com.rccl.middleware.guestprofiles.models.Profile;
 import com.rccl.middleware.saviynt.api.requests.SaviyntGuest;
 import com.rccl.middleware.saviynt.api.requests.SaviyntUserType;
 import com.rccl.middleware.saviynt.api.responses.AccountInformation;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.CollectionUtils;
 
@@ -116,15 +117,38 @@ public class Mapper {
             builder.securityQuestion(sq.getQuestion()).securityAnswer(sq.getAnswer());
         }
         
-        if (guest.getTermsAndConditionsAgreement() != null) {
-            builder.termsAndConditionsVersion(guest.getTermsAndConditionsAgreement().getVersion());
+        TermsAndConditionsAgreement tac = guest.getTermsAndConditionsAgreement();
+        if (tac != null) {
+            builder.termsAndConditionsVersion(tac.getVersion());
+            
+            if (StringUtils.isNotBlank(tac.getAcceptTime())) {
+                String[] acceptTimeTokens = tac.getAcceptTime().split("T");
+                
+                if (ArrayUtils.isNotEmpty(acceptTimeTokens)) {
+                    builder.termsAndConditionsAcceptDate(acceptTimeTokens[0]);
+                    
+                    if (acceptTimeTokens.length > 1) {
+                        builder.termsAndConditionsAcceptTime(acceptTimeTokens[1]);
+                    }
+                }
+            }
         }
         
         PrivacyPolicyAgreement ppa = guest.getPrivacyPolicyAgreement();
         if (ppa != null) {
-            builder.privacyPolicyAcceptDate(ppa.getAcceptTime());
-            builder.privacyPolicyAcceptTime(ppa.getAcceptTime());
             builder.privacyPolicyVersion(ppa.getVersion());
+            
+            if (StringUtils.isNotBlank(ppa.getAcceptTime())) {
+                String[] acceptTimeTokens = ppa.getAcceptTime().split("T");
+                
+                if (ArrayUtils.isNotEmpty(acceptTimeTokens)) {
+                    builder.privacyPolicyAcceptDate(acceptTimeTokens[0]);
+                    
+                    if (acceptTimeTokens.length > 1) {
+                        builder.privacyPolicyAcceptTime(acceptTimeTokens[1]);
+                    }
+                }
+            }
         }
         
         return builder;
