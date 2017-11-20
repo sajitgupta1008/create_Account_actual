@@ -36,21 +36,27 @@ public class AccountCreatedConfirmationEmail {
         
         LOGGER.info("#send - Attempting to send the email to: " + guest.getEmail());
         
-        this.getEmailContent(guest)
-                .thenAccept(htmlEmailTemplate -> {
-                    String content = htmlEmailTemplate.getHtmlMessage();
-                    String sender = htmlEmailTemplate.getSender();
-                    String subject = htmlEmailTemplate.getSubject();
-                    
-                    EmailNotification en = EmailNotification.builder()
-                            .recipient(guest.getEmail())
-                            .sender(sender)
-                            .subject(subject)
-                            .content(content)
-                            .build();
-                    
-                    this.sendToTopic(en);
-                });
+        try {
+            this.getEmailContent(guest)
+                    .thenAccept(htmlEmailTemplate -> {
+                        if (htmlEmailTemplate != null) {
+                            String content = htmlEmailTemplate.getHtmlMessage();
+                            String sender = htmlEmailTemplate.getSender();
+                            String subject = htmlEmailTemplate.getSubject();
+                            
+                            EmailNotification en = EmailNotification.builder()
+                                    .recipient(guest.getEmail())
+                                    .sender(sender)
+                                    .subject(subject)
+                                    .content(content)
+                                    .build();
+                            
+                            this.sendToTopic(en);
+                        }
+                    });
+        } catch (Exception e) {
+            LOGGER.info("An error was encountered when retrieving email content.", e);
+        }
     }
     
     private CompletionStage<HtmlEmailTemplate> getEmailContent(Guest guest) {
