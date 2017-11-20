@@ -122,7 +122,7 @@ public class Mapper {
             builder.termsAndConditionsVersion(tac.getVersion());
             
             if (StringUtils.isNotBlank(tac.getAcceptTime())) {
-                String[] acceptTimeTokens = tac.getAcceptTime().split("T");
+                String[] acceptTimeTokens = tac.getAcceptTime().split("T", 1);
                 
                 if (ArrayUtils.isNotEmpty(acceptTimeTokens)) {
                     builder.termsAndConditionsAcceptDate(acceptTimeTokens[0]);
@@ -139,7 +139,7 @@ public class Mapper {
             builder.privacyPolicyVersion(ppa.getVersion());
             
             if (StringUtils.isNotBlank(ppa.getAcceptTime())) {
-                String[] acceptTimeTokens = ppa.getAcceptTime().split("T");
+                String[] acceptTimeTokens = ppa.getAcceptTime().split("T", 1);
                 
                 if (ArrayUtils.isNotEmpty(acceptTimeTokens)) {
                     builder.privacyPolicyAcceptDate(acceptTimeTokens[0]);
