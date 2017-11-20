@@ -76,6 +76,10 @@ public class Guest implements Jsonable {
     @Valid
     List<SecurityQuestion> securityQuestions;
     
+    @NotNull(message = "The privacy policy agreement fields are required.", groups = CreateChecks.class)
+    @Valid
+    PrivacyPolicyAgreement privacyPolicyAgreement;
+    
     @NotNull(message = "The terms and conditions agreement fields are required.", groups = CreateChecks.class)
     @Valid
     TermsAndConditionsAgreement termsAndConditionsAgreement;
