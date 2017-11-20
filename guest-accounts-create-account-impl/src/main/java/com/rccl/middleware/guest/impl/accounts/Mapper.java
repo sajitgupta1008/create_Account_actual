@@ -4,6 +4,7 @@ import com.rccl.middleware.common.response.ResponseBody;
 import com.rccl.middleware.guest.accounts.Guest;
 import com.rccl.middleware.guest.accounts.PrivacyPolicyAgreement;
 import com.rccl.middleware.guest.accounts.SecurityQuestion;
+import com.rccl.middleware.guest.accounts.TermsAndConditionsAgreement;
 import com.rccl.middleware.guest.accounts.enriched.ContactInformation;
 import com.rccl.middleware.guest.accounts.enriched.EnrichedGuest;
 import com.rccl.middleware.guest.accounts.enriched.LoyaltyInformation;
@@ -137,7 +138,7 @@ public class Mapper {
      */
     public static Guest mapSaviyntGuestToGuest(AccountInformation accountInformation) {
         SaviyntGuest saviyntGuest = accountInformation.getGuest();
-        return Guest.builder()
+        Guest.GuestBuilder builder = Guest.builder()
                 .firstName(saviyntGuest.getFirstName())
                 .lastName(saviyntGuest.getLastName())
                 .middleName(saviyntGuest.getMiddleName())
@@ -161,8 +162,27 @@ public class Mapper {
                 .webshopperId(saviyntGuest.getWebshopperId())
                 .webshopperBrand(saviyntGuest.getWebshopperBrand())
                 .passportNumber(saviyntGuest.getPassportNumber())
-                .passportExpirationDate(saviyntGuest.getPassportExpirationDate())
+                .passportExpirationDate(saviyntGuest.getPassportExpirationDate());
+        
+        String tacAcceptTime = StringUtils.defaultIfBlank(saviyntGuest.getTermsAndConditionsAcceptDate(), "")
+                + "T"
+                + StringUtils.defaultIfBlank(saviyntGuest.getTermsAndConditionsAcceptTime(), "");
+        TermsAndConditionsAgreement tac = TermsAndConditionsAgreement.builder()
+                .acceptTime(tacAcceptTime)
+                .version(saviyntGuest.getTermsAndConditionsVersion())
                 .build();
+        builder.termsAndConditionsAgreement(tac);
+        
+        String ppaAcceptTime = StringUtils.defaultIfBlank(saviyntGuest.getPrivacyPolicyAcceptDate(), "")
+                + "T"
+                + StringUtils.defaultIfBlank(saviyntGuest.getPrivacyPolicyAcceptTime(), "");
+        PrivacyPolicyAgreement ppa = PrivacyPolicyAgreement.builder()
+                .acceptTime(ppaAcceptTime)
+                .version(saviyntGuest.getPrivacyPolicyVersion())
+                .build();
+        builder.privacyPolicyAgreement(ppa);
+        
+        return builder.build();
     }
     
     /**
@@ -209,6 +229,16 @@ public class Mapper {
         if (webshopperInfo != null) {
             builder.webshopperId(webshopperInfo.getShopperId())
                     .webshopperBrand(webshopperInfo.getBrand());
+        }
+        
+        TermsAndConditionsAgreement tac = guest.getTermsAndConditionsAgreement();
+        if (tac != null) {
+            builder.termsAndConditionsAgreement(tac);
+        }
+        
+        PrivacyPolicyAgreement ppa = guest.getPrivacyPolicyAgreement();
+        if (ppa != null) {
+            builder.privacyPolicyAgreement(ppa);
         }
         
         if (StringUtils.isNotBlank(guest.getEmail())) {
@@ -313,6 +343,9 @@ public class Mapper {
                     .azamaraLoyaltyId(guest.getAzamaraLoyaltyId())
                     .clubRoyaleId(guest.getClubRoyaleId())
                     .celebrityBlueChipId(guest.getCelebrityBlueChipId());
+            
+            enrichedGuestBuilder.privacyPolicyAgreement(guest.getPrivacyPolicyAgreement());
+            enrichedGuestBuilder.termsAndConditionsAgreement(guest.getTermsAndConditionsAgreement());
             
             enrichedGuestBuilder.vdsId(guest.getVdsId())
                     .email(guest.getEmail())

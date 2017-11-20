@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.lightbend.lagom.serialization.Jsonable;
 import com.rccl.middleware.common.header.Header;
 import com.rccl.middleware.common.validation.validator.ValidatorConstants;
+import com.rccl.middleware.guest.accounts.PrivacyPolicyAgreement;
+import com.rccl.middleware.guest.accounts.TermsAndConditionsAgreement;
 import com.rccl.middleware.guest.optin.Optin;
 import com.rccl.middleware.guestprofiles.models.EmergencyContact;
 import lombok.Builder;
@@ -46,6 +48,12 @@ public class EnrichedGuest implements Jsonable {
     
     @Valid
     EmergencyContact emergencyContact;
+    
+    @Valid
+    TermsAndConditionsAgreement termsAndConditionsAgreement;
+    
+    @Valid
+    PrivacyPolicyAgreement privacyPolicyAgreement;
     
     @Valid
     List<Optin> optins;
