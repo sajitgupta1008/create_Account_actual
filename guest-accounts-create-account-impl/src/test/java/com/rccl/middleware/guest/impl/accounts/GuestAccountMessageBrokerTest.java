@@ -16,6 +16,7 @@ import com.rccl.middleware.guest.accounts.Guest;
 import com.rccl.middleware.guest.accounts.GuestAccountService;
 import com.rccl.middleware.guest.accounts.GuestEvent;
 import com.rccl.middleware.guest.accounts.Optin;
+import com.rccl.middleware.guest.accounts.PrivacyPolicyAgreement;
 import com.rccl.middleware.guest.accounts.SecurityQuestion;
 import com.rccl.middleware.guest.accounts.TermsAndConditionsAgreement;
 import com.rccl.middleware.guest.accounts.email.EmailNotification;
@@ -246,6 +247,10 @@ public class GuestAccountMessageBrokerTest {
                 .securityQuestions(Collections.singletonList(SecurityQuestion.builder()
                         .question("what?").answer("yes").build()))
                 .termsAndConditionsAgreement(TermsAndConditionsAgreement.builder()
+                        .acceptTime("20170627T033735UTC")
+                        .version("1.0")
+                        .build())
+                .privacyPolicyAgreement(PrivacyPolicyAgreement.builder()
                         .acceptTime("20170627T033735UTC")
                         .version("1.0")
                         .build())
