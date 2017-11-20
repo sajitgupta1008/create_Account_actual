@@ -2,6 +2,7 @@ package com.rccl.middleware.guest.impl.accounts;
 
 import com.rccl.middleware.common.response.ResponseBody;
 import com.rccl.middleware.guest.accounts.Guest;
+import com.rccl.middleware.guest.accounts.PrivacyPolicyAgreement;
 import com.rccl.middleware.guest.accounts.SecurityQuestion;
 import com.rccl.middleware.guest.accounts.enriched.ContactInformation;
 import com.rccl.middleware.guest.accounts.enriched.EnrichedGuest;
@@ -116,6 +117,13 @@ public class Mapper {
         
         if (guest.getTermsAndConditionsAgreement() != null) {
             builder.termsAndConditionsVersion(guest.getTermsAndConditionsAgreement().getVersion());
+        }
+        
+        PrivacyPolicyAgreement ppa = guest.getPrivacyPolicyAgreement();
+        if (ppa != null) {
+            builder.privacyPolicyAcceptDate(ppa.getAcceptTime());
+            builder.privacyPolicyAcceptTime(ppa.getAcceptTime());
+            builder.privacyPolicyVersion(ppa.getVersion());
         }
         
         return builder;
