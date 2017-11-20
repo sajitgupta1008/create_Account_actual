@@ -18,7 +18,8 @@ public class PrivacyPolicyAgreement implements Jsonable {
             groups = Guest.CreateChecks.class)
     @NotNull(message = "The privacy policy accept time in ISO-8601 date format (yyyyMMddThhmmssz) is required.",
             groups = Guest.UpdateChecks.class)
-    @DateFormat(format = "yyyyMMdd'T'HHmmssz", message = "The privacy policy accept time must follow ISO-8601 format: yyyyMMddThhmmssz",
+    @DateFormat(format = "yyyyMMdd'T'HHmmssz",
+            message = "The privacy policy accept time must follow ISO-8601 format: yyyyMMddThhmmssz",
             groups = Guest.DefaultChecks.class)
     String acceptTime;
     
