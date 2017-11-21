@@ -18,7 +18,6 @@ import com.rccl.middleware.guestprofiles.models.Profile;
 import com.rccl.middleware.saviynt.api.requests.SaviyntGuest;
 import com.rccl.middleware.saviynt.api.requests.SaviyntUserType;
 import com.rccl.middleware.saviynt.api.responses.AccountInformation;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.CollectionUtils;
 
@@ -119,36 +118,14 @@ public class Mapper {
         
         TermsAndConditionsAgreement tac = guest.getTermsAndConditionsAgreement();
         if (tac != null) {
+            builder.termsAndConditionsAcceptTime(tac.getAcceptTime());
             builder.termsAndConditionsVersion(tac.getVersion());
-            
-            if (StringUtils.isNotBlank(tac.getAcceptTime())) {
-                String[] acceptTimeTokens = tac.getAcceptTime().split("T", 2);
-                
-                if (ArrayUtils.isNotEmpty(acceptTimeTokens)) {
-                    builder.termsAndConditionsAcceptDate(acceptTimeTokens[0]);
-                    
-                    if (acceptTimeTokens.length > 1) {
-                        builder.termsAndConditionsAcceptTime(acceptTimeTokens[1]);
-                    }
-                }
-            }
         }
         
         PrivacyPolicyAgreement ppa = guest.getPrivacyPolicyAgreement();
         if (ppa != null) {
+            builder.privacyPolicyAcceptTime(ppa.getAcceptTime());
             builder.privacyPolicyVersion(ppa.getVersion());
-            
-            if (StringUtils.isNotBlank(ppa.getAcceptTime())) {
-                String[] acceptTimeTokens = ppa.getAcceptTime().split("T", 2);
-                
-                if (ArrayUtils.isNotEmpty(acceptTimeTokens)) {
-                    builder.privacyPolicyAcceptDate(acceptTimeTokens[0]);
-                    
-                    if (acceptTimeTokens.length > 1) {
-                        builder.privacyPolicyAcceptTime(acceptTimeTokens[1]);
-                    }
-                }
-            }
         }
         
         return builder;
@@ -161,48 +138,43 @@ public class Mapper {
      * @return {@link Guest}
      */
     public static Guest mapSaviyntGuestToGuest(AccountInformation accountInformation) {
-        SaviyntGuest saviyntGuest = accountInformation.getGuest();
-        Guest.GuestBuilder builder = Guest.builder()
-                .firstName(saviyntGuest.getFirstName())
-                .lastName(saviyntGuest.getLastName())
-                .middleName(saviyntGuest.getMiddleName())
-                .suffix(saviyntGuest.getSuffix())
-                .email(saviyntGuest.getEmail())
-                .phoneNumber(saviyntGuest.getPhoneNumber())
-                .vdsId(saviyntGuest.getVdsId())
-                .password(saviyntGuest.getPassword())
-                .birthdate(saviyntGuest.getBirthdate())
-                .consumerId(saviyntGuest.getConsumerId())
-                .crownAndAnchorId(CollectionUtils.isEmpty(saviyntGuest.getCrownAndAnchorIds())
-                        ? null : saviyntGuest.getCrownAndAnchorIds().get(0))
-                .captainsClubId(CollectionUtils.isEmpty(saviyntGuest.getCaptainsClubIds())
-                        ? null : saviyntGuest.getCaptainsClubIds().get(0))
-                .azamaraLoyaltyId(CollectionUtils.isEmpty(saviyntGuest.getAzamaraLoyaltyIds())
-                        ? null : saviyntGuest.getAzamaraLoyaltyIds().get(0))
-                .clubRoyaleId(CollectionUtils.isEmpty(saviyntGuest.getClubRoyaleIds())
-                        ? null : saviyntGuest.getClubRoyaleIds().get(0))
-                .celebrityBlueChipId(CollectionUtils.isEmpty(saviyntGuest.getCelebrityBlueChipIds())
-                        ? null : saviyntGuest.getCelebrityBlueChipIds().get(0))
-                .webshopperId(saviyntGuest.getWebshopperId())
-                .webshopperBrand(saviyntGuest.getWebshopperBrand())
-                .passportNumber(saviyntGuest.getPassportNumber())
-                .passportExpirationDate(saviyntGuest.getPassportExpirationDate());
+        SaviyntGuest sg = accountInformation.getGuest();
         
-        String tacAcceptTime = StringUtils.defaultIfBlank(saviyntGuest.getTermsAndConditionsAcceptDate(), "")
-                + "T"
-                + StringUtils.defaultIfBlank(saviyntGuest.getTermsAndConditionsAcceptTime(), "");
+        Guest.GuestBuilder builder = Guest.builder()
+                .firstName(sg.getFirstName())
+                .lastName(sg.getLastName())
+                .middleName(sg.getMiddleName())
+                .suffix(sg.getSuffix())
+                .email(sg.getEmail())
+                .phoneNumber(sg.getPhoneNumber())
+                .vdsId(sg.getVdsId())
+                .password(sg.getPassword())
+                .birthdate(sg.getBirthdate())
+                .consumerId(sg.getConsumerId())
+                .crownAndAnchorId(CollectionUtils.isEmpty(sg.getCrownAndAnchorIds())
+                        ? null : sg.getCrownAndAnchorIds().get(0))
+                .captainsClubId(CollectionUtils.isEmpty(sg.getCaptainsClubIds())
+                        ? null : sg.getCaptainsClubIds().get(0))
+                .azamaraLoyaltyId(CollectionUtils.isEmpty(sg.getAzamaraLoyaltyIds())
+                        ? null : sg.getAzamaraLoyaltyIds().get(0))
+                .clubRoyaleId(CollectionUtils.isEmpty(sg.getClubRoyaleIds())
+                        ? null : sg.getClubRoyaleIds().get(0))
+                .celebrityBlueChipId(CollectionUtils.isEmpty(sg.getCelebrityBlueChipIds())
+                        ? null : sg.getCelebrityBlueChipIds().get(0))
+                .webshopperId(sg.getWebshopperId())
+                .webshopperBrand(sg.getWebshopperBrand())
+                .passportNumber(sg.getPassportNumber())
+                .passportExpirationDate(sg.getPassportExpirationDate());
+        
         TermsAndConditionsAgreement tac = TermsAndConditionsAgreement.builder()
-                .acceptTime(tacAcceptTime)
-                .version(saviyntGuest.getTermsAndConditionsVersion())
+                .acceptTime(sg.getTermsAndConditionsAcceptTime())
+                .version(sg.getTermsAndConditionsVersion())
                 .build();
         builder.termsAndConditionsAgreement(tac);
         
-        String ppaAcceptTime = StringUtils.defaultIfBlank(saviyntGuest.getPrivacyPolicyAcceptDate(), "")
-                + "T"
-                + StringUtils.defaultIfBlank(saviyntGuest.getPrivacyPolicyAcceptTime(), "");
         PrivacyPolicyAgreement ppa = PrivacyPolicyAgreement.builder()
-                .acceptTime(ppaAcceptTime)
-                .version(saviyntGuest.getPrivacyPolicyVersion())
+                .acceptTime(sg.getPrivacyPolicyAcceptTime())
+                .version(sg.getPrivacyPolicyVersion())
                 .build();
         builder.privacyPolicyAgreement(ppa);
         
