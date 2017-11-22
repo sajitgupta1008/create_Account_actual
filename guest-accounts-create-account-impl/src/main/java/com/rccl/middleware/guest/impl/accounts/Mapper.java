@@ -329,7 +329,7 @@ public class Mapper {
                     .birthdate(guest.getBirthdate());
             
             contactInformationBuilder.phoneNumber(guest.getPhoneNumber())
-                    .phoneCountryCode("");
+                    .phoneCountryCode(StringUtils.defaultIfBlank(guest.getPhoneCountryCode(), ""));
             
             travelDocumentInformation.passportNumber(guest.getPassportNumber())
                     .passportExpirationDate(guest.getPassportExpirationDate());
