@@ -30,7 +30,6 @@ import com.rccl.middleware.guest.accounts.enriched.EnrichedGuest;
 import com.rccl.middleware.guest.accounts.exceptions.ExistingGuestException;
 import com.rccl.middleware.guest.accounts.exceptions.GuestNotFoundException;
 import com.rccl.middleware.guest.accounts.exceptions.InvalidEmailFormatException;
-import com.rccl.middleware.guest.accounts.exceptions.InvalidGuestException;
 import com.rccl.middleware.guest.accounts.exceptions.InvalidPasswordException;
 import com.rccl.middleware.guest.authentication.AccountCredentials;
 import com.rccl.middleware.guest.authentication.GuestAuthenticationService;
@@ -39,10 +38,9 @@ import com.rccl.middleware.guest.impl.accounts.email.EmailNotificationEntity;
 import com.rccl.middleware.guest.impl.accounts.email.EmailNotificationTag;
 import com.rccl.middleware.guest.impl.accounts.email.EmailUpdatedConfirmationEmail;
 import com.rccl.middleware.guest.impl.accounts.email.PasswordUpdatedConfirmationEmail;
+import com.rccl.middleware.guest.optin.EmailOptins;
 import com.rccl.middleware.guest.optin.GuestProfileOptinService;
-import com.rccl.middleware.guest.optin.Optin;
-import com.rccl.middleware.guest.optin.OptinType;
-import com.rccl.middleware.guest.optin.Optins;
+import com.rccl.middleware.guest.optin.PostalOptins;
 import com.rccl.middleware.guestprofiles.GuestProfilesService;
 import com.rccl.middleware.guestprofiles.models.Profile;
 import com.rccl.middleware.saviynt.api.SaviyntService;
@@ -54,12 +52,8 @@ import com.rccl.middleware.saviynt.api.responses.AccountStatus;
 import com.rccl.middleware.saviynt.api.responses.GenericSaviyntResponse;
 import com.typesafe.config.ConfigFactory;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.util.CollectionUtils;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -135,11 +129,11 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         }
                         
                         if (cause instanceof SaviyntExceptionFactory.InvalidEmailFormatException) {
-                            throw new InvalidGuestException("The email is in an invalid format.", null);
+                            throw new InvalidEmailFormatException();
                         }
                         
                         if (cause instanceof SaviyntExceptionFactory.InvalidPasswordFormatException) {
-                            throw InvalidGuestException.INVALID_PASSWORD;
+                            throw new InvalidPasswordException();
                         }
                         
                         throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
@@ -155,16 +149,6 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         persistentEntityRegistry.refFor(GuestAccountEntity.class, guest.getEmail())
                                 .ask(new GuestAccountCommand.CreateGuest(Mapper.mapVdsIdWithGuest(vdsId, guest)));
                         
-                        String appKey = requestHeader.getHeader(APPKEY_HEADER).orElse(DEFAULT_APP_KEY);
-                        
-                        // trigger optin service to store the optins into Cassandra
-                        if (!CollectionUtils.isEmpty(guest.getOptins())) {
-                            guestProfileOptinService.createOptins(guest.getEmail())
-                                    .handleRequestHeader(rh -> rh.withHeader(APPKEY_HEADER, appKey))
-                                    .invoke(this.generateCreateOptinsRequest(guest))
-                                    .toCompletableFuture().complete(ResponseBody.builder().build());
-                        }
-                        
                         if ("web".equals(guest.getHeader().getChannel())) {
                             ObjectNode objNode = OBJECT_MAPPER.createObjectNode();
                             objNode.put("vdsId", vdsId);
@@ -179,6 +163,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                             .payload(objNode)
                                             .build()));
                         } else {
+                            String appKey = requestHeader.getHeader(APPKEY_HEADER).orElse(DEFAULT_APP_KEY);
                             // automatically authenticate user and include vdsId in the response.
                             return guestAuthenticationService.authenticateUser()
                                     .handleRequestHeader(rh -> rh.withHeader(APPKEY_HEADER, appKey))
@@ -217,33 +202,27 @@ public class GuestAccountServiceImpl implements GuestAccountService {
             
             return this.getAccount(vdsId).invoke().exceptionally(throwable -> null)
                     .thenCombineAsync(getProfile, (guest, profile) -> {
-                        ResponseBody<Optins> optins = null;
-                        
-                        if (guest != null && StringUtils.isNotBlank(guest.getEmail())) {
-                            optins = guestProfileOptinService.getOptins(guest.getEmail())
-                                    .handleRequestHeader(rh -> rh.withHeader(APPKEY_HEADER, appKey))
-                                    .invoke()
-                                    .exceptionally(throwable -> null)
-                                    .toCompletableFuture()
-                                    .join();
-                        }
-                        
                         if (guest == null && profile == null) {
                             throw new GuestNotFoundException();
                         }
+                        return Pair.create(guest, profile);
+                    }).thenCompose(pair -> {
+                        Guest guest = pair.first();
+                        ResponseBody<Profile> profile = pair.second();
                         
                         String extendedView = extended.orElse("false");
                         
-                        EnrichedGuest enrichedGuest = this.filterObjectView(
-                                Mapper.mapToEnrichedGuest(guest, profile, optins),
-                                extendedView.equalsIgnoreCase("true")
-                                        ? EnrichedGuest.ExtendedView.class : EnrichedGuest.DefaultView.class);
-                        
-                        return Pair.create(ResponseHeader.OK, ResponseBody
-                                .<EnrichedGuest>builder()
-                                .status(ResponseHeader.OK.status())
-                                .payload(enrichedGuest)
-                                .build());
+                        return this.getOptins(guest, appKey).thenApply(optinsPair -> {
+                            EnrichedGuest enrichedGuest = this.filterObjectView(
+                                    Mapper.mapToEnrichedGuest(guest, profile, optinsPair.first(), optinsPair.second()),
+                                    extendedView.equalsIgnoreCase("true")
+                                            ? EnrichedGuest.ExtendedView.class : EnrichedGuest.DefaultView.class);
+                            return Pair.create(ResponseHeader.OK, ResponseBody
+                                    .<EnrichedGuest>builder()
+                                    .status(ResponseHeader.OK.status())
+                                    .payload(enrichedGuest)
+                                    .build());
+                        });
                     });
         };
     }
@@ -259,6 +238,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                     .invoke();
             
             MiddlewareValidation.validate(enrichedGuest);
+            MiddlewareValidation.validateWithGroups(enrichedGuest.getEmailOptins(), EmailOptins.DefaultChecks.class);
+            MiddlewareValidation.validateWithGroups(enrichedGuest.getPostalOptins(), PostalOptins.DefaultChecks.class);
             
             String appKey = requestHeader.getHeader(APPKEY_HEADER).orElse(DEFAULT_APP_KEY);
             
@@ -286,21 +267,32 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         .handleRequestHeader(rh -> rh.withHeader(APPKEY_HEADER, appKey)).invoke(profile);
             }
             
-            CompletionStage<ResponseBody> updateOptinsService = CompletableFuture
+            CompletionStage<ResponseBody> updateEmailOptinsService = CompletableFuture
                     .completedFuture(ResponseBody.builder().build());
-            Optins optins = Mapper.mapEnrichedGuestToOptins(enrichedGuest);
+            EmailOptins emailOptins = Mapper.mapEnrichedGuestToEmailOptins(enrichedGuest);
             
-            if (optins != null && StringUtils.isNotBlank(enrichedGuest.getEmail())) {
-                updateOptinsService = guestProfileOptinService
-                        .updateOptins(enrichedGuest.getEmail())
-                        .handleRequestHeader(rh -> rh.withHeader(APPKEY_HEADER, appKey)).invoke(optins);
+            if (emailOptins != null && StringUtils.isNotBlank(enrichedGuest.getEmail())) {
+                updateEmailOptinsService = guestProfileOptinService
+                        .updateEmailOptins(enrichedGuest.getEmail())
+                        .handleRequestHeader(rh -> rh.withHeader(APPKEY_HEADER, appKey)).invoke(emailOptins);
+            }
+            
+            CompletionStage<ResponseBody> updatePostalOptinsService = CompletableFuture
+                    .completedFuture(ResponseBody.builder().build());
+            PostalOptins postalOptins = Mapper.mapEnrichedGuestToPostalOptins(enrichedGuest);
+            
+            if (postalOptins != null && StringUtils.isNotBlank(enrichedGuest.getEmail())) {
+                updatePostalOptinsService = guestProfileOptinService
+                        .updatePostalOptins(enrichedGuest.getVdsId())
+                        .handleRequestHeader(rh -> rh.withHeader(APPKEY_HEADER, appKey)).invoke(postalOptins);
             }
             
             final CompletableFuture<NotUsed> accountFuture = updateAccountService.toCompletableFuture();
             final CompletableFuture<ResponseBody<TextNode>> profileFuture = updateProfileService.toCompletableFuture();
-            final CompletableFuture<ResponseBody> optinsFuture = updateOptinsService.toCompletableFuture();
+            final CompletableFuture<ResponseBody> emailOptinsFuture = updateEmailOptinsService.toCompletableFuture();
+            final CompletableFuture<ResponseBody> postalOptinsFuture = updatePostalOptinsService.toCompletableFuture();
             
-            return CompletableFuture.allOf(accountFuture, profileFuture, optinsFuture)
+            return CompletableFuture.allOf(accountFuture, profileFuture, emailOptinsFuture, postalOptinsFuture)
                     .exceptionally(throwable -> {
                         // if both Guest Account and Profile failed, throw the exception. otherwise,
                         // let the process go through.
@@ -314,9 +306,14 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                             StringBuilder sb = new StringBuilder();
                             sb.append("Update Account and Update Profile services failed. ");
                             
-                            if (optinsFuture.isCompletedExceptionally()) {
-                                sb.append("Update Optins service failed. ");
+                            if (emailOptinsFuture.isCompletedExceptionally()) {
+                                sb.append("Update Email Optins service failed. ");
                             }
+                            
+                            if (postalOptinsFuture.isCompletedExceptionally()) {
+                                sb.append("Update Postal Optins service failed. ");
+                            }
+                            
                             error.userMessage(sb.toString());
                             
                             throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), error.build());
@@ -384,15 +381,19 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                     });
                         }
                         
-                        if (accountFuture.isCompletedExceptionally() || profileFuture.isCompletedExceptionally()
-                                || optinsFuture.isCompletedExceptionally()) {
+                        if (accountFuture.isCompletedExceptionally()
+                                || profileFuture.isCompletedExceptionally()
+                                || emailOptinsFuture.isCompletedExceptionally()
+                                || postalOptinsFuture.isCompletedExceptionally()) {
                             objectNode.put("status", "The service completed with some exceptions.");
                             objectNode.put("updateAccount",
                                     "completed= " + !accountFuture.isCompletedExceptionally());
                             objectNode.put("updateProfile",
                                     "completed= " + !profileFuture.isCompletedExceptionally());
-                            objectNode.put("updateOptins",
-                                    "completed= " + !optinsFuture.isCompletedExceptionally());
+                            objectNode.put("updateEmailOptins",
+                                    "completed= " + !emailOptinsFuture.isCompletedExceptionally());
+                            objectNode.put("updatePostalOptins",
+                                    "completed= " + !emailOptinsFuture.isCompletedExceptionally());
                             
                             return Pair.create(ResponseHeader.OK, ResponseBody
                                     .<JsonNode>builder()
@@ -470,7 +471,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                             }
                             
                             if (cause instanceof SaviyntExceptionFactory.InvalidPasswordFormatException) {
-                                throw InvalidGuestException.INVALID_PASSWORD;
+                                throw new InvalidPasswordException();
                             }
                             
                             if (cause instanceof SaviyntExceptionFactory.PasswordReuseException) {
@@ -494,11 +495,11 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         }
                         
                         if (cause instanceof SaviyntExceptionFactory.InvalidEmailFormatException) {
-                            throw new InvalidGuestException("The email is in invalid format.", null);
+                            throw new InvalidEmailFormatException();
                         }
                         
                         if (cause instanceof SaviyntExceptionFactory.InvalidPasswordFormatException) {
-                            throw InvalidGuestException.INVALID_PASSWORD;
+                            throw new InvalidPasswordException();
                         }
                         
                         throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
@@ -640,39 +641,50 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     }
     
     /**
-     * Populates {@link Optins} to register the guest email to all brands and all categories of optins specified in
-     * create account request.
+     * Executes {@link CompletionStage} for both Email and Postal optins if required parameters are available and
+     * creates a {@link Pair} that contains both, at least one of them, or none (null).
      *
-     * @param guest the {@link Guest} model
-     * @return {@link Optins} with enrollment to all brands and all optin categories.
+     * @param guest  The {@link Guest} object.
+     * @param appKey The AppKey from request headers.
+     * @return {@link CompletionStage} which contains a {@link Pair} of Email and Postal {@link ResponseBody}.
      */
-    
-    private Optins generateCreateOptinsRequest(Guest guest) {
-        List<OptinType> optinTypeList = new ArrayList<>();
-        guest.getOptins().forEach(optin ->
-                optinTypeList.add(OptinType.builder()
-                        .type(optin.getType())
-                        .acceptTime(optin.getAcceptTime())
-                        .flag(optin.getFlag())
-                        .build()));
+    private CompletionStage<Pair<ResponseBody<EmailOptins>, ResponseBody<PostalOptins>>> getOptins(Guest guest,
+                                                                                                   String appKey) {
+        CompletionStage<ResponseBody<EmailOptins>> emailOptinStage = null;
+        if (guest != null && StringUtils.isNotBlank(guest.getEmail())) {
+            emailOptinStage = guestProfileOptinService.getEmailOptins(guest.getEmail())
+                    .handleRequestHeader(rh -> rh.withHeader(APPKEY_HEADER, appKey))
+                    .invoke()
+                    .exceptionally(throwable -> {
+                        LOGGER.error("GET Email Optins failed.", throwable);
+                        return null;
+                    });
+        }
         
-        // enroll the guest to all brands and categories.
-        List<Optin> optinList = new ArrayList<>();
-        Arrays.asList('R', 'C', 'Z').forEach(brand ->
-                Arrays.asList("marketing", "operational").forEach(category ->
-                        optinList.add(Optin.builder()
-                                .brand(brand)
-                                .category(category)
-                                .types(optinTypeList)
-                                .build())
-                )
-        );
+        CompletionStage<ResponseBody<PostalOptins>> postalOptinStage = null;
+        if (guest != null && StringUtils.isNotBlank(guest.getVdsId())) {
+            postalOptinStage = guestProfileOptinService.getPostalOptins(guest.getVdsId())
+                    .handleRequestHeader(rh -> rh.withHeader(APPKEY_HEADER, appKey))
+                    .invoke()
+                    .exceptionally(throwable -> {
+                        LOGGER.error("GET Postal Optins failed.", throwable);
+                        return null;
+                    });
+        }
         
-        return Optins.builder()
-                .header(guest.getHeader())
-                .email(guest.getEmail())
-                .optins(optinList)
-                .build();
+        if (emailOptinStage != null && postalOptinStage != null) {
+            return emailOptinStage.thenCombineAsync(postalOptinStage, Pair::create);
+        }
+        
+        if (emailOptinStage != null) {
+            return emailOptinStage.thenApply(emailResponse -> Pair.create(emailResponse, null));
+        }
+        
+        if (postalOptinStage != null) {
+            return postalOptinStage.thenApply(postalResponse -> Pair.create(null, postalResponse));
+        }
+        
+        return CompletableFuture.completedFuture(Pair.create(null, null));
     }
     
     /**

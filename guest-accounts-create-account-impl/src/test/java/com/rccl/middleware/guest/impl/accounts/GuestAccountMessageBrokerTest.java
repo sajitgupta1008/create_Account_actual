@@ -15,7 +15,6 @@ import com.rccl.middleware.common.header.Header;
 import com.rccl.middleware.guest.accounts.Guest;
 import com.rccl.middleware.guest.accounts.GuestAccountService;
 import com.rccl.middleware.guest.accounts.GuestEvent;
-import com.rccl.middleware.guest.accounts.Optin;
 import com.rccl.middleware.guest.accounts.PrivacyPolicyAgreement;
 import com.rccl.middleware.guest.accounts.SecurityQuestion;
 import com.rccl.middleware.guest.accounts.TermsAndConditionsAgreement;
@@ -254,8 +253,6 @@ public class GuestAccountMessageBrokerTest {
                         .acceptTime("20170627T033735UTC")
                         .version("1.0")
                         .build())
-                .optins(Collections.singletonList(Optin.builder()
-                        .type("EMAIL").flag("Y").acceptTime("20170706T022122UTC").build()))
                 .build();
     }
     
