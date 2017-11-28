@@ -12,8 +12,10 @@ import com.rccl.middleware.guest.accounts.enriched.PersonalInformation;
 import com.rccl.middleware.guest.accounts.enriched.SignInInformation;
 import com.rccl.middleware.guest.accounts.enriched.TravelDocumentInformation;
 import com.rccl.middleware.guest.accounts.enriched.WebshopperInformation;
-import com.rccl.middleware.guest.optin.Optin;
-import com.rccl.middleware.guest.optin.Optins;
+import com.rccl.middleware.guest.optin.EmailOptin;
+import com.rccl.middleware.guest.optin.EmailOptins;
+import com.rccl.middleware.guest.optin.PostalOptin;
+import com.rccl.middleware.guest.optin.PostalOptins;
 import com.rccl.middleware.guestprofiles.models.Profile;
 import com.rccl.middleware.saviynt.api.requests.SaviyntGuest;
 import com.rccl.middleware.saviynt.api.requests.SaviyntUserType;
@@ -60,7 +62,6 @@ public class Mapper {
                 .webshopperId(guest.getWebshopperId())
                 .webshopperBrand(guest.getWebshopperBrand())
                 .termsAndConditionsAgreement(guest.getTermsAndConditionsAgreement())
-                .optins(guest.getOptins())
                 .creationTimestamp(DateTimeFormatter.ofPattern("yyyyMMdd'T'hhmmssz")
                         .withZone(ZoneId.of("UTC")).format(ZonedDateTime.now()))
                 .build();
@@ -282,18 +283,39 @@ public class Mapper {
     
     /**
      * Extracts all necessary information from {@link EnrichedGuest} and maps those attributes
-     * in {@link Optins} for Update Optins service.
+     * in {@link EmailOptins} for Update Optins service.
      *
      * @param guest {@link EnrichedGuest}
-     * @return {@link Optins}
+     * @return {@link EmailOptins}
      */
-    public static Optins mapEnrichedGuestToOptins(EnrichedGuest guest) {
-        List<Optin> optins = guest.getOptins();
+    public static EmailOptins mapEnrichedGuestToEmailOptins(EnrichedGuest guest) {
+        List<EmailOptin> emailOptins = guest.getEmailOptins();
         
-        if (optins != null && !optins.isEmpty()) {
-            return Optins.builder()
-                    .optins(optins)
+        if (emailOptins != null && !emailOptins.isEmpty()) {
+            return EmailOptins.builder()
+                    .optins(emailOptins)
                     .email(guest.getEmail())
+                    .header(guest.getHeader())
+                    .build();
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Extracts all necessary information from {@link EnrichedGuest} and maps those attributes
+     * in {@link PostalOptins} for Update Optins service.
+     *
+     * @param guest {@link EnrichedGuest}
+     * @return {@link PostalOptins}
+     */
+    public static PostalOptins mapEnrichedGuestToPostalOptins(EnrichedGuest guest) {
+        List<PostalOptin> postalOptins = guest.getPostalOptins();
+        
+        if (postalOptins != null && !postalOptins.isEmpty()) {
+            return PostalOptins.builder()
+                    .optins(postalOptins)
+                    .vdsId(guest.getVdsId())
                     .header(guest.getHeader())
                     .build();
         }
@@ -304,14 +326,16 @@ public class Mapper {
     /**
      * Maps the individual model values into the {@link EnrichedGuest} model.
      *
-     * @param guest               the {@link Guest} model from accounts service.
-     * @param profileResponseBody the {@link ResponseBody}<{@link Profile}> model from profiles service.
-     * @param optinsResponseBody  the {@link ResponseBody}<{@link Optins}> model from optins service.
+     * @param guest                    the {@link Guest} model from accounts service.
+     * @param profileResponseBody      the {@link ResponseBody}<{@link Profile}> model from profiles service.
+     * @param emailOptinsResponseBody  the {@link ResponseBody}<{@link EmailOptins}> model from optins service.
+     * @param postalOptinsResponseBody the {@link ResponseBody}<{@link PostalOptins}> model from optins service.
      * @return {@link EnrichedGuest}
      */
     public static EnrichedGuest mapToEnrichedGuest(Guest guest,
                                                    ResponseBody<Profile> profileResponseBody,
-                                                   ResponseBody<Optins> optinsResponseBody) {
+                                                   ResponseBody<EmailOptins> emailOptinsResponseBody,
+                                                   ResponseBody<PostalOptins> postalOptinsResponseBody) {
         
         PersonalInformation.PersonalInformationBuilder personalInformationBuilder = PersonalInformation.builder();
         ContactInformation.ContactInformationBuilder contactInformationBuilder = ContactInformation.builder();
@@ -378,8 +402,12 @@ public class Mapper {
             enrichedGuestBuilder.emergencyContact(profile.getEmergencyContact());
         }
         
-        if (optinsResponseBody != null && optinsResponseBody.getPayload() != null) {
-            enrichedGuestBuilder.optins(optinsResponseBody.getPayload().getOptins());
+        if (emailOptinsResponseBody != null && emailOptinsResponseBody.getPayload() != null) {
+            enrichedGuestBuilder.emailOptins(emailOptinsResponseBody.getPayload().getOptins());
+        }
+        
+        if (postalOptinsResponseBody != null && postalOptinsResponseBody.getPayload() != null) {
+            enrichedGuestBuilder.postalOptins(postalOptinsResponseBody.getPayload().getOptins());
         }
         
         return enrichedGuestBuilder

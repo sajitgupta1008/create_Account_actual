@@ -12,7 +12,6 @@ import com.rccl.middleware.common.response.ResponseBody;
 import com.rccl.middleware.common.validation.MiddlewareValidationException;
 import com.rccl.middleware.guest.accounts.Guest;
 import com.rccl.middleware.guest.accounts.GuestAccountService;
-import com.rccl.middleware.guest.accounts.Optin;
 import com.rccl.middleware.guest.accounts.PrivacyPolicyAgreement;
 import com.rccl.middleware.guest.accounts.SecurityQuestion;
 import com.rccl.middleware.guest.accounts.TermsAndConditionsAgreement;
@@ -255,9 +254,6 @@ public class GuestAccountServiceTest {
                 .build();
         
         builder.securityQuestions(Arrays.asList(sq1, sq2));
-        
-        builder.optins(Collections.singletonList(Optin.builder()
-                .type("EMAIL").flag("Y").acceptTime("20170706T022122UTC").build()));
         
         return builder;
     }

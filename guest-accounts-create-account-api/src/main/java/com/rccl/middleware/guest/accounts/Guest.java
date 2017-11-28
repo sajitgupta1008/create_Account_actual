@@ -114,9 +114,6 @@ public class Guest implements Jsonable {
     @Brand(groups = DefaultChecks.class)
     Character webshopperBrand;
     
-    @Valid
-    List<Optin> optins;
-    
     String passportNumber;
     
     @DateFormat

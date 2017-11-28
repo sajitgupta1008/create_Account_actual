@@ -62,7 +62,6 @@ public class GetGuestAccountServiceTest {
         
         EnrichedGuest guest = response.getPayload();
         assertTrue(guest != null);
-        assertTrue(guest.getOptins().size() > 0);
         assertTrue(guest.getPersonalInformation().getAvatar() != null);
         assertTrue(guest.getContactInformation().getPhoneNumber() != null);
         assertTrue(guest.getEmergencyContact().getLastName() != null);

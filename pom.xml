@@ -158,7 +158,7 @@
             <aem-email>http://dev1.api.rccl.com</aem-email>
             <saviynt>http://dev1.api.rccl.com</saviynt>
             <guest-profiles>http://dev1.api.rccl.com/v1</guest-profiles>
-            <guest_profile_optins>http://dev1.api.rccl.com/v1</guest_profile_optins>
+            <guest_accounts_profile_optins>http://dev1.api.rccl.com/v1</guest_accounts_profile_optins>
             <guest_accounts_authentication>http://dev1.api.rccl.com/v1</guest_accounts_authentication>
           </unmanagedServices>
           <kafkaEnabled>false</kafkaEnabled>
