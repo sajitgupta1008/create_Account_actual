@@ -6,6 +6,7 @@
   "user": null,
   "env": {
     "AEM_EMAIL": "http://dev1-int.api.rccl.com",
+    "AKKA_PORT": "1337",
     "AKKA_ACTOR_SYSTEM": "guest-accounts-create-account-application",
     "NOTIFICATIONS_EMAIL_TOPIC_NAME": "notifications_email_dev_v1",
     "GUEST_PROFILES_OPTINS": "http://dev1-int.api.rccl.com/v1",
