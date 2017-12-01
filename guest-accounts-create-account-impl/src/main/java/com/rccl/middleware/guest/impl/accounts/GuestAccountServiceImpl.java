@@ -682,14 +682,11 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                 guestBuilder.clubRoyaleId("");
                             }
                         }
-                        
                         return Mapper.mapCurrentGuestToUpdatedGuest(guest, guestBuilder.build());
                     });
         } else {
             return CompletableFuture.completedFuture(guest);
         }
-        
-        
     }
     
     /**
