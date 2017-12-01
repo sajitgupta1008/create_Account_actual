@@ -638,7 +638,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
      * from VDS via {@link SaviyntService} {@code getUser}. If any number is set to zero (0), will
      * then set the {@link Guest} request object's loyalty IDs to empty strings so that the {@code updateUser}
      * invocation will empty out the loyalty IDs in VDS. This is implemented to show the "on processing" state
-     * of VDS to Siebel validation and `synchronization.
+     * of VDS to Siebel validation and synchronization.
      *
      * @param guest the {@link Guest} request object from service invocation.
      * @return {@link CompletionStage} of updated {@link Guest} request object.
