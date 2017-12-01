@@ -446,71 +446,76 @@ public class GuestAccountServiceImpl implements GuestAccountService {
             
             MiddlewareValidation.validateWithGroups(guest, Guest.UpdateChecks.class);
             
-            final SaviyntGuest saviyntGuest = Mapper.mapGuestToSaviyntGuest(guest, false).build();
-            
-            // If password is provided then invoke Saviynt changePassword
-            // and pass pwdreset = false in updateUser call.
-            CompletionStage<GenericSaviyntResponse> updatePasswordService = null;
-            if (guest.getPassword() != null) {
-                SaviyntAuthAccountPassword updatePassword = SaviyntAuthAccountPassword
-                        .builder()
-                        .password(guest.getPassword())
-                        .vdsId(guest.getVdsId())
-                        .build();
-                
-                updatePasswordService = saviyntService.updateAuthenticatedAccountPassword()
-                        .invoke(updatePassword)
-                        .exceptionally(exception -> {
-                            Throwable cause = exception.getCause();
-                            
-                            LOGGER.error("Error encountered while trying to update account password for VDS ID={}",
-                                    saviyntGuest.getVdsId(), exception);
-                            
-                            if (cause instanceof SaviyntExceptionFactory.NoSuchGuestException) {
-                                throw new GuestNotFoundException();
-                            }
-                            
-                            if (cause instanceof SaviyntExceptionFactory.InvalidPasswordFormatException) {
-                                throw new InvalidPasswordException();
-                            }
-                            
-                            if (cause instanceof SaviyntExceptionFactory.PasswordReuseException) {
-                                throw new InvalidPasswordException(InvalidPasswordException.REUSE_ERROR);
-                            }
-                            
-                            throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
-                        });
-            }
-            
-            CompletionStage<GenericSaviyntResponse> updateService = saviyntService.updateGuestAccount()
-                    .invoke(saviyntGuest)
-                    .exceptionally(exception -> {
-                        Throwable cause = exception.getCause();
+            return this.verifyUpdateAccountLoyaltyInformation(guest)
+                    .thenComposeAsync(updatedGuest -> {
+                        final SaviyntGuest saviyntGuest = Mapper.mapGuestToSaviyntGuest(updatedGuest, false).build();
                         
-                        LOGGER.error("Error encountered while trying to update account for VDS ID={}",
-                                saviyntGuest.getVdsId(), exception);
-                        
-                        if (cause instanceof SaviyntExceptionFactory.NoSuchGuestException) {
-                            throw new GuestNotFoundException();
+                        // If password is provided then invoke Saviynt changePassword
+                        // and pass pwdreset = false in updateUser call.
+                        CompletionStage<GenericSaviyntResponse> updatePasswordService = null;
+                        if (updatedGuest.getPassword() != null) {
+                            SaviyntAuthAccountPassword updatePassword = SaviyntAuthAccountPassword
+                                    .builder()
+                                    .password(updatedGuest.getPassword())
+                                    .vdsId(updatedGuest.getVdsId())
+                                    .build();
+                            
+                            updatePasswordService = saviyntService.updateAuthenticatedAccountPassword()
+                                    .invoke(updatePassword)
+                                    .exceptionally(exception -> {
+                                        Throwable cause = exception.getCause();
+                                        
+                                        LOGGER.error("Error encountered while trying to update "
+                                                        + "account password for VDS ID={}",
+                                                saviyntGuest.getVdsId(), exception);
+                                        
+                                        if (cause instanceof SaviyntExceptionFactory.NoSuchGuestException) {
+                                            throw new GuestNotFoundException();
+                                        }
+                                        
+                                        if (cause instanceof SaviyntExceptionFactory.InvalidPasswordFormatException) {
+                                            throw new InvalidPasswordException();
+                                        }
+                                        
+                                        if (cause instanceof SaviyntExceptionFactory.PasswordReuseException) {
+                                            throw new InvalidPasswordException(InvalidPasswordException.REUSE_ERROR);
+                                        }
+                                        
+                                        throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500),
+                                                exception);
+                                    });
                         }
                         
-                        if (cause instanceof SaviyntExceptionFactory.InvalidEmailFormatException) {
-                            throw new InvalidEmailFormatException();
-                        }
+                        CompletionStage<GenericSaviyntResponse> updateService = saviyntService.updateGuestAccount()
+                                .invoke(saviyntGuest)
+                                .exceptionally(exception -> {
+                                    Throwable cause = exception.getCause();
+                                    
+                                    LOGGER.error("Error encountered while trying to update account for VDS ID={}",
+                                            saviyntGuest.getVdsId(), exception);
+                                    
+                                    if (cause instanceof SaviyntExceptionFactory.NoSuchGuestException) {
+                                        throw new GuestNotFoundException();
+                                    }
+                                    
+                                    if (cause instanceof SaviyntExceptionFactory.InvalidEmailFormatException) {
+                                        throw new InvalidEmailFormatException();
+                                    }
+                                    
+                                    if (cause instanceof SaviyntExceptionFactory.InvalidPasswordFormatException) {
+                                        throw new InvalidPasswordException();
+                                    }
+                                    
+                                    throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
+                                });
                         
-                        if (cause instanceof SaviyntExceptionFactory.InvalidPasswordFormatException) {
-                            throw new InvalidPasswordException();
+                        if (updatePasswordService != null) {
+                            return updatePasswordService.thenCompose(changePasswordResponse ->
+                                    updateService.thenApply(notUsed -> NotUsed.getInstance()));
+                        } else {
+                            return updateService.thenApply(notUsed -> NotUsed.getInstance());
                         }
-                        
-                        throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
                     });
-            
-            if (updatePasswordService != null) {
-                return updatePasswordService.thenCompose(changePasswordResponse ->
-                        updateService.thenApply(notUsed -> NotUsed.getInstance()));
-            } else {
-                return updateService.thenApply(notUsed -> NotUsed.getInstance());
-            }
         };
     }
     
@@ -572,18 +577,6 @@ public class GuestAccountServiceImpl implements GuestAccountService {
         };
     }
     
-    @Override
-    public HeaderServiceCall<NotUsed, String> healthCheck() {
-        return (requestHeader, request) -> {
-            String quote = "Here's to tall ships. "
-                    + "Here's to small ships. "
-                    + "Here's to all the ships on the sea. "
-                    + "But the best ships are friendships, so here's to you and me!";
-            
-            return CompletableFuture.completedFuture(new Pair<>(ResponseHeader.OK, quote));
-        };
-    }
-    
     public Topic<GuestEvent> linkLoyaltyTopic() {
         return TopicProducer.taggedStreamWithOffset(GuestAccountTag.GUEST_ACCOUNT_EVENT_TAG.allTags(), (tag, offset) ->
                 persistentEntityRegistry.eventStream(tag, offset)
@@ -638,6 +631,65 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                             return new Pair<>(emailNotification, pair.second());
                         })
         );
+    }
+    
+    /**
+     * Verifies if any loyalty ID is specified in the request. If so, retrieves the guest record
+     * from VDS via {@link SaviyntService} {@code getUser}. If any number is set to zero (0), will
+     * then set the {@link Guest} request object's loyalty IDs to empty strings so that the {@code updateUser}
+     * invocation will empty out the loyalty IDs in VDS. This is implemented to show the "on processing" state
+     * of VDS to Siebel validation and `synchronization.
+     *
+     * @param guest the {@link Guest} request object from service invocation.
+     * @return {@link CompletionStage} of updated {@link Guest} request object.
+     */
+    private CompletionStage<Guest> verifyUpdateAccountLoyaltyInformation(Guest guest) {
+        if (StringUtils.isNotBlank(guest.getCrownAndAnchorId())
+                || StringUtils.isNotBlank(guest.getCaptainsClubId())
+                || StringUtils.isNotBlank(guest.getAzamaraLoyaltyId())
+                || StringUtils.isNotBlank(guest.getCelebrityBlueChipId())
+                || StringUtils.isNotBlank(guest.getClubRoyaleId())) {
+            
+            return saviyntService
+                    .getGuestAccount("systemUserName", Optional.empty(), Optional.of(guest.getVdsId()))
+                    .invoke()
+                    .exceptionally(throwable -> {
+                        LOGGER.error("Failed to retrieve guest account with VDS ID {} for Loyalty check.",
+                                guest.getVdsId(), throwable);
+                        return null;
+                    })
+                    .thenApply(accInfo -> {
+                        Guest.GuestBuilder guestBuilder = Guest.builder();
+                        if (accInfo != null) {
+                            SaviyntGuest savGuest = accInfo.getGuest();
+                            if ("0".equals(savGuest.getCrownAndAnchorId())) {
+                                guestBuilder.crownAndAnchorId("");
+                            }
+                            
+                            if ("0".equals(savGuest.getCaptainsClubId())) {
+                                guestBuilder.captainsClubId("");
+                            }
+                            
+                            if ("0".equals(savGuest.getAzamaraLoyaltyId())) {
+                                guestBuilder.azamaraLoyaltyId("");
+                            }
+                            
+                            if ("0".equals(savGuest.getCelebrityBlueChipId())) {
+                                guestBuilder.celebrityBlueChipId("");
+                            }
+                            
+                            if ("0".equals(savGuest.getClubRoyaleId())) {
+                                guestBuilder.clubRoyaleId("");
+                            }
+                        }
+                        
+                        return Mapper.mapCurrentGuestToUpdatedGuest(guest, guestBuilder.build());
+                    });
+        } else {
+            return CompletableFuture.completedFuture(guest);
+        }
+        
+        
     }
     
     /**

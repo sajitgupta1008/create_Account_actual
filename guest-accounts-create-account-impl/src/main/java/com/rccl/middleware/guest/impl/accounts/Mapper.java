@@ -26,7 +26,6 @@ import org.springframework.util.CollectionUtils;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Collections;
 import java.util.List;
 
 public class Mapper {
@@ -37,7 +36,7 @@ public class Mapper {
     
     /**
      * Includes VDS ID argument value into {@link Guest} model as well as the creation timestamp
-     * which is for the Kafka event.
+     * which is for the Kafka event message.
      *
      * @param vdsId the given VDS ID of the user.
      * @param guest the {@link Guest} model.
@@ -68,14 +67,62 @@ public class Mapper {
     }
     
     /**
+     * Maps old {@link Guest} into a new {@link Guest} with updated attribute values where newGuest
+     * is taking precedence. If newGuest's attribute is null, oldGuest value will take place.
+     *
+     * @param oldGuest the current {@link Guest} from service invocation request.
+     * @param newGuest the updated {@link Guest} object.
+     * @return {@link Guest}
+     */
+    public static Guest mapCurrentGuestToUpdatedGuest(Guest oldGuest, Guest newGuest) {
+        return Guest.builder()
+                .header(newGuest.getHeader() == null ? oldGuest.getHeader() : newGuest.getHeader())
+                .vdsId(newGuest.getVdsId() == null ? oldGuest.getVdsId() : newGuest.getVdsId())
+                .email(newGuest.getEmail() == null ? oldGuest.getEmail() : newGuest.getEmail())
+                .firstName(newGuest.getFirstName() == null ? oldGuest.getFirstName() : newGuest.getFirstName())
+                .lastName(newGuest.getLastName() == null ? oldGuest.getLastName() : newGuest.getLastName())
+                .birthdate(newGuest.getBirthdate() == null ? oldGuest.getBirthdate() : newGuest.getBirthdate())
+                .phoneNumber(newGuest.getPassportNumber() == null ? oldGuest.getPhoneNumber()
+                        : newGuest.getPhoneNumber())
+                .securityQuestions(CollectionUtils.isEmpty(newGuest.getSecurityQuestions())
+                        ? oldGuest.getSecurityQuestions() : newGuest.getSecurityQuestions())
+                .consumerId(newGuest.getConsumerId() == null ? oldGuest.getConsumerId() : newGuest.getConsumerId())
+                .crownAndAnchorId(newGuest.getCrownAndAnchorId() == null ? oldGuest.getCrownAndAnchorId()
+                        : newGuest.getCrownAndAnchorId())
+                .captainsClubId(newGuest.getCaptainsClubId() == null ? oldGuest.getCaptainsClubId() :
+                        newGuest.getCaptainsClubId())
+                .azamaraLoyaltyId(newGuest.getAzamaraLoyaltyId() == null ? oldGuest.getAzamaraLoyaltyId()
+                        : newGuest.getAzamaraLoyaltyId())
+                .clubRoyaleId(newGuest.getClubRoyaleId() == null ? oldGuest.getClubRoyaleId() :
+                        newGuest.getClubRoyaleId())
+                .celebrityBlueChipId(newGuest.getCelebrityBlueChipId() == null
+                        ? oldGuest.getCelebrityBlueChipId() : newGuest.getCelebrityBlueChipId())
+                .webshopperId(newGuest.getWebshopperId() == null ? oldGuest.getWebshopperId()
+                        : newGuest.getWebshopperId())
+                .webshopperBrand(newGuest.getWebshopperBrand() == null ? oldGuest.getWebshopperBrand()
+                        : newGuest.getWebshopperBrand())
+                .termsAndConditionsAgreement(newGuest.getTermsAndConditionsAgreement() == null
+                        ? oldGuest.getTermsAndConditionsAgreement() : newGuest.getTermsAndConditionsAgreement())
+                .creationTimestamp(newGuest.getCreationTimestamp() == null
+                        ? oldGuest.getCreationTimestamp() : newGuest.getCreationTimestamp())
+                .build();
+    }
+    
+    /**
      * Creates a builder which maps the appropriate {@link Guest} values into {@link SaviyntGuest} object
      * based on the action taken.
+     * <p>
+     * Note: Loyalty IDs should NOT be mapped directly to create or update account Saviynt service unless
+     * those are being updated to empty string "". Any addition or modification of loyalty IDs must
+     * go to a verification process through Kafka message going to Tibco.
+     * </p>
      *
      * @param guest    the {@link Guest} model
      * @param isCreate determines the request being taken whether it is create or update guest account
      * @return {@link SaviyntGuest.SaviyntGuestBuilder}
      */
-    public static SaviyntGuest.SaviyntGuestBuilder mapGuestToSaviyntGuest(Guest guest, boolean isCreate) {
+    public static SaviyntGuest.SaviyntGuestBuilder mapGuestToSaviyntGuest(Guest guest,
+                                                                          boolean isCreate) {
         SaviyntGuest.SaviyntGuestBuilder builder = SaviyntGuest.builder()
                 .firstName(guest.getFirstName())
                 .lastName(guest.getLastName())
@@ -85,11 +132,6 @@ public class Mapper {
                 .birthdate(guest.getBirthdate())
                 .phoneNumber(guest.getPhoneNumber())
                 .consumerId(guest.getConsumerId())
-                .crownAndAnchorIds(mapStringToSaviyntStringList(guest.getCrownAndAnchorId()))
-                .captainsClubIds(mapStringToSaviyntStringList(guest.getCaptainsClubId()))
-                .azamaraLoyaltyIds(mapStringToSaviyntStringList(guest.getAzamaraLoyaltyId()))
-                .clubRoyaleIds(mapStringToSaviyntStringList(guest.getClubRoyaleId()))
-                .celebrityBlueChipIds(mapStringToSaviyntStringList(guest.getCelebrityBlueChipId()))
                 .webshopperId(guest.getWebshopperId())
                 .webshopperBrand(guest.getWebshopperBrand())
                 .passportNumber(guest.getPassportNumber())
@@ -97,10 +139,31 @@ public class Mapper {
                 .vdsId(guest.getVdsId())
                 .propertyToSearch("systemUserName");
         
-        // only map the account creation specific attributes
+        // Only map the account creation specific attributes.
         if (isCreate) {
             builder.password(guest.getPassword())
                     .userType(SaviyntUserType.Guest);
+        } else {
+            //map loyalty IDs ONLY if those have empty strings during Update process.
+            if ("".equals(guest.getCrownAndAnchorId())) {
+                builder.crownAndAnchorId("");
+            }
+            
+            if ("".equals(guest.getCaptainsClubId())) {
+                builder.captainsClubId("");
+            }
+            
+            if ("".equals(guest.getAzamaraLoyaltyId())) {
+                builder.azamaraLoyaltyId("");
+            }
+            
+            if ("".equals(guest.getCelebrityBlueChipId())) {
+                builder.celebrityBlueChipId("");
+            }
+            
+            if ("".equals(guest.getClubRoyaleId())) {
+                builder.clubRoyaleId("");
+            }
         }
         
         // if password is specified for update service, map the following attributes with values which 
@@ -152,16 +215,11 @@ public class Mapper {
                 .password(sg.getPassword())
                 .birthdate(sg.getBirthdate())
                 .consumerId(sg.getConsumerId())
-                .crownAndAnchorId(CollectionUtils.isEmpty(sg.getCrownAndAnchorIds())
-                        ? null : sg.getCrownAndAnchorIds().get(0))
-                .captainsClubId(CollectionUtils.isEmpty(sg.getCaptainsClubIds())
-                        ? null : sg.getCaptainsClubIds().get(0))
-                .azamaraLoyaltyId(CollectionUtils.isEmpty(sg.getAzamaraLoyaltyIds())
-                        ? null : sg.getAzamaraLoyaltyIds().get(0))
-                .clubRoyaleId(CollectionUtils.isEmpty(sg.getClubRoyaleIds())
-                        ? null : sg.getClubRoyaleIds().get(0))
-                .celebrityBlueChipId(CollectionUtils.isEmpty(sg.getCelebrityBlueChipIds())
-                        ? null : sg.getCelebrityBlueChipIds().get(0))
+                .crownAndAnchorId(sg.getCrownAndAnchorId())
+                .captainsClubId(sg.getCaptainsClubId())
+                .azamaraLoyaltyId(sg.getAzamaraLoyaltyId())
+                .clubRoyaleId(sg.getClubRoyaleId())
+                .celebrityBlueChipId(sg.getCelebrityBlueChipId())
                 .webshopperId(sg.getWebshopperId())
                 .webshopperBrand(sg.getWebshopperBrand())
                 .passportNumber(sg.getPassportNumber())
@@ -220,6 +278,17 @@ public class Mapper {
         if (travelDocInfo != null) {
             builder.passportNumber(travelDocInfo.getPassportNumber())
                     .passportExpirationDate(travelDocInfo.getPassportExpirationDate());
+        }
+        
+        // we are mapping loyalty information here for verification purposes only.
+        // see this.mapGuestToSaviyntGuest() and Impl's verifyLoyaltyInformation() Java Doc for more info.
+        LoyaltyInformation loyaltyInfo = guest.getLoyaltyInformation();
+        if (loyaltyInfo != null) {
+            builder.crownAndAnchorId(loyaltyInfo.getCrownAndAnchorId())
+                    .captainsClubId(loyaltyInfo.getCaptainsClubId())
+                    .azamaraLoyaltyId(loyaltyInfo.getAzamaraLoyaltyId())
+                    .clubRoyaleId(loyaltyInfo.getClubRoyaleId())
+                    .celebrityBlueChipId(loyaltyInfo.getCelebrityBlueChipId());
         }
         
         WebshopperInformation webshopperInfo = guest.getWebshopperInformation();
@@ -416,19 +485,5 @@ public class Mapper {
                 .travelDocumentInformation(travelDocumentInformation.build())
                 .loyaltyInformation(loyaltyInformationBuilder.build())
                 .build();
-    }
-    
-    /**
-     * Wraps each {@link String} value with quotation marks to satisfy Saviynt's requirement.
-     *
-     * @param attribute {@code String}
-     * @return {@code List<String>}
-     */
-    private static List<String> mapStringToSaviyntStringList(String attribute) {
-        if (StringUtils.isNotBlank(attribute)) {
-            return Collections.singletonList("\"" + attribute + "\"");
-        }
-        
-        return Collections.emptyList();
     }
 }
