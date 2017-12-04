@@ -37,8 +37,6 @@ public interface GuestAccountService extends Service {
     
     ServiceCall<NotUsed, ResponseBody<JsonNode>> validateEmail(String email, Optional<String> inputType);
     
-    ServiceCall<NotUsed, String> healthCheck();
-    
     Topic<GuestEvent> linkLoyaltyTopic();
     
     Topic<EnrichedGuest> verifyLoyaltyTopic();
@@ -53,8 +51,7 @@ public interface GuestAccountService extends Service {
                         restCall(POST, "/guestAccounts/", this::createAccount),
                         restCall(GET, "/guestAccounts/enriched/:vdsId?extended", this::getAccountEnriched),
                         restCall(PUT, "/guestAccounts/enriched", this::updateAccountEnriched),
-                        restCall(GET, "/guestAccounts/:email/validation?inputType", this::validateEmail),
-                        restCall(GET, "/guestAccounts/health", this::healthCheck)
+                        restCall(GET, "/guestAccounts/:email/validation?inputType", this::validateEmail)
                 )
                 .withTopics(
                         topic(LINK_LOYALTY_KAFKA_TOPIC, this::linkLoyaltyTopic),
