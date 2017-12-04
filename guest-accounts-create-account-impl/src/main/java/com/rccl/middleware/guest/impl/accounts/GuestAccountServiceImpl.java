@@ -532,7 +532,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
             
             // propertyToSearch is defaulted to displayName if inputType is null or if passed with "username".
             String propertyToSearch = inputType.isPresent()
-                    && inputType.get().equalsIgnoreCase("email") ? "email" : "displayName";
+                    && inputType.get().equalsIgnoreCase("email") ? "email" : "displayname";
             
             return saviyntService.getAccountStatus(email, propertyToSearch, "False").invoke()
                     .exceptionally(exception -> {
