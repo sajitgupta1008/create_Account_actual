@@ -34,7 +34,7 @@ public class GuestAccountEntity extends PersistentEntity<GuestAccountCommand, Gu
             events.add(new GuestAccountEvent.GuestUpdated(cmd.getEnrichedGuest()));
             
             // add a verify loyalty event for Kafka publishing 
-            // if loyalty information is not null or if lastName is not null.
+            // if loyalty information is not null.
             if (cmd.getEnrichedGuest().getLoyaltyInformation() != null
                     || (cmd.getEnrichedGuest().getPersonalInformation() != null)) {
                 events.add(new GuestAccountEvent.VerifyLoyalty(cmd.getEnrichedGuest()));
