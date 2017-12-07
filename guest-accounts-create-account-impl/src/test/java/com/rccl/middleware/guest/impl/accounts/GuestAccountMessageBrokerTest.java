@@ -37,6 +37,7 @@ import com.rccl.middleware.saviynt.api.SaviyntService;
 import com.rccl.middleware.saviynt.api.SaviyntServiceImplStub;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import scala.concurrent.duration.FiniteDuration;
 
@@ -132,6 +133,8 @@ public class GuestAccountMessageBrokerTest {
         assertThat(outcome.issues().isEmpty(), is(true));
     }
     
+    // TODO: Re-enable this logic and unit tests once the Email Communication story is re-approved.
+    @Ignore
     @Test
     public void testEmailNotificationOnCreateAccount() throws InterruptedException, ExecutionException, TimeoutException {
         Source<EmailNotification, ?> source = guestAccountService.emailNotificationTopic()
@@ -153,6 +156,8 @@ public class GuestAccountMessageBrokerTest {
         assertNotNull(en);
     }
     
+    // TODO: Re-enable this logic and unit tests once the Email Communication story is re-approved.
+    @Ignore
     @Test
     public void testEmailNotificationOnUpdateEmail() throws InterruptedException, ExecutionException, TimeoutException {
         Source<EmailNotification, ?> source = guestAccountService.emailNotificationTopic()
@@ -174,6 +179,8 @@ public class GuestAccountMessageBrokerTest {
         assertNotNull(en);
     }
     
+    // TODO: Re-enable this logic and unit tests once the Email Communication story is re-approved.
+    @Ignore
     @Test
     public void testLinkLoyaltyOnCreateAccount() throws InterruptedException, ExecutionException, TimeoutException {
         Source<GuestEvent, ?> source = guestAccountService.linkLoyaltyTopic()
