@@ -51,6 +51,7 @@ public class Mapper {
                 .lastName(guest.getLastName())
                 .birthdate(guest.getBirthdate())
                 .phoneNumber(guest.getPhoneNumber())
+                .password(guest.getPassword())
                 .securityQuestions(guest.getSecurityQuestions())
                 .consumerId(guest.getConsumerId())
                 .crownAndAnchorId(guest.getCrownAndAnchorId())
