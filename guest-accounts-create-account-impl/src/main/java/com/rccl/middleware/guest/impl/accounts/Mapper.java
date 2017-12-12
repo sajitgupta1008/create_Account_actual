@@ -102,10 +102,16 @@ public class Mapper {
                         : newGuest.getWebshopperId())
                 .webshopperBrand(newGuest.getWebshopperBrand() == null ? oldGuest.getWebshopperBrand()
                         : newGuest.getWebshopperBrand())
+                .privacyPolicyAgreement(newGuest.getPrivacyPolicyAgreement() == null ?
+                        oldGuest.getPrivacyPolicyAgreement() : newGuest.getPrivacyPolicyAgreement())
                 .termsAndConditionsAgreement(newGuest.getTermsAndConditionsAgreement() == null
                         ? oldGuest.getTermsAndConditionsAgreement() : newGuest.getTermsAndConditionsAgreement())
                 .creationTimestamp(newGuest.getCreationTimestamp() == null
                         ? oldGuest.getCreationTimestamp() : newGuest.getCreationTimestamp())
+                .passportNumber(newGuest.getPassportNumber() == null ? oldGuest.getPassportNumber()
+                        : newGuest.getPassportNumber())
+                .passportExpirationDate(newGuest.getPassportExpirationDate() == null ?
+                        oldGuest.getPassportExpirationDate() : newGuest.getPassportExpirationDate())
                 .build();
     }
     

@@ -2,8 +2,8 @@ package com.rccl.middleware.guest.accounts.enriched;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.lightbend.lagom.serialization.Jsonable;
+import com.rccl.middleware.common.beans.Gender;
 import com.rccl.middleware.common.validation.validator.Birthdate;
-import com.rccl.middleware.guestprofiles.models.Gender;
 import lombok.Builder;
 import lombok.Value;
 
