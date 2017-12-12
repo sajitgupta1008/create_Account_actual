@@ -34,7 +34,7 @@
     "JAVA_OPTS": "-Xmx512m -Xms384m -Djavax.net.ssl.keyStorePassword=password -Djavax.net.ssl.trustStorePassword=password -Djavax.net.ssl.keyStore=/etc/ssl/certs/clientkeystore.jks -Djavax.net.ssl.trustStore=/etc/ssl/certs/cacerts.jks"
   },
   "instances": 2,
-  "cpus": 1,
+  "cpus": 0.1,
   "mem": 2048,
   "disk": 0,
   "gpus": 0,
