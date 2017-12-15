@@ -46,7 +46,7 @@
 
     <apache.lang.version>3.6</apache.lang.version>
     <constructr.version>0.17.0</constructr.version>
-    <constructr.zookeeper.version>0.4.0</constructr.zookeeper.version>
+    <constructr.zookeeper.version>0.4.1</constructr.zookeeper.version>
     <hibernate.validator.version>5.4.1.Final</hibernate.validator.version>
     <jaxb.api.version>2.1</jaxb.api.version>
     <junit.version>4.12</junit.version>
