@@ -494,34 +494,13 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                     });
                         }
                         
-                        CompletionStage<GenericSaviyntResponse> updateService = saviyntService.updateGuestAccount()
-                                .invoke(saviyntGuest)
-                                .exceptionally(exception -> {
-                                    Throwable cause = exception.getCause();
-                                    
-                                    LOGGER.error("Error encountered while trying to update account for VDS ID={}",
-                                            saviyntGuest.getVdsId(), exception);
-                                    
-                                    if (cause instanceof SaviyntExceptionFactory.NoSuchGuestException) {
-                                        throw new GuestNotFoundException();
-                                    }
-                                    
-                                    if (cause instanceof SaviyntExceptionFactory.InvalidEmailFormatException) {
-                                        throw new InvalidEmailFormatException();
-                                    }
-                                    
-                                    if (cause instanceof SaviyntExceptionFactory.InvalidPasswordFormatException) {
-                                        throw new InvalidPasswordException();
-                                    }
-                                    
-                                    throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
-                                });
-                        
                         if (updatePasswordService != null) {
                             return updatePasswordService.thenCompose(changePasswordResponse ->
-                                    updateService.thenApply(notUsed -> NotUsed.getInstance()));
+                                    this.callSaviyntUpdateGuestAccount(saviyntGuest)
+                                            .thenApply(notUsed -> NotUsed.getInstance()));
                         } else {
-                            return updateService.thenApply(notUsed -> NotUsed.getInstance());
+                            return this.callSaviyntUpdateGuestAccount(saviyntGuest)
+                                    .thenApply(notUsed -> NotUsed.getInstance());
                         }
                     });
         };
@@ -639,6 +618,37 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                             return new Pair<>(emailNotification, pair.second());
                         })
         );
+    }
+    
+    /**
+     * Triggers a call to Saviynt updateUser service.
+     *
+     * @param saviyntGuest the {@link SaviyntGuest} request.
+     * @return {@link CompletionStage}<{@link GenericSaviyntResponse}>
+     */
+    private CompletionStage<GenericSaviyntResponse> callSaviyntUpdateGuestAccount(SaviyntGuest saviyntGuest) {
+        return saviyntService.updateGuestAccount()
+                .invoke(saviyntGuest)
+                .exceptionally(exception -> {
+                    Throwable cause = exception.getCause();
+                    
+                    LOGGER.error("Error encountered while trying to update account for VDS ID={}",
+                            saviyntGuest.getVdsId(), exception);
+                    
+                    if (cause instanceof SaviyntExceptionFactory.NoSuchGuestException) {
+                        throw new GuestNotFoundException();
+                    }
+                    
+                    if (cause instanceof SaviyntExceptionFactory.InvalidEmailFormatException) {
+                        throw new InvalidEmailFormatException();
+                    }
+                    
+                    if (cause instanceof SaviyntExceptionFactory.InvalidPasswordFormatException) {
+                        throw new InvalidPasswordException();
+                    }
+                    
+                    throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
+                });
     }
     
     /**
