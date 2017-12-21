@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.lightbend.lagom.serialization.Jsonable;
 import com.rccl.middleware.common.beans.Gender;
 import com.rccl.middleware.common.validation.validator.Birthdate;
+import com.rccl.middleware.common.validation.validator.ValidGender;
 import lombok.Builder;
 import lombok.Value;
 
@@ -45,5 +46,6 @@ public class PersonalInformation implements Jsonable {
     @Birthdate
     String birthdate;
     
+    @ValidGender(allowBlank = true)
     Gender gender;
 }
