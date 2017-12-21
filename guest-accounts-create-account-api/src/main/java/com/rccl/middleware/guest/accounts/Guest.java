@@ -58,6 +58,8 @@ public class Guest implements Jsonable {
     
     String suffix;
     
+    String title;
+    
     @NotEmpty(message = "Date of birth is required.", groups = CreateChecks.class)
     @Birthdate(groups = DefaultChecks.class)
     String birthdate;

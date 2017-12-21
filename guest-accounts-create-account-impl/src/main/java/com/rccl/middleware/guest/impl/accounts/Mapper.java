@@ -51,6 +51,7 @@ public class Mapper {
                 .lastName(guest.getLastName())
                 .middleName(guest.getMiddleName())
                 .suffix(guest.getSuffix())
+                .title(guest.getTitle())
                 .birthdate(guest.getBirthdate())
                 .phoneNumber(guest.getPhoneNumber())
                 .password(guest.getPassword())
@@ -84,8 +85,9 @@ public class Mapper {
                 .email(newGuest.getEmail() == null ? oldGuest.getEmail() : newGuest.getEmail())
                 .firstName(newGuest.getFirstName() == null ? oldGuest.getFirstName() : newGuest.getFirstName())
                 .lastName(newGuest.getLastName() == null ? oldGuest.getLastName() : newGuest.getLastName())
-                .suffix(newGuest.getSuffix() == null ? oldGuest.getSuffix() : newGuest.getSuffix())
                 .middleName(newGuest.getMiddleName() == null ? oldGuest.getMiddleName() : newGuest.getMiddleName())
+                .suffix(newGuest.getSuffix() == null ? oldGuest.getSuffix() : newGuest.getSuffix())
+                .title(newGuest.getTitle() == null ? oldGuest.getTitle() : newGuest.getTitle())
                 .birthdate(newGuest.getBirthdate() == null ? oldGuest.getBirthdate() : newGuest.getBirthdate())
                 .phoneNumber(newGuest.getPassportNumber() == null ? oldGuest.getPhoneNumber()
                         : newGuest.getPhoneNumber())
@@ -141,6 +143,7 @@ public class Mapper {
                 .lastName(guest.getLastName())
                 .middleName(guest.getMiddleName())
                 .suffix(guest.getSuffix())
+                .title(guest.getTitle())
                 .email(guest.getEmail())
                 .birthdate(guest.getBirthdate())
                 .phoneNumber(guest.getPhoneNumber())
@@ -222,6 +225,7 @@ public class Mapper {
                 .lastName(sg.getLastName())
                 .middleName(sg.getMiddleName())
                 .suffix(sg.getSuffix())
+                .title(sg.getTitle())
                 .email(sg.getEmail())
                 .phoneNumber(sg.getPhoneNumber())
                 .vdsId(sg.getVdsId())
@@ -272,6 +276,7 @@ public class Mapper {
                     .lastName(personalInfo.getLastName())
                     .middleName(personalInfo.getMiddleName())
                     .suffix(personalInfo.getSuffix())
+                    .title(personalInfo.getTitle())
                     .birthdate(personalInfo.getBirthdate());
         }
         
@@ -432,6 +437,7 @@ public class Mapper {
                     .lastName(guest.getLastName())
                     .middleName(guest.getMiddleName())
                     .suffix(guest.getSuffix())
+                    .title(guest.getTitle())
                     .birthdate(guest.getBirthdate());
             
             contactInformationBuilder.phoneNumber(guest.getPhoneNumber())

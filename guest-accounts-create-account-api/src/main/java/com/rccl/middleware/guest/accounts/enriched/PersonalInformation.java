@@ -40,6 +40,8 @@ public class PersonalInformation implements Jsonable {
     
     String suffix;
     
+    String title;
+    
     @Birthdate
     String birthdate;
     
