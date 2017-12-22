@@ -237,7 +237,7 @@ public class GuestAccountServiceTest {
                 .build();
         
         builder.termsAndConditionsAgreement(tca);
-    
+        
         PrivacyPolicyAgreement ppa = PrivacyPolicyAgreement.builder()
                 .acceptTime("20170627T033735UTC")
                 .version("1.0")
