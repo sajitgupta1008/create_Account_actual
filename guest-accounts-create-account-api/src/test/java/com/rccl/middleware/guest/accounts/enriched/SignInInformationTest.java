@@ -12,11 +12,11 @@ public class SignInInformationTest {
     public void testGetterForPasswordReturnsClonedPasswordArray() {
         char[] password = {'p', 'a', 's', 's', 'w', 'o', 'r', 'd'};
         
-        SignInInformation frc = SignInInformation.builder()
+        SignInInformation sii = SignInInformation.builder()
                 .password(password)
                 .build();
         
-        char[] actualPassword = frc.getPassword();
+        char[] actualPassword = sii.getPassword();
         
         assertNotEquals(password, actualPassword);
         assertEquals(ArrayUtils.toString(password), ArrayUtils.toString(actualPassword));
@@ -26,12 +26,12 @@ public class SignInInformationTest {
     public void testGetterForPasswordAlwaysReturnsNewArrayInstance() {
         char[] password = {'p', 'a', 's', 's', 'w', 'o', 'r', 'd'};
         
-        SignInInformation frc = SignInInformation.builder()
+        SignInInformation sii = SignInInformation.builder()
                 .password(password)
                 .build();
         
-        char[] instanceOne = frc.getPassword();
-        char[] instanceTwo = frc.getPassword();
+        char[] instanceOne = sii.getPassword();
+        char[] instanceTwo = sii.getPassword();
         
         assertNotEquals(instanceOne, instanceTwo);
         assertEquals(ArrayUtils.toString(instanceOne), ArrayUtils.toString(instanceTwo));
