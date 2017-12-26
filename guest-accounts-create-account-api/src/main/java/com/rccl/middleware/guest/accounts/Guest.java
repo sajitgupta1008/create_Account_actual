@@ -153,6 +153,8 @@ public class Guest implements Jsonable {
                 this.password = password.clone();
             }
             
+            this.password = NULL_PASSWORD;
+            
             return this;
         }
     }

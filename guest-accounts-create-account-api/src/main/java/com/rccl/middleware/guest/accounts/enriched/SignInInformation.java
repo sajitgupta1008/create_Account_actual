@@ -41,6 +41,8 @@ public class SignInInformation implements Jsonable {
                 this.password = password.clone();
             }
             
+            this.password = NULL_PASSWORD;
+            
             return this;
         }
     }
