@@ -39,7 +39,7 @@ public class GuestTest {
     }
     
     @Test
-    public void testGetterHonorsEmptyArray() {
+    public void testGetterForPasswordHonorsEmptyArray() {
         Guest guest = Guest.builder()
                 .password(new char[0])
                 .build();

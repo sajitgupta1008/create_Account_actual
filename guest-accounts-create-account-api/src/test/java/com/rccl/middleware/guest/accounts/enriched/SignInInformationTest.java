@@ -39,7 +39,7 @@ public class SignInInformationTest {
     }
     
     @Test
-    public void testGetterHonorsEmptyArray() {
+    public void testGetterForPasswordHonorsEmptyArray() {
         SignInInformation sii = SignInInformation.builder()
                 .password(new char[0])
                 .build();
