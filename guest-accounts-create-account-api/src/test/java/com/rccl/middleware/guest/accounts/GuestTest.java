@@ -5,6 +5,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class GuestTest {
     
@@ -35,5 +36,14 @@ public class GuestTest {
         
         assertNotEquals(instanceOne, instanceTwo);
         assertEquals(ArrayUtils.toString(instanceOne), ArrayUtils.toString(instanceTwo));
+    }
+    
+    @Test
+    public void testGetterHonorsEmptyArray() {
+        Guest guest = Guest.builder()
+                .password(new char[0])
+                .build();
+        
+        assertNotNull(guest.getPassword());
     }
 }

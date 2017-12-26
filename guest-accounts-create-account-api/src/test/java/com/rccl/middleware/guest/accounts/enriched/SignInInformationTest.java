@@ -5,6 +5,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class SignInInformationTest {
     
@@ -35,5 +36,14 @@ public class SignInInformationTest {
         
         assertNotEquals(instanceOne, instanceTwo);
         assertEquals(ArrayUtils.toString(instanceOne), ArrayUtils.toString(instanceTwo));
+    }
+    
+    @Test
+    public void testGetterHonorsEmptyArray() {
+        SignInInformation sii = SignInInformation.builder()
+                .password(new char[0])
+                .build();
+        
+        assertNotNull(sii.getPassword());
     }
 }

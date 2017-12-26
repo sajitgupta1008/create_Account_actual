@@ -6,7 +6,6 @@ import com.rccl.middleware.common.validation.validator.GuestAccountPassword;
 import com.rccl.middleware.guest.accounts.SecurityQuestion;
 import lombok.Builder;
 import lombok.Value;
-import org.apache.commons.lang3.ArrayUtils;
 
 import javax.validation.Valid;
 import java.util.List;
@@ -25,7 +24,7 @@ public class SignInInformation implements Jsonable {
     List<SecurityQuestion> securityQuestions;
     
     public char[] getPassword() {
-        if (!ArrayUtils.isEmpty(this.password)) {
+        if (this.password != null) {
             return this.password.clone();
         }
         

@@ -137,7 +137,7 @@ public class Guest implements Jsonable {
     }
     
     public char[] getPassword() {
-        if (!ArrayUtils.isEmpty(this.password)) {
+        if (this.password != null) {
             return this.password.clone();
         }
         
