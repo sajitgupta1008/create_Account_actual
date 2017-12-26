@@ -151,9 +151,9 @@ public class Guest implements Jsonable {
         public GuestBuilder password(char[] password) {
             if (password != null) {
                 this.password = password.clone();
+            } else {
+                this.password = NULL_PASSWORD;
             }
-            
-            this.password = NULL_PASSWORD;
             
             return this;
         }
