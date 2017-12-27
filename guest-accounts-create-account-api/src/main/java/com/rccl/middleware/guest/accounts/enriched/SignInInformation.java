@@ -22,4 +22,27 @@ public class SignInInformation implements Jsonable {
     
     @Valid
     List<SecurityQuestion> securityQuestions;
+    
+    public char[] getPassword() {
+        if (this.password != null) {
+            return this.password.clone();
+        }
+        
+        return SignInInformationBuilder.NULL_PASSWORD;
+    }
+    
+    public static class SignInInformationBuilder {
+        
+        static final char[] NULL_PASSWORD = null;
+        
+        public SignInInformationBuilder password(char[] password) {
+            if (password != null) {
+                this.password = password.clone();
+            } else {
+                this.password = NULL_PASSWORD;
+            }
+            
+            return this;
+        }
+    }
 }
