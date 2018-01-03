@@ -10,6 +10,7 @@ import com.rccl.middleware.common.validation.validator.GuestAccountPassword;
 import com.rccl.middleware.common.validation.validator.ValidatorConstants;
 import lombok.Builder;
 import lombok.Value;
+import org.apache.commons.lang3.ArrayUtils;
 import org.hibernate.validator.constraints.NotBlank;
 import org.hibernate.validator.constraints.NotEmpty;
 
@@ -133,5 +134,28 @@ public class Guest implements Jsonable {
     
     interface DefaultChecks extends Default {
         // Validation group interface.
+    }
+    
+    public char[] getPassword() {
+        if (this.password != null) {
+            return this.password.clone();
+        }
+        
+        return GuestBuilder.NULL_PASSWORD;
+    }
+    
+    public static class GuestBuilder {
+        
+        static final char[] NULL_PASSWORD = null;
+        
+        public GuestBuilder password(char[] password) {
+            if (password != null) {
+                this.password = password.clone();
+            } else {
+                this.password = NULL_PASSWORD;
+            }
+            
+            return this;
+        }
     }
 }

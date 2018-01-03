@@ -19,6 +19,7 @@ import com.rccl.middleware.common.exceptions.MiddlewareError;
 import com.rccl.middleware.common.exceptions.MiddlewareExceptionMessage;
 import com.rccl.middleware.common.exceptions.MiddlewareTransportException;
 import com.rccl.middleware.common.logging.RcclLoggerFactory;
+import com.rccl.middleware.common.request.EnvironmentDetails;
 import com.rccl.middleware.common.response.ResponseBody;
 import com.rccl.middleware.common.validation.MiddlewareValidation;
 import com.rccl.middleware.common.validation.validator.ValidatorConstants;
@@ -274,10 +275,31 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                             .<TextNode>builder().payload(TextNode.valueOf(enrichedGuest.getVdsId())).build());
             Profile.ProfileBuilder profileBuilder = Mapper.mapEnrichedGuestToProfile(enrichedGuest);
             
+            EnvironmentDetails environmentDetails;
+            
+            try {
+                environmentDetails = EnvironmentDetails.getInstance(requestHeader);
+            } catch (IllegalArgumentException iae) {
+                MiddlewareError me = MiddlewareError.builder()
+                        .developerMessage("The Environment-Marker and Environment-Ship-Code headers are missing."
+                                + " Please verify Apigee is passing them in.")
+                        .userMessage("The Environment-Marker and Environment-Ship-Code headers "
+                                + "are missing on this request.")
+                        .build();
+                throw new MiddlewareTransportException(TransportErrorCode.fromHttp(422), me);
+            }
+            
             if (!profileBuilder.build().equals(Profile.builder().build())) {
                 final Profile profile = profileBuilder.vdsId(enrichedGuest.getVdsId()).build();
+                
                 updateProfileService = guestProfilesService.updateProfile()
-                        .handleRequestHeader(rh -> rh.withHeader(APPKEY_HEADER, appKey)).invoke(profile);
+                        .handleRequestHeader(rh -> rh
+                                .withHeader(APPKEY_HEADER, appKey)
+                                .withHeader(EnvironmentDetails.ENVIRONMENT_MARKER_HEADER_NAME,
+                                        environmentDetails.getEnvironmentMarker())
+                                .withHeader(EnvironmentDetails.ENVIRONMENT_SHIP_CODE_HEADER_NAME,
+                                        environmentDetails.getEnvironmentShipCode())
+                        ).invoke(profile);
             }
             
             CompletionStage<ResponseBody> updateEmailOptinsService = CompletableFuture
@@ -287,7 +309,13 @@ public class GuestAccountServiceImpl implements GuestAccountService {
             if (emailOptins != null && StringUtils.isNotBlank(enrichedGuest.getEmail())) {
                 updateEmailOptinsService = guestProfileOptinService
                         .updateEmailOptins(enrichedGuest.getEmail())
-                        .handleRequestHeader(rh -> rh.withHeader(APPKEY_HEADER, appKey)).invoke(emailOptins);
+                        .handleRequestHeader(rh -> rh
+                                .withHeader(APPKEY_HEADER, appKey)
+                                .withHeader(EnvironmentDetails.ENVIRONMENT_MARKER_HEADER_NAME,
+                                        environmentDetails.getEnvironmentMarker())
+                                .withHeader(EnvironmentDetails.ENVIRONMENT_SHIP_CODE_HEADER_NAME,
+                                        environmentDetails.getEnvironmentShipCode())
+                        ).invoke(emailOptins);
             }
             
             CompletionStage<ResponseBody> updatePostalOptinsService = CompletableFuture
@@ -297,7 +325,13 @@ public class GuestAccountServiceImpl implements GuestAccountService {
             if (postalOptins != null && StringUtils.isNotBlank(enrichedGuest.getEmail())) {
                 updatePostalOptinsService = guestProfileOptinService
                         .updatePostalOptins(enrichedGuest.getVdsId())
-                        .handleRequestHeader(rh -> rh.withHeader(APPKEY_HEADER, appKey)).invoke(postalOptins);
+                        .handleRequestHeader(rh -> rh
+                                .withHeader(APPKEY_HEADER, appKey)
+                                .withHeader(EnvironmentDetails.ENVIRONMENT_MARKER_HEADER_NAME,
+                                        environmentDetails.getEnvironmentMarker())
+                                .withHeader(EnvironmentDetails.ENVIRONMENT_SHIP_CODE_HEADER_NAME,
+                                        environmentDetails.getEnvironmentShipCode())
+                        ).invoke(postalOptins);
             }
             
             final CompletableFuture<NotUsed> accountFuture = updateAccountService.toCompletableFuture();

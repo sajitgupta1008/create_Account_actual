@@ -10,6 +10,7 @@ import com.rccl.middleware.aem.api.email.AemEmailService;
 import com.rccl.middleware.aem.api.email.AemEmailServiceStub;
 import com.rccl.middleware.common.exceptions.MiddlewareTransportException;
 import com.rccl.middleware.common.header.Header;
+import com.rccl.middleware.common.request.EnvironmentDetails;
 import com.rccl.middleware.common.response.ResponseBody;
 import com.rccl.middleware.common.validation.MiddlewareValidationException;
 import com.rccl.middleware.guest.accounts.GuestAccountService;
@@ -78,7 +79,9 @@ public class GuestAccountUpdateServiceTest {
                     (HeaderServiceCall<EnrichedGuest, ResponseBody<JsonNode>>) guestAccountService.updateAccountEnriched();
             
             Pair<ResponseHeader, ResponseBody<JsonNode>> response = updateAccount
-                    .invokeWithHeaders(RequestHeader.DEFAULT, guest)
+                    .invokeWithHeaders(RequestHeader.DEFAULT
+                            .withHeader(EnvironmentDetails.ENVIRONMENT_MARKER_HEADER_NAME, "shore")
+                            .withHeader(EnvironmentDetails.ENVIRONMENT_SHIP_CODE_HEADER_NAME, "none"), guest)
                     .toCompletableFuture()
                     .get(5, TimeUnit.SECONDS);
             
@@ -98,7 +101,9 @@ public class GuestAccountUpdateServiceTest {
         try {
             ((HeaderServiceCall<EnrichedGuest, ResponseBody<JsonNode>>) guestAccountService
                     .updateAccountEnriched())
-                    .invokeWithHeaders(RequestHeader.DEFAULT, guest)
+                    .invokeWithHeaders(RequestHeader.DEFAULT
+                            .withHeader(EnvironmentDetails.ENVIRONMENT_MARKER_HEADER_NAME, "shore")
+                            .withHeader(EnvironmentDetails.ENVIRONMENT_SHIP_CODE_HEADER_NAME, "none"), guest)
                     .toCompletableFuture()
                     .get(5, TimeUnit.SECONDS);
         } catch (Exception e) {
@@ -120,7 +125,9 @@ public class GuestAccountUpdateServiceTest {
                 (HeaderServiceCall<EnrichedGuest, ResponseBody<JsonNode>>) guestAccountService.updateAccountEnriched();
         
         Pair<ResponseHeader, ResponseBody<JsonNode>> response = updateAccount
-                .invokeWithHeaders(RequestHeader.DEFAULT, guest)
+                .invokeWithHeaders(RequestHeader.DEFAULT
+                        .withHeader(EnvironmentDetails.ENVIRONMENT_MARKER_HEADER_NAME, "shore")
+                        .withHeader(EnvironmentDetails.ENVIRONMENT_SHIP_CODE_HEADER_NAME, "none"), guest)
                 .toCompletableFuture()
                 .get(5, TimeUnit.SECONDS);
         

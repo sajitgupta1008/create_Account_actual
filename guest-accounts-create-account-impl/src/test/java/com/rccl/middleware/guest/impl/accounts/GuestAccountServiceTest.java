@@ -8,6 +8,7 @@ import com.lightbend.lagom.javadsl.server.HeaderServiceCall;
 import com.lightbend.lagom.javadsl.testkit.ServiceTest.TestServer;
 import com.rccl.middleware.common.exceptions.MiddlewareError;
 import com.rccl.middleware.common.header.Header;
+import com.rccl.middleware.common.request.EnvironmentDetails;
 import com.rccl.middleware.common.response.ResponseBody;
 import com.rccl.middleware.common.validation.MiddlewareValidationException;
 import com.rccl.middleware.guest.accounts.Guest;
@@ -85,7 +86,10 @@ public class GuestAccountServiceTest {
         Guest guest = createSampleGuest().build();
         
         Pair<ResponseHeader, ResponseBody<JsonNode>> responseBody = createAccount
-                .invokeWithHeaders(RequestHeader.DEFAULT, guest).toCompletableFuture().get(5, SECONDS);
+                .invokeWithHeaders(RequestHeader.DEFAULT
+                                .withHeader(EnvironmentDetails.ENVIRONMENT_MARKER_HEADER_NAME, "shore")
+                                .withHeader(EnvironmentDetails.ENVIRONMENT_SHIP_CODE_HEADER_NAME, "none"),
+                        guest).toCompletableFuture().get(5, SECONDS);
         JsonNode response = responseBody.second().getPayload();
         
         assertTrue("The status code for success should be 201 Created.",
@@ -237,7 +241,7 @@ public class GuestAccountServiceTest {
                 .build();
         
         builder.termsAndConditionsAgreement(tca);
-    
+        
         PrivacyPolicyAgreement ppa = PrivacyPolicyAgreement.builder()
                 .acceptTime("20170627T033735UTC")
                 .version("1.0")

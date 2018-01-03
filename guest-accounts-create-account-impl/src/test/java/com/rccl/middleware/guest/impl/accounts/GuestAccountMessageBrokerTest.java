@@ -12,6 +12,7 @@ import com.lightbend.lagom.javadsl.testkit.ServiceTest;
 import com.rccl.middleware.aem.api.email.AemEmailService;
 import com.rccl.middleware.aem.api.email.AemEmailServiceStub;
 import com.rccl.middleware.common.header.Header;
+import com.rccl.middleware.common.request.EnvironmentDetails;
 import com.rccl.middleware.guest.accounts.Guest;
 import com.rccl.middleware.guest.accounts.GuestAccountService;
 import com.rccl.middleware.guest.accounts.GuestEvent;
@@ -224,7 +225,9 @@ public class GuestAccountMessageBrokerTest {
                 .loyaltyInformation(li)
                 .build();
         
-        guestAccountService.updateAccountEnriched()
+        guestAccountService.updateAccountEnriched().handleRequestHeader(rh -> rh
+                .withHeader(EnvironmentDetails.ENVIRONMENT_MARKER_HEADER_NAME, "shore")
+                .withHeader(EnvironmentDetails.ENVIRONMENT_SHIP_CODE_HEADER_NAME, "none"))
                 .invoke(sampleEnrichedGuest)
                 .toCompletableFuture()
                 .get(10, TimeUnit.SECONDS);
