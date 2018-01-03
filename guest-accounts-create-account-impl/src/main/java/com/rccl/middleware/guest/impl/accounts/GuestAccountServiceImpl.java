@@ -266,7 +266,19 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                             .<TextNode>builder().payload(TextNode.valueOf(enrichedGuest.getVdsId())).build());
             Profile.ProfileBuilder profileBuilder = Mapper.mapEnrichedGuestToProfile(enrichedGuest);
             
-            EnvironmentDetails environmentDetails = EnvironmentDetails.getInstance(requestHeader);
+            EnvironmentDetails environmentDetails;
+            
+            try {
+                environmentDetails = EnvironmentDetails.getInstance(requestHeader);
+            } catch (IllegalArgumentException iae) {
+                MiddlewareError me = MiddlewareError.builder()
+                        .developerMessage("The Environment-Marker and Environment-Ship-Code headers are missing."
+                                + " Please verify Apigee is passing them in.")
+                        .userMessage("The Environment-Marker and Environment-Ship-Code headers "
+                                + "are missing on this request.")
+                        .build();
+                throw new MiddlewareTransportException(TransportErrorCode.fromHttp(422), me);
+            }
             
             if (!profileBuilder.build().equals(Profile.builder().build())) {
                 final Profile profile = profileBuilder.vdsId(enrichedGuest.getVdsId()).build();
@@ -274,8 +286,10 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                 updateProfileService = guestProfilesService.updateProfile()
                         .handleRequestHeader(rh -> rh
                                 .withHeader(APPKEY_HEADER, appKey)
-                                .withHeader(EnvironmentDetails.ENVIRONMENT_MARKER_HEADER_NAME, environmentDetails.getEnvironmentMarker())
-                                .withHeader(EnvironmentDetails.ENVIRONMENT_SHIP_CODE_HEADER_NAME, environmentDetails.getEnvironmentShipCode())
+                                .withHeader(EnvironmentDetails.ENVIRONMENT_MARKER_HEADER_NAME,
+                                        environmentDetails.getEnvironmentMarker())
+                                .withHeader(EnvironmentDetails.ENVIRONMENT_SHIP_CODE_HEADER_NAME,
+                                        environmentDetails.getEnvironmentShipCode())
                         ).invoke(profile);
             }
             
@@ -288,8 +302,10 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         .updateEmailOptins(enrichedGuest.getEmail())
                         .handleRequestHeader(rh -> rh
                                 .withHeader(APPKEY_HEADER, appKey)
-                                .withHeader(EnvironmentDetails.ENVIRONMENT_MARKER_HEADER_NAME, environmentDetails.getEnvironmentMarker())
-                                .withHeader(EnvironmentDetails.ENVIRONMENT_SHIP_CODE_HEADER_NAME, environmentDetails.getEnvironmentShipCode())
+                                .withHeader(EnvironmentDetails.ENVIRONMENT_MARKER_HEADER_NAME,
+                                        environmentDetails.getEnvironmentMarker())
+                                .withHeader(EnvironmentDetails.ENVIRONMENT_SHIP_CODE_HEADER_NAME,
+                                        environmentDetails.getEnvironmentShipCode())
                         ).invoke(emailOptins);
             }
             
@@ -302,8 +318,10 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         .updatePostalOptins(enrichedGuest.getVdsId())
                         .handleRequestHeader(rh -> rh
                                 .withHeader(APPKEY_HEADER, appKey)
-                                .withHeader(EnvironmentDetails.ENVIRONMENT_MARKER_HEADER_NAME, environmentDetails.getEnvironmentMarker())
-                                .withHeader(EnvironmentDetails.ENVIRONMENT_SHIP_CODE_HEADER_NAME, environmentDetails.getEnvironmentShipCode())
+                                .withHeader(EnvironmentDetails.ENVIRONMENT_MARKER_HEADER_NAME,
+                                        environmentDetails.getEnvironmentMarker())
+                                .withHeader(EnvironmentDetails.ENVIRONMENT_SHIP_CODE_HEADER_NAME,
+                                        environmentDetails.getEnvironmentShipCode())
                         ).invoke(postalOptins);
             }
             
