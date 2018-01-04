@@ -45,7 +45,7 @@
     <maven.surefire.plugin.version>2.20.1</maven.surefire.plugin.version>
 
     <apache.lang.version>3.6</apache.lang.version>
-    <constructr.version>0.17.0</constructr.version>
+    <constructr.version>0.18.1</constructr.version>
     <constructr.zookeeper.version>0.4.1</constructr.zookeeper.version>
     <hibernate.validator.version>5.4.1.Final</hibernate.validator.version>
     <jaxb.api.version>2.1</jaxb.api.version>
