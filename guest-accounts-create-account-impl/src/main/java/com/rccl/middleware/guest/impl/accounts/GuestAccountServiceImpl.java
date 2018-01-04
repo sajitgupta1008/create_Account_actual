@@ -555,17 +555,18 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     @Override
     public HeaderServiceCall<NotUsed, ResponseBody<JsonNode>> validateEmail(String email, Optional<String> inputType) {
         return (requestHeader, notUsed) -> {
-            
-            Pattern pattern = Pattern.compile(ValidatorConstants.EMAIL_REGEXP);
-            Matcher matcher = pattern.matcher(email);
-            
-            if (!matcher.matches()) {
-                throw new InvalidEmailFormatException();
-            }
-            
             // propertyToSearch is defaulted to displayName if inputType is null or if passed with "username".
             String propertyToSearch = inputType.isPresent()
                     && inputType.get().equalsIgnoreCase("email") ? "email" : "displayname";
+            
+            if ("email".equalsIgnoreCase(propertyToSearch)) {
+                Pattern pattern = Pattern.compile(ValidatorConstants.EMAIL_REGEXP);
+                Matcher matcher = pattern.matcher(email);
+                
+                if (!matcher.matches()) {
+                    throw new InvalidEmailFormatException();
+                }
+            }
             
             return saviyntService.getAccountStatus(email, propertyToSearch, "False").invoke()
                     .exceptionally(exception -> {
