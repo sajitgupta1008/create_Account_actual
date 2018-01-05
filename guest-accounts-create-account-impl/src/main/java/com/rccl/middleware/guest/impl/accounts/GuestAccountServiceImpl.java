@@ -64,6 +64,7 @@ import java.util.regex.Pattern;
 
 import static com.rccl.middleware.guest.accounts.exceptions.CreateAccountErrorCodeContants.CONSTRAINT_VIOLATION;
 import static com.rccl.middleware.guest.accounts.exceptions.CreateAccountErrorCodeContants.MULTIPLE_BACKEND_ERROR;
+import static com.rccl.middleware.guest.accounts.exceptions.CreateAccountErrorCodeContants.SIGN_IN_ERROR;
 import static com.rccl.middleware.guest.accounts.exceptions.CreateAccountErrorCodeContants.UNKONWN_ERROR;
 
 public class GuestAccountServiceImpl implements GuestAccountService {
@@ -181,6 +182,12 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                             .username(guest.getEmail())
                                             .password(guest.getPassword())
                                             .build())
+                                    .exceptionally(throwable -> {
+                                        LOGGER.error("User Authentication failed for email {}.",
+                                                guest.getEmail(), throwable);
+                                        throw new MiddlewareTransportException(TransportErrorCode.fromHttp(401),
+                                                throwable.getMessage(), SIGN_IN_ERROR);
+                                    })
                                     .thenApply(authResponse -> {
                                         // Send the account created confirmation email.
                                         // TODO: Re-enable this logic and unit tests once the Email
