@@ -292,6 +292,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                 + " Please verify Apigee is passing them in.")
                         .userMessage("The Environment-Marker and Environment-Ship-Code headers "
                                 + "are missing on this request.")
+                        .errorCode(UNKONWN_ERROR)
                         .build();
                 throw new MiddlewareTransportException(TransportErrorCode.fromHttp(422), me);
             }
@@ -504,7 +505,6 @@ public class GuestAccountServiceImpl implements GuestAccountService {
      */
     private ServiceCall<Guest, NotUsed> updateAccount() {
         return guest -> {
-            
             MiddlewareValidation.validateWithGroups(guest, CONSTRAINT_VIOLATION, Guest.UpdateChecks.class);
             
             return this.verifyUpdateAccountLoyaltyInformation(guest)
