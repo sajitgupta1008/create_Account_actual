@@ -36,18 +36,18 @@
     <maven.assembly.plugin.version>3.1.0</maven.assembly.plugin.version>
     <maven.checkstyle.plugin.version>2.17</maven.checkstyle.plugin.version>
     <maven.compiler.plugin.version>3.7.0</maven.compiler.plugin.version>
-    <maven.docker.plugin.version>0.22.1</maven.docker.plugin.version>
+    <maven.docker.plugin.version>0.23.0</maven.docker.plugin.version>
     <maven.failsafe.plugin.version>2.20.1</maven.failsafe.plugin.version>
     <maven.findbugs.plugin.version>3.0.5</maven.findbugs.plugin.version>
-    <maven.jacoco.plugin.version>0.7.9</maven.jacoco.plugin.version>
+    <maven.jacoco.plugin.version>0.8.0</maven.jacoco.plugin.version>
     <maven.javadoc.plugin.version>2.10.4</maven.javadoc.plugin.version>
     <maven.sonar.plugin.version>3.3.0.603</maven.sonar.plugin.version>
     <maven.surefire.plugin.version>2.20.1</maven.surefire.plugin.version>
 
-    <apache.lang.version>3.6</apache.lang.version>
+    <apache.lang.version>3.7</apache.lang.version>
     <constructr.version>0.17.0</constructr.version>
     <constructr.zookeeper.version>0.4.1</constructr.zookeeper.version>
-    <hibernate.validator.version>5.4.1.Final</hibernate.validator.version>
+    <hibernate.validator.version>6.0.7.Final</hibernate.validator.version>
     <jaxb.api.version>2.1</jaxb.api.version>
     <junit.version>4.12</junit.version>
     <lightbend.cinnamon.version>2.4.0</lightbend.cinnamon.version>
