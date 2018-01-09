@@ -16,6 +16,7 @@ import com.lightbend.lagom.javadsl.broker.TopicProducer;
 import com.lightbend.lagom.javadsl.persistence.PersistentEntityRegistry;
 import com.lightbend.lagom.javadsl.server.HeaderServiceCall;
 import com.rccl.middleware.common.exceptions.MiddlewareError;
+import com.rccl.middleware.common.exceptions.MiddlewareExceptionMessage;
 import com.rccl.middleware.common.exceptions.MiddlewareTransportException;
 import com.rccl.middleware.common.logging.RcclLoggerFactory;
 import com.rccl.middleware.common.request.EnvironmentDetails;
@@ -60,6 +61,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static com.rccl.middleware.guest.accounts.exceptions.CreateAccountErrorCodeContants.CONSTRAINT_VIOLATION;
+import static com.rccl.middleware.guest.accounts.exceptions.CreateAccountErrorCodeContants.MULTIPLE_BACKEND_ERROR;
+import static com.rccl.middleware.guest.accounts.exceptions.CreateAccountErrorCodeContants.SIGN_IN_ERROR;
+import static com.rccl.middleware.guest.accounts.exceptions.CreateAccountErrorCodeContants.UNKONWN_ERROR;
 
 public class GuestAccountServiceImpl implements GuestAccountService {
     
@@ -115,7 +121,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     @Override
     public HeaderServiceCall<Guest, ResponseBody<JsonNode>> createAccount() {
         return (requestHeader, guest) -> {
-            MiddlewareValidation.validateWithGroups(guest, Guest.CreateChecks.class);
+            MiddlewareValidation.validateWithGroups(guest, CONSTRAINT_VIOLATION, Guest.CreateChecks.class);
             
             final SaviyntGuest saviyntGuest = Mapper.mapGuestToSaviyntGuest(guest, true).build();
             
@@ -137,7 +143,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                             throw new InvalidPasswordException();
                         }
                         
-                        throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
+                        throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500),
+                                exception.getMessage(), UNKONWN_ERROR);
                     })
                     .thenCompose(response -> {
                         String message = response.getMessage();
@@ -175,6 +182,12 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                             .username(guest.getEmail())
                                             .password(guest.getPassword())
                                             .build())
+                                    .exceptionally(throwable -> {
+                                        LOGGER.error("User Authentication failed for email {}.",
+                                                guest.getEmail(), throwable);
+                                        throw new MiddlewareTransportException(TransportErrorCode.fromHttp(401),
+                                                throwable.getMessage(), SIGN_IN_ERROR);
+                                    })
                                     .thenApply(authResponse -> {
                                         // Send the account created confirmation email.
                                         // TODO: Re-enable this logic and unit tests once the Email
@@ -194,7 +207,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
         return (requestHeader, notUsed) -> {
             
             if (StringUtils.isBlank(vdsId)) {
-                throw new MiddlewareTransportException(TransportErrorCode.fromHttp(422), "VDS ID is required.");
+                throw new MiddlewareTransportException(TransportErrorCode.fromHttp(422),
+                        new MiddlewareExceptionMessage(CONSTRAINT_VIOLATION, null, "VDS ID is required."));
             }
             
             String appKey = requestHeader.getHeader(APPKEY_HEADER).orElse(DEFAULT_APP_KEY);
@@ -242,9 +256,11 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                             Optional.of(enrichedGuest.getVdsId()))
                     .invoke();
             
-            MiddlewareValidation.validate(enrichedGuest);
-            MiddlewareValidation.validateWithGroups(enrichedGuest.getEmailOptins(), EmailOptins.DefaultChecks.class);
-            MiddlewareValidation.validateWithGroups(enrichedGuest.getPostalOptins(), PostalOptins.DefaultChecks.class);
+            MiddlewareValidation.validate(enrichedGuest, CONSTRAINT_VIOLATION);
+            MiddlewareValidation.validateWithGroups(enrichedGuest.getEmailOptins(),
+                    CONSTRAINT_VIOLATION, EmailOptins.DefaultChecks.class);
+            MiddlewareValidation.validateWithGroups(enrichedGuest.getPostalOptins(),
+                    CONSTRAINT_VIOLATION, PostalOptins.DefaultChecks.class);
             
             String appKey = requestHeader.getHeader(APPKEY_HEADER).orElse(DEFAULT_APP_KEY);
             
@@ -276,6 +292,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                 + " Please verify Apigee is passing them in.")
                         .userMessage("The Environment-Marker and Environment-Ship-Code headers "
                                 + "are missing on this request.")
+                        .errorCode(UNKONWN_ERROR)
                         .build();
                 throw new MiddlewareTransportException(TransportErrorCode.fromHttp(422), me);
             }
@@ -340,6 +357,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                             
                             error.internalMessage("The service did not complete successfully.");
                             error.developerMessage(throwable.getCause().toString());
+                            error.errorCode(MULTIPLE_BACKEND_ERROR);
                             
                             StringBuilder sb = new StringBuilder();
                             sb.append("Update Account and Update Profile services failed. ");
@@ -462,7 +480,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     private ServiceCall<NotUsed, Guest> getAccount(String vdsId) {
         return notUsed -> {
             if (StringUtils.isBlank(vdsId)) {
-                throw new MiddlewareTransportException(TransportErrorCode.fromHttp(422), "VDS ID is required.");
+                throw new MiddlewareTransportException(TransportErrorCode.fromHttp(422),
+                        "VDS ID is required.", CONSTRAINT_VIOLATION);
             }
             
             return saviyntService.getGuestAccount("systemUserName", Optional.empty(), Optional.of(vdsId)).invoke()
@@ -472,7 +491,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                             throw new GuestNotFoundException();
                         }
                         
-                        throw new MiddlewareTransportException(TransportErrorCode.BadRequest, throwable);
+                        throw new MiddlewareTransportException(TransportErrorCode.InternalServerError,
+                                throwable.getCause().getMessage(), UNKONWN_ERROR);
                     })
                     .thenApply(Mapper::mapSaviyntGuestToGuest);
         };
@@ -485,8 +505,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
      */
     private ServiceCall<Guest, NotUsed> updateAccount() {
         return guest -> {
-            
-            MiddlewareValidation.validateWithGroups(guest, Guest.UpdateChecks.class);
+            MiddlewareValidation.validateWithGroups(guest, CONSTRAINT_VIOLATION, Guest.UpdateChecks.class);
             
             return this.verifyUpdateAccountLoyaltyInformation(guest)
                     .thenComposeAsync(updatedGuest -> {
@@ -504,12 +523,12 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                             
                             updatePasswordService = saviyntService.updateAuthenticatedAccountPassword()
                                     .invoke(updatePassword)
-                                    .exceptionally(exception -> {
-                                        Throwable cause = exception.getCause();
+                                    .exceptionally(throwable -> {
+                                        Throwable cause = throwable.getCause();
                                         
                                         LOGGER.error("Error encountered while trying to update "
                                                         + "account password for VDS ID={}",
-                                                saviyntGuest.getVdsId(), exception);
+                                                saviyntGuest.getVdsId(), throwable);
                                         
                                         if (cause instanceof SaviyntExceptionFactory.NoSuchGuestException) {
                                             throw new GuestNotFoundException();
@@ -524,7 +543,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                         }
                                         
                                         throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500),
-                                                exception);
+                                                throwable.getCause().getMessage(), UNKONWN_ERROR);
                                     });
                         }
                         
@@ -575,7 +594,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                             throw new InvalidEmailFormatException();
                         }
                         
-                        throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
+                        throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500),
+                                cause.getMessage(), UNKONWN_ERROR);
                     })
                     .thenApply(accountStatus -> {
                         ObjectNode response = OBJECT_MAPPER.createObjectNode();
@@ -682,7 +702,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         throw new InvalidPasswordException();
                     }
                     
-                    throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), exception);
+                    throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500),
+                            cause.getMessage(), UNKONWN_ERROR);
                 });
     }
     
