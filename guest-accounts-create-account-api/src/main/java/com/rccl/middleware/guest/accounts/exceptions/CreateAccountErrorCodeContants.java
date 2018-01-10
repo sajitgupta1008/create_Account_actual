@@ -2,7 +2,7 @@ package com.rccl.middleware.guest.accounts.exceptions;
 
 public class CreateAccountErrorCodeContants {
     
-    public static final String UNKONWN_ERROR = "GA-0100";
+    public static final String UNKNOWN_ERROR = "GA-0100";
     
     public static final String EXISTING_GUEST = "GA-0101";
     

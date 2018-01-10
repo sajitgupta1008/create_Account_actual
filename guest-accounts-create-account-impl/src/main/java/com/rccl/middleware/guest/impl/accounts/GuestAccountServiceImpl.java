@@ -66,7 +66,7 @@ import java.util.regex.Pattern;
 import static com.rccl.middleware.guest.accounts.exceptions.CreateAccountErrorCodeContants.CONSTRAINT_VIOLATION;
 import static com.rccl.middleware.guest.accounts.exceptions.CreateAccountErrorCodeContants.MULTIPLE_BACKEND_ERROR;
 import static com.rccl.middleware.guest.accounts.exceptions.CreateAccountErrorCodeContants.SIGN_IN_ERROR;
-import static com.rccl.middleware.guest.accounts.exceptions.CreateAccountErrorCodeContants.UNKONWN_ERROR;
+import static com.rccl.middleware.guest.accounts.exceptions.CreateAccountErrorCodeContants.UNKNOWN_ERROR;
 
 public class GuestAccountServiceImpl implements GuestAccountService {
     
@@ -136,7 +136,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         if (cause instanceof ConnectException
                                 || cause instanceof SaviyntExceptionFactory.SaviyntEnvironmentException) {
                             throw new MiddlewareTransportException(TransportErrorCode.ServiceUnavailable,
-                                    throwable.getMessage(), UNKONWN_ERROR);
+                                    throwable.getMessage(), UNKNOWN_ERROR);
                         }
                         
                         if (cause instanceof SaviyntExceptionFactory.ExistingGuestException) {
@@ -152,7 +152,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         }
                         
                         throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500),
-                                throwable.getMessage(), UNKONWN_ERROR);
+                                throwable.getMessage(), UNKNOWN_ERROR);
                     })
                     .thenCompose(response -> {
                         String message = response.getMessage();
@@ -307,7 +307,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                 + " Please verify Apigee is passing them in.")
                         .userMessage("The Environment-Marker and Environment-Ship-Code headers "
                                 + "are missing on this request.")
-                        .errorCode(UNKONWN_ERROR)
+                        .errorCode(UNKNOWN_ERROR)
                         .build();
                 throw new MiddlewareTransportException(TransportErrorCode.fromHttp(422), me);
             }
@@ -506,7 +506,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         if (cause instanceof ConnectException
                                 || cause instanceof SaviyntExceptionFactory.SaviyntEnvironmentException) {
                             throw new MiddlewareTransportException(TransportErrorCode.InternalServerError,
-                                    throwable.getMessage(), UNKONWN_ERROR);
+                                    throwable.getMessage(), UNKNOWN_ERROR);
                         }
                         
                         if (cause instanceof SaviyntExceptionFactory.NoSuchGuestException) {
@@ -514,7 +514,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         }
                         
                         throw new MiddlewareTransportException(TransportErrorCode.InternalServerError,
-                                throwable.getMessage(), UNKONWN_ERROR);
+                                throwable.getMessage(), UNKNOWN_ERROR);
                     })
                     .thenApply(Mapper::mapSaviyntGuestToGuest);
         };
@@ -554,7 +554,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                         if (cause instanceof ConnectException || cause
                                                 instanceof SaviyntExceptionFactory.SaviyntEnvironmentException) {
                                             throw new MiddlewareTransportException(TransportErrorCode
-                                                    .InternalServerError, throwable.getMessage(), UNKONWN_ERROR);
+                                                    .InternalServerError, throwable.getMessage(), UNKNOWN_ERROR);
                                         }
                                         
                                         if (cause instanceof SaviyntExceptionFactory.NoSuchGuestException) {
@@ -570,7 +570,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                         }
                                         
                                         throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500),
-                                                throwable.getCause().getMessage(), UNKONWN_ERROR);
+                                                throwable.getCause().getMessage(), UNKNOWN_ERROR);
                                     });
                         }
                         
@@ -612,7 +612,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         if (cause instanceof ConnectException
                                 || cause instanceof SaviyntExceptionFactory.SaviyntEnvironmentException) {
                             throw new MiddlewareTransportException(TransportErrorCode.InternalServerError,
-                                    throwable.getMessage(), UNKONWN_ERROR);
+                                    throwable.getMessage(), UNKNOWN_ERROR);
                         }
                         
                         // in case of non existing account, return an AccountStatus with DoesNotExist message instead.
@@ -628,7 +628,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         }
                         
                         throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500),
-                                cause.getMessage(), UNKONWN_ERROR);
+                                cause.getMessage(), UNKNOWN_ERROR);
                     })
                     .thenApply(accountStatus -> {
                         ObjectNode response = OBJECT_MAPPER.createObjectNode();
@@ -737,7 +737,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                     }
                     
                     throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500),
-                            cause.getMessage(), UNKONWN_ERROR);
+                            cause.getMessage(), UNKNOWN_ERROR);
                 });
     }
     
