@@ -56,6 +56,7 @@ import com.typesafe.config.ConfigFactory;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.inject.Inject;
+import java.net.ConnectException;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -128,8 +129,15 @@ public class GuestAccountServiceImpl implements GuestAccountService {
             return saviyntService
                     .createGuestAccount()
                     .invoke(saviyntGuest)
-                    .exceptionally(exception -> {
-                        Throwable cause = exception.getCause();
+                    .exceptionally(throwable -> {
+                        LOGGER.error("Saviynt Create Account failed. ", throwable);
+                        
+                        Throwable cause = throwable.getCause();
+                        if (cause instanceof ConnectException
+                                || cause instanceof SaviyntExceptionFactory.SaviyntEnvironmentException) {
+                            throw new MiddlewareTransportException(TransportErrorCode.ServiceUnavailable,
+                                    throwable.getMessage(), UNKONWN_ERROR);
+                        }
                         
                         if (cause instanceof SaviyntExceptionFactory.ExistingGuestException) {
                             throw new ExistingGuestException();
@@ -144,7 +152,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         }
                         
                         throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500),
-                                exception.getMessage(), UNKONWN_ERROR);
+                                throwable.getMessage(), UNKONWN_ERROR);
                     })
                     .thenCompose(response -> {
                         String message = response.getMessage();
@@ -157,7 +165,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         persistentEntityRegistry.refFor(GuestAccountEntity.class, guest.getEmail())
                                 .ask(new GuestAccountCommand.CreateGuest(Mapper.mapVdsIdWithGuest(vdsId, guest)));
                         
-                        if ("web".equals(guest.getHeader().getChannel())) {
+                        if (!"web".equals(guest.getHeader().getChannel())) {
                             ObjectNode objNode = OBJECT_MAPPER.createObjectNode();
                             objNode.put("vdsId", vdsId);
                             
@@ -217,9 +225,16 @@ public class GuestAccountServiceImpl implements GuestAccountService {
             // attributes are available.
             final CompletionStage<ResponseBody<Profile>> getProfile = guestProfilesService.getProfile(vdsId)
                     .handleRequestHeader(rh -> rh.withHeader(APPKEY_HEADER, appKey))
-                    .invoke().exceptionally(throwable -> null);
+                    .invoke().exceptionally(throwable -> {
+                        LOGGER.error("GET Profile failed for VDS ID {}.", vdsId, throwable);
+                        return null;
+                    });
             
-            return this.getAccount(vdsId).invoke().exceptionally(throwable -> null)
+            return this.getAccount(vdsId).invoke()
+                    .exceptionally(throwable -> {
+                        LOGGER.error("GET Guest Account failed for VDS ID {}.", vdsId, throwable);
+                        return null;
+                    })
                     .thenCombineAsync(getProfile, (guest, profile) -> {
                         if (guest == null && profile == null) {
                             throw new GuestNotFoundException();
@@ -249,7 +264,6 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     @Override
     public HeaderServiceCall<EnrichedGuest, ResponseBody<JsonNode>> updateAccountEnriched() {
         return (requestHeader, enrichedGuest) -> {
-            
             CompletionStage<AccountInformation> originalSaviyntAccount = saviyntService
                     .getGuestAccount("systemUserName",
                             Optional.empty(),
@@ -287,6 +301,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
             try {
                 environmentDetails = EnvironmentDetails.getInstance(requestHeader);
             } catch (IllegalArgumentException iae) {
+                LOGGER.error("The Environment-Marker and Environment-Ship-Code headers are missing.", iae);
                 MiddlewareError me = MiddlewareError.builder()
                         .developerMessage("The Environment-Marker and Environment-Ship-Code headers are missing."
                                 + " Please verify Apigee is passing them in.")
@@ -385,7 +400,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         
                         // If the update occurred successfully...
                         if (!accountFuture.isCompletedExceptionally()) {
-                            LOGGER.info("The account future completed successfully.");
+                            LOGGER.debug("The account future completed successfully.");
                             
                             // Using the original account information PRIOR to update...
                             originalSaviyntAccount
@@ -399,9 +414,9 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                         String originalEmail = accountInformation.getGuest().getEmail();
                                         String updatedEmail = enrichedGuest.getEmail();
                                         
-                                        LOGGER.info("Comparing original email to supposedly updated email.");
-                                        LOGGER.info("originalEmail := " + originalEmail);
-                                        LOGGER.info("updatedEmail := " + updatedEmail);
+                                        LOGGER.debug("Comparing original email to supposedly updated email.");
+                                        LOGGER.debug("originalEmail := " + originalEmail);
+                                        LOGGER.debug("updatedEmail := " + updatedEmail);
                                         
                                         boolean emailUpdated = false;
                                         
@@ -486,13 +501,20 @@ public class GuestAccountServiceImpl implements GuestAccountService {
             
             return saviyntService.getGuestAccount("systemUserName", Optional.empty(), Optional.of(vdsId)).invoke()
                     .exceptionally(throwable -> {
+                        LOGGER.error("Saviynt GET Guest Account failed.", throwable);
                         Throwable cause = throwable.getCause();
+                        if (cause instanceof ConnectException
+                                || cause instanceof SaviyntExceptionFactory.SaviyntEnvironmentException) {
+                            throw new MiddlewareTransportException(TransportErrorCode.InternalServerError,
+                                    throwable.getMessage(), UNKONWN_ERROR);
+                        }
+                        
                         if (cause instanceof SaviyntExceptionFactory.NoSuchGuestException) {
                             throw new GuestNotFoundException();
                         }
                         
                         throw new MiddlewareTransportException(TransportErrorCode.InternalServerError,
-                                throwable.getCause().getMessage(), UNKONWN_ERROR);
+                                throwable.getMessage(), UNKONWN_ERROR);
                     })
                     .thenApply(Mapper::mapSaviyntGuestToGuest);
         };
@@ -525,10 +547,15 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                     .invoke(updatePassword)
                                     .exceptionally(throwable -> {
                                         Throwable cause = throwable.getCause();
-                                        
                                         LOGGER.error("Error encountered while trying to update "
                                                         + "account password for VDS ID={}",
                                                 saviyntGuest.getVdsId(), throwable);
+                                        
+                                        if (cause instanceof ConnectException || cause
+                                                instanceof SaviyntExceptionFactory.SaviyntEnvironmentException) {
+                                            throw new MiddlewareTransportException(TransportErrorCode
+                                                    .InternalServerError, throwable.getMessage(), UNKONWN_ERROR);
+                                        }
                                         
                                         if (cause instanceof SaviyntExceptionFactory.NoSuchGuestException) {
                                             throw new GuestNotFoundException();
@@ -576,11 +603,17 @@ public class GuestAccountServiceImpl implements GuestAccountService {
             }
             
             return saviyntService.getAccountStatus(email, propertyToSearch, "False").invoke()
-                    .exceptionally(exception -> {
-                        Throwable cause = exception.getCause();
+                    .exceptionally(throwable -> {
+                        Throwable cause = throwable.getCause();
                         
                         LOGGER.error("Error encountered while validating account status for given = {}",
-                                email, exception);
+                                email, throwable);
+    
+                        if (cause instanceof ConnectException
+                                || cause instanceof SaviyntExceptionFactory.SaviyntEnvironmentException) {
+                            throw new MiddlewareTransportException(TransportErrorCode.InternalServerError,
+                                    throwable.getMessage(), UNKONWN_ERROR);
+                        }
                         
                         // in case of non existing account, return an AccountStatus with DoesNotExist message instead.
                         // So that the service will return a 200 with a status of "DoesNotExist"
@@ -662,6 +695,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                 persistentEntityRegistry
                         .eventStream(EmailNotificationTag.EMAIL_NOTIFICATION_TAG, offset)
                         .map(pair -> {
+                            LOGGER.debug("Publishing email notification message...");
                             EmailNotification eventNotification = pair.first().getEmailNotification();
                             EmailNotification emailNotification = EmailNotification
                                     .builder()
