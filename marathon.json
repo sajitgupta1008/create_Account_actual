@@ -5,11 +5,11 @@
   "args": null,
   "user": null,
   "env": {
-    "AEM_EMAIL": "http://dev1-int.api.rccl.com",
+    "AEM_EMAIL": "https://dev1-int.api.rccl.com",
     "AKKA_PORT": "1337",
     "AKKA_ACTOR_SYSTEM": "guest-accounts-create-account-application",
     "NOTIFICATIONS_EMAIL_TOPIC_NAME": "notifications_email_dev_v1",
-    "GUEST_PROFILES_OPTINS": "http://dev1-int.api.rccl.com/v1",
+    "GUEST_PROFILES_OPTINS": "https://dev1-int.api.rccl.com/v1",
     "CAS_CONTACT_POINT_THREE": "10.16.6.162",
     "CAS_CONTACT_POINT_ONE": "10.16.4.106",
     "CASSANDRA_REPLICATION_FACTOR": "3",
@@ -17,10 +17,10 @@
     "CONSTRUCTR_COORDINATION_NODES": "10.16.4.101:2181,10.16.4.227:2181,10.16.7.225:2181",
     "LINK_LOYALTY_TOPIC_NAME": "guest_accounts_search_add_loyalty_ucm_dev_v1",
     "CASSANDRA_REPLICATION_STRATEGY": "SimpleStrategy",
-    "GUEST_PROFILES": "http://dev1-int.api.rccl.com/v1",
-    "GUEST_ACCOUNTS_AUTHENTICATION": "http://dev1-int.api.rccl.com/v1",
+    "GUEST_PROFILES": "https://dev1-int.api.rccl.com/v1",
+    "GUEST_ACCOUNTS_AUTHENTICATION": "https://dev1-int.api.rccl.com/v1",
     "KAFKA_BOOTSTRAP_SERVERS": "10.16.5.94:9092, 10.16.5.91:9092",
-    "SAVIYNT": "http://dev1-int.api.rccl.com",
+    "SAVIYNT": "https://dev1-int.api.rccl.com",
     "CASSANDRA_USERNAME": {
       "secret": "CASSANDRA_USERNAME"
     },
