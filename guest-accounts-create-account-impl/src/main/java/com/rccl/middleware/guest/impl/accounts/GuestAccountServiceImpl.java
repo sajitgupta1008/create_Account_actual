@@ -573,8 +573,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                                     .ServiceUnavailable, throwable.getMessage(), UNKNOWN_ERROR);
                                         } else if (cause instanceof SaviyntExceptionFactory.NoSuchGuestException) {
                                             throw new GuestNotFoundException();
-                                        } else if (cause instanceof
-                                                SaviyntExceptionFactory.InvalidPasswordFormatException) {
+                                        } else if (cause instanceof SaviyntExceptionFactory
+                                                .InvalidPasswordFormatException) {
                                             throw new InvalidPasswordException();
                                         } else if (cause instanceof SaviyntExceptionFactory.PasswordReuseException) {
                                             throw new InvalidPasswordException(InvalidPasswordException.REUSE_ERROR);
