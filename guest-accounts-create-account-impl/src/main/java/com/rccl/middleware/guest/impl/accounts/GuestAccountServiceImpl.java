@@ -52,6 +52,7 @@ import com.rccl.middleware.saviynt.api.requests.SaviyntGuest;
 import com.rccl.middleware.saviynt.api.responses.AccountInformation;
 import com.rccl.middleware.saviynt.api.responses.AccountStatus;
 import com.rccl.middleware.saviynt.api.responses.GenericSaviyntResponse;
+import com.rccl.middleware.vds.responses.GenericVDSResponse;
 import com.typesafe.config.ConfigFactory;
 import org.apache.commons.lang3.StringUtils;
 
@@ -94,6 +95,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     
     private final GuestAuthenticationService guestAuthenticationService;
     
+    private final GuestAccountsVDSHelper vdsHelper;
+    
     @Inject
     public GuestAccountServiceImpl(AccountCreatedConfirmationEmail accountCreatedConfirmationEmail,
                                    EmailUpdatedConfirmationEmail emailUpdatedConfirmationEmail,
@@ -102,9 +105,11 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                    PersistentEntityRegistry persistentEntityRegistry,
                                    GuestProfilesService guestProfilesService,
                                    GuestProfileOptinService guestProfileOptinService,
-                                   GuestAuthenticationService guestAuthenticationService) {
+                                   GuestAuthenticationService guestAuthenticationService,
+                                   GuestAccountsVDSHelper vdsHelper) {
         
         this.saviyntService = saviyntService;
+        this.vdsHelper = vdsHelper;
         
         this.guestProfilesService = guestProfilesService;
         this.guestProfileOptinService = guestProfileOptinService;
@@ -165,46 +170,57 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         persistentEntityRegistry.refFor(GuestAccountEntity.class, guest.getEmail())
                                 .ask(new GuestAccountCommand.CreateGuest(Mapper.mapVdsIdWithGuest(vdsId, guest)));
                         
-                        if ("web".equals(guest.getHeader().getChannel())) {
-                            ObjectNode objNode = OBJECT_MAPPER.createObjectNode();
-                            objNode.put("vdsId", vdsId);
-                            
-                            // Send the account created confirmation email.
-                            // TODO: Re-enable this logic and unit tests once the Email Communication story
-                            // TODO: is re-approved.
-                            // accountCreatedConfirmationEmail.send(guest);
-                            
-                            return CompletableFuture.completedFuture(
-                                    Pair.create(ResponseHeader.OK.withStatus(201), ResponseBody
-                                            .<JsonNode>builder()
-                                            .status(201)
-                                            .payload(objNode)
-                                            .build()));
+                        // if WebShopper ID is present, invoke VDS API to immediately flag isMigrated to true
+                        // instead of waiting for async IAM process.
+                        CompletionStage<GenericVDSResponse> vdsService;
+                        if (StringUtils.isNoneBlank(saviyntGuest.getWebshopperId())) {
+                            vdsService = vdsHelper.invokeVDSAddVirtualIDService(saviyntGuest.getWebshopperId(), vdsId);
                         } else {
-                            String appKey = requestHeader.getHeader(APPKEY_HEADER).orElse(DEFAULT_APP_KEY);
-                            // automatically authenticate user and include vdsId in the response.
-                            return guestAuthenticationService.authenticateUser()
-                                    .handleRequestHeader(rh -> rh.withHeader(APPKEY_HEADER, appKey))
-                                    .invoke(AccountCredentials.builder()
-                                            .header(guest.getHeader())
-                                            .username(guest.getEmail())
-                                            .password(guest.getPassword())
-                                            .build())
-                                    .exceptionally(throwable -> {
-                                        LOGGER.error("User Authentication failed for email {}.",
-                                                guest.getEmail(), throwable);
-                                        throw new MiddlewareTransportException(TransportErrorCode.fromHttp(401),
-                                                throwable.getMessage(), SIGN_IN_ERROR);
-                                    })
-                                    .thenApply(authResponse -> {
-                                        // Send the account created confirmation email.
-                                        // TODO: Re-enable this logic and unit tests once the Email
-                                        // TODO: Communication story is re-approved.
-                                        // accountCreatedConfirmationEmail.send(guest);
-                                        
-                                        return Pair.create(ResponseHeader.OK.withStatus(201), authResponse);
-                                    });
+                            vdsService = CompletableFuture.completedFuture(null);
                         }
+                        
+                        return vdsService.thenCompose(genericVDSResponse -> {
+                            if ("web".equals(guest.getHeader().getChannel())) {
+                                ObjectNode objNode = OBJECT_MAPPER.createObjectNode();
+                                objNode.put("vdsId", vdsId);
+                                
+                                // Send the account created confirmation email.
+                                // TODO: Re-enable this logic and unit tests once the Email Communication story
+                                // TODO: is re-approved.
+                                // accountCreatedConfirmationEmail.send(guest);
+                                
+                                return CompletableFuture.completedFuture(
+                                        Pair.create(ResponseHeader.OK.withStatus(201), ResponseBody
+                                                .<JsonNode>builder()
+                                                .status(201)
+                                                .payload(objNode)
+                                                .build()));
+                            } else {
+                                String appKey = requestHeader.getHeader(APPKEY_HEADER).orElse(DEFAULT_APP_KEY);
+                                // automatically authenticate user and include vdsId in the response.
+                                return guestAuthenticationService.authenticateUser()
+                                        .handleRequestHeader(rh -> rh.withHeader(APPKEY_HEADER, appKey))
+                                        .invoke(AccountCredentials.builder()
+                                                .header(guest.getHeader())
+                                                .username(guest.getEmail())
+                                                .password(guest.getPassword())
+                                                .build())
+                                        .exceptionally(throwable -> {
+                                            LOGGER.error("User Authentication failed for email {}.",
+                                                    guest.getEmail(), throwable);
+                                            throw new MiddlewareTransportException(TransportErrorCode.fromHttp(401),
+                                                    throwable.getMessage(), SIGN_IN_ERROR);
+                                        })
+                                        .thenApply(authResponse -> {
+                                            // Send the account created confirmation email.
+                                            // TODO: Re-enable this logic and unit tests once the Email
+                                            // TODO: Communication story is re-approved.
+                                            // accountCreatedConfirmationEmail.send(guest);
+                                            
+                                            return Pair.create(ResponseHeader.OK.withStatus(201), authResponse);
+                                        });
+                            }
+                        });
                     });
         };
     }
@@ -505,7 +521,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         Throwable cause = throwable.getCause();
                         if (cause instanceof ConnectException
                                 || cause instanceof SaviyntExceptionFactory.SaviyntEnvironmentException) {
-                            throw new MiddlewareTransportException(TransportErrorCode.InternalServerError,
+                            throw new MiddlewareTransportException(TransportErrorCode.ServiceUnavailable,
                                     throwable.getMessage(), UNKNOWN_ERROR);
                         }
                         
@@ -554,21 +570,15 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                         if (cause instanceof ConnectException || cause
                                                 instanceof SaviyntExceptionFactory.SaviyntEnvironmentException) {
                                             throw new MiddlewareTransportException(TransportErrorCode
-                                                    .InternalServerError, throwable.getMessage(), UNKNOWN_ERROR);
-                                        }
-                                        
-                                        if (cause instanceof SaviyntExceptionFactory.NoSuchGuestException) {
+                                                    .ServiceUnavailable, throwable.getMessage(), UNKNOWN_ERROR);
+                                        } else if (cause instanceof SaviyntExceptionFactory.NoSuchGuestException) {
                                             throw new GuestNotFoundException();
-                                        }
-                                        
-                                        if (cause instanceof SaviyntExceptionFactory.InvalidPasswordFormatException) {
+                                        } else if (cause instanceof
+                                                SaviyntExceptionFactory.InvalidPasswordFormatException) {
                                             throw new InvalidPasswordException();
-                                        }
-                                        
-                                        if (cause instanceof SaviyntExceptionFactory.PasswordReuseException) {
+                                        } else if (cause instanceof SaviyntExceptionFactory.PasswordReuseException) {
                                             throw new InvalidPasswordException(InvalidPasswordException.REUSE_ERROR);
                                         }
-                                        
                                         throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500),
                                                 throwable.getCause().getMessage(), UNKNOWN_ERROR);
                                     });
@@ -608,10 +618,10 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         
                         LOGGER.error("Error encountered while validating account status for given = {}",
                                 email, throwable);
-    
+                        
                         if (cause instanceof ConnectException
                                 || cause instanceof SaviyntExceptionFactory.SaviyntEnvironmentException) {
-                            throw new MiddlewareTransportException(TransportErrorCode.InternalServerError,
+                            throw new MiddlewareTransportException(TransportErrorCode.ServiceUnavailable,
                                     throwable.getMessage(), UNKNOWN_ERROR);
                         }
                         

@@ -13,4 +13,6 @@ public class CreateAccountErrorCodeContants {
     public static final String MULTIPLE_BACKEND_ERROR = "GA-0104";
     
     public static final String SIGN_IN_ERROR = "GA-0105";
+    
+    public static final String VDS_RECORD_MIGRATED = "GA-0106";
 }
