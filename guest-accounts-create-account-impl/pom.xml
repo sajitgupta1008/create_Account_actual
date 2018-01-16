@@ -105,6 +105,11 @@
 
     <dependency>
       <groupId>com.rccl.middleware</groupId>
+      <artifactId>guest-accounts-vds</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.rccl.middleware</groupId>
       <artifactId>guest-accounts-profiles-api</artifactId>
     </dependency>
 

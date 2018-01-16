@@ -9,6 +9,7 @@ import com.rccl.middleware.guest.impl.accounts.GuestAccountServiceImpl;
 import com.rccl.middleware.guest.optin.GuestProfileOptinService;
 import com.rccl.middleware.guestprofiles.GuestProfilesService;
 import com.rccl.middleware.saviynt.api.SaviyntService;
+import com.rccl.middleware.vds.VDSService;
 
 public class GuestAccountModule extends AbstractModule implements ServiceGuiceSupport {
     
@@ -17,6 +18,7 @@ public class GuestAccountModule extends AbstractModule implements ServiceGuiceSu
         bindService(GuestAccountService.class, GuestAccountServiceImpl.class);
         bindClient(SaviyntService.class);
         bindClient(AemEmailService.class);
+        bindClient(VDSService.class);
         bindClient(GuestProfilesService.class);
         bindClient(GuestProfileOptinService.class);
         bindClient(GuestAuthenticationService.class);
