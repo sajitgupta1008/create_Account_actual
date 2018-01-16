@@ -56,6 +56,7 @@
     <middleware.aem.version>1.0.0-SNAPSHOT</middleware.aem.version>
     <middleware.common.version>1.20.1</middleware.common.version>
     <middleware.saviynt.version>1.0.0-SNAPSHOT</middleware.saviynt.version>
+    <vds.version>1.0.0-SNAPSHOT</vds.version>
     <middleware.guestprofiles.version>1.1.0-SNAPSHOT</middleware.guestprofiles.version>
     <middleware.optins.version>1.1.0-SNAPSHOT</middleware.optins.version>
     <middleware.authentication.version>1.1.0-SNAPSHOT</middleware.authentication.version>
@@ -155,11 +156,12 @@
         <version>${lagom.version}</version>
         <configuration>
           <unmanagedServices>
-            <aem-email>http://dev1.api.rccl.com</aem-email>
-            <saviynt>http://dev1.api.rccl.com</saviynt>
-            <guest_accounts_profiles>http://dev1.api.rccl.com/v1</guest_accounts_profiles>
-            <guest_accounts_profile_optins>http://dev1.api.rccl.com/v1</guest_accounts_profile_optins>
-            <guest_accounts_authentication>http://dev1.api.rccl.com/v1</guest_accounts_authentication>
+            <aem-email>https://dev1-int.api.rccl.com</aem-email>
+            <saviynt>https://dev1-int.api.rccl.com</saviynt>
+            <guest_accounts_profiles>https://dev1-int.api.rccl.com/v1</guest_accounts_profiles>
+            <guest_accounts_profile_optins>https://dev1-int.api.rccl.com/v1</guest_accounts_profile_optins>
+            <guest_accounts_authentication>https://dev1-int.api.rccl.com/v1</guest_accounts_authentication>
+            <guest_accounts_vds>https://dev1-int.api.rccl.com</guest_accounts_vds>
           </unmanagedServices>
           <kafkaEnabled>false</kafkaEnabled>
           <cassandraEnabled>false</cassandraEnabled>
@@ -567,6 +569,12 @@
         <groupId>com.rccl.middleware</groupId>
         <artifactId>guest-accounts-saviynt</artifactId>
         <version>${middleware.saviynt.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.rccl.middleware</groupId>
+        <artifactId>guest-accounts-vds</artifactId>
+        <version>${vds.version}</version>
       </dependency>
 
       <dependency>
