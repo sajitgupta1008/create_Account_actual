@@ -8,15 +8,19 @@ import com.rccl.middleware.guest.accounts.exceptions.ExistingVDSRecordException;
 import com.rccl.middleware.vds.VDSService;
 import com.rccl.middleware.vds.exceptions.VDSExceptionFactory;
 import com.rccl.middleware.vds.requests.VDSVirtualID;
-import com.rccl.middleware.vds.requests.VDSVirtualIDAttributes;
+import com.rccl.middleware.vds.requests.VDSVirtualIDMod;
 import com.rccl.middleware.vds.requests.VDSVirtualIDParameters;
 import com.rccl.middleware.vds.responses.GenericVDSResponse;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.inject.Inject;
 import java.net.ConnectException;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import static com.rccl.middleware.guest.accounts.exceptions.CreateAccountErrorCodeContants.UNKNOWN_ERROR;
@@ -46,9 +50,10 @@ public class GuestAccountsVDSHelper {
     protected CompletionStage<GenericVDSResponse> invokeVDSAddVirtualIDService(String webshopperId, String vdsId) {
         LOGGER.debug("Invoking VDS Virtual ID to flag isMigrated for VDS ID {} and WebShopper ID {} to true.",
                 vdsId, webshopperId);
-        
-        return vdsService.addVDSVirtualId()
-                .invoke(this.createVDSRequestPayload(webshopperId, vdsId))
+        final String vdsFilterString = StringUtils.replace("vdsid={},ou=shopper,dc=rccl,dc=com",
+                "{}", webshopperId);
+        return vdsService.addVDSVirtualId(vdsFilterString)
+                .invoke(this.createVDSRequestPayload(vdsId))
                 .exceptionally(throwable -> {
                     LOGGER.error("An error occurred when invoking VDS Virtual ID service.", throwable);
                     Throwable cause = throwable.getCause();
@@ -67,23 +72,30 @@ public class GuestAccountsVDSHelper {
     /**
      * Generates {@link VDSVirtualID} payload for VDS API addVDSVirtualID service call.
      *
-     * @param webshopperId the account WebShopper from the service request payload.
-     * @param vdsId        the created account's VDS ID.
+     * @param vdsId the created account's VDS ID.
      * @return {@link VDSVirtualID}
      */
-    private VDSVirtualID createVDSRequestPayload(String webshopperId, String vdsId) {
+    private VDSVirtualID createVDSRequestPayload(String vdsId) {
+        List<VDSVirtualIDMod> mods = new ArrayList<>();
+        mods.add(VDSVirtualIDMod.builder().attribute("ismigrated").type("ADD")
+                .values(Collections.singletonList("True"))
+                .build());
+        
+        mods.add(VDSVirtualIDMod.builder().attribute("virtualdirectoryservicesid").type("ADD")
+                .values(Collections.singletonList(vdsId))
+                .build());
+        
+        mods.add(VDSVirtualIDMod.builder().attribute("creationuserid").type("ADD")
+                .values(Collections.singletonList("Excalibur_User"))
+                .build());
+        
+        mods.add(VDSVirtualIDMod.builder().attribute("creationdtm").type("ADD")
+                .values(Collections.singletonList(ZonedDateTime.now(ZoneOffset.UTC)
+                        .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.S"))))
+                .build());
+        
         return VDSVirtualID.builder()
-                .parameters(VDSVirtualIDParameters.builder()
-                        .ldapSearch(String.format("vdsid=%s,ou=shopper_virtualid,o=webshopper", webshopperId))
-                        .attributes(VDSVirtualIDAttributes.builder()
-                                .isMigrated("True")
-                                .shopperIdMain(webshopperId)
-                                .shopperIdMinor(webshopperId)
-                                .vdsId(vdsId)
-                                .creationTimestamp(ZonedDateTime.now(ZoneOffset.UTC)
-                                        .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.S")))
-                                .build())
-                        .build())
+                .parameters(VDSVirtualIDParameters.builder().vdsVirtualIDMods(mods).build())
                 .build();
     }
 }
