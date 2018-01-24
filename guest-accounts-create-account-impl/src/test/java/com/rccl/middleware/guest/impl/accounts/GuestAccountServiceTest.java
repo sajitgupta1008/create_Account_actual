@@ -25,6 +25,8 @@ import com.rccl.middleware.guestprofiles.GuestProfilesService;
 import com.rccl.middleware.saviynt.api.SaviyntService;
 import com.rccl.middleware.saviynt.api.SaviyntServiceImplStub;
 import com.rccl.middleware.saviynt.api.exceptions.SaviyntExceptionFactory;
+import com.rccl.middleware.vds.VDSService;
+import com.rccl.middleware.vds.VDSServiceStub;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -58,6 +60,7 @@ public class GuestAccountServiceTest {
                 .withCassandra(true)
                 .configureBuilder(builder -> builder.overrides(
                         bind(SaviyntService.class).to(SaviyntServiceImplStub.class),
+                        bind(VDSService.class).to(VDSServiceStub.class),
                         bind(GuestAuthenticationService.class).to(GuestAuthenticationServiceStub.class),
                         bind(GuestAccountService.class).to(GuestAccountServiceImpl.class),
                         bind(GuestProfileOptinService.class).to(GuestProfileOptinsStub.class),
