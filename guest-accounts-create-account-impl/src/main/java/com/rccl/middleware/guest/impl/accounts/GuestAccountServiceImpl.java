@@ -185,9 +185,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                 objNode.put("vdsId", vdsId);
                                 
                                 // Send the account created confirmation email.
-                                // TODO: Re-enable this logic and unit tests once the Email Communication story
-                                // TODO: is re-approved.
-                                // accountCreatedConfirmationEmail.send(guest);
+                                accountCreatedConfirmationEmail.send(guest);
                                 
                                 return CompletableFuture.completedFuture(
                                         Pair.create(ResponseHeader.OK.withStatus(201), ResponseBody
@@ -213,9 +211,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                         })
                                         .thenApply(authResponse -> {
                                             // Send the account created confirmation email.
-                                            // TODO: Re-enable this logic and unit tests once the Email
-                                            // TODO: Communication story is re-approved.
-                                            // accountCreatedConfirmationEmail.send(guest);
+                                            accountCreatedConfirmationEmail.send(guest);
                                             
                                             return Pair.create(ResponseHeader.OK.withStatus(201), authResponse);
                                         });
@@ -439,9 +435,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                         // Check if the email was updated. If so, send the notification.
                                         if (StringUtils.isNoneBlank(originalEmail, updatedEmail)
                                                 && !originalEmail.equalsIgnoreCase(updatedEmail)) {
-                                            // TODO: Re-enable this logic and unit tests once the
-                                            // TODO: Email Communication story is re-approved.
-                                            // emailUpdatedConfirmationEmail.send(enrichedGuest);
+                                            emailUpdatedConfirmationEmail.send(enrichedGuest);
                                             emailUpdated = true;
                                         }
                                         
@@ -463,11 +457,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                                 firstName = accountInformation.getGuest().getFirstName();
                                             }
                                             
-                                            // TODO: Re-enable this logic and unit tests once the
-                                            // TODO: Email Communication story is re-approved.
-                                            // passwordUpdatedConfirmationEmail.send(email,
-                                            //        firstName,
-                                            //        enrichedGuest.getHeader());
+                                            passwordUpdatedConfirmationEmail.send(email, firstName,
+                                                    enrichedGuest.getHeader());
                                         }
                                     });
                         }

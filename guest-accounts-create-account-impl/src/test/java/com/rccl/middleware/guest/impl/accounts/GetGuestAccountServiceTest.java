@@ -32,7 +32,7 @@ public class GetGuestAccountServiceTest {
     private static GuestAccountService guestAccountService;
     
     @BeforeClass
-    public static void setUp() {
+    public static void beforeClass() {
         final ServiceTest.Setup setup = defaultSetup()
                 .configureBuilder(builder -> builder.overrides(
                         bind(SaviyntService.class).to(SaviyntServiceImplStub.class),
@@ -46,7 +46,7 @@ public class GetGuestAccountServiceTest {
     }
     
     @AfterClass
-    public static void tearDown() {
+    public static void afterClass() {
         if (testServer != null) {
             testServer.stop();
             testServer = null;

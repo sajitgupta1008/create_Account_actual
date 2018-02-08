@@ -7,9 +7,9 @@ import com.rccl.middleware.common.logging.RcclLoggerFactory;
 import com.rccl.middleware.guest.accounts.exceptions.ExistingVDSRecordException;
 import com.rccl.middleware.vds.VDSService;
 import com.rccl.middleware.vds.exceptions.VDSExceptionFactory;
-import com.rccl.middleware.vds.requests.VDSVirtualID;
-import com.rccl.middleware.vds.requests.VDSVirtualIDMod;
-import com.rccl.middleware.vds.requests.VDSVirtualIDParameters;
+import com.rccl.middleware.vds.requests.PatchVDSVirtualID;
+import com.rccl.middleware.vds.requests.PatchVDSVirtualIDMod;
+import com.rccl.middleware.vds.requests.PatchVDSVirtualIDParameters;
 import com.rccl.middleware.vds.responses.GenericVDSResponse;
 import org.apache.commons.lang3.StringUtils;
 
@@ -52,7 +52,7 @@ public class GuestAccountsVDSHelper {
                 vdsId, webshopperId);
         final String vdsFilterString = StringUtils.replace("vdsid={},ou=shopper,dc=rccl,dc=com",
                 "{}", webshopperId);
-        return vdsService.addVDSVirtualId(vdsFilterString)
+        return vdsService.patchVDSVirtualId(vdsFilterString)
                 .invoke(this.createVDSRequestPayload(vdsId))
                 .exceptionally(throwable -> {
                     LOGGER.error("An error occurred when invoking VDS Virtual ID service.", throwable);
@@ -70,32 +70,32 @@ public class GuestAccountsVDSHelper {
     }
     
     /**
-     * Generates {@link VDSVirtualID} payload for VDS API addVDSVirtualID service call.
+     * Generates {@link PatchVDSVirtualID} payload for VDS API addVDSVirtualID service call.
      *
      * @param vdsId the created account's VDS ID.
-     * @return {@link VDSVirtualID}
+     * @return {@link PatchVDSVirtualID}
      */
-    private VDSVirtualID createVDSRequestPayload(String vdsId) {
-        List<VDSVirtualIDMod> mods = new ArrayList<>();
-        mods.add(VDSVirtualIDMod.builder().attribute("ismigrated").type("ADD")
+    private PatchVDSVirtualID createVDSRequestPayload(String vdsId) {
+        List<PatchVDSVirtualIDMod> mods = new ArrayList<>();
+        mods.add(PatchVDSVirtualIDMod.builder().attribute("ismigrated").type("ADD")
                 .values(Collections.singletonList("True"))
                 .build());
         
-        mods.add(VDSVirtualIDMod.builder().attribute("virtualdirectoryservicesid").type("ADD")
+        mods.add(PatchVDSVirtualIDMod.builder().attribute("virtualdirectoryservicesid").type("ADD")
                 .values(Collections.singletonList(vdsId))
                 .build());
         
-        mods.add(VDSVirtualIDMod.builder().attribute("creationuserid").type("ADD")
+        mods.add(PatchVDSVirtualIDMod.builder().attribute("creationuserid").type("ADD")
                 .values(Collections.singletonList("Excalibur_User"))
                 .build());
         
-        mods.add(VDSVirtualIDMod.builder().attribute("creationdtm").type("ADD")
+        mods.add(PatchVDSVirtualIDMod.builder().attribute("creationdtm").type("ADD")
                 .values(Collections.singletonList(ZonedDateTime.now(ZoneOffset.UTC)
                         .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.S"))))
                 .build());
         
-        return VDSVirtualID.builder()
-                .parameters(VDSVirtualIDParameters.builder().vdsVirtualIDMods(mods).build())
+        return PatchVDSVirtualID.builder()
+                .parameters(PatchVDSVirtualIDParameters.builder().vdsVirtualIDMods(mods).build())
                 .build();
     }
 }
