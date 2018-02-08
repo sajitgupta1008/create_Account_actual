@@ -21,7 +21,7 @@
 
     <logger name="com.lightbend.lagom" level="WARN"/>
 
-    <logger name="org.apache.cassandra" level="INFO"/>
+    <logger name="org.apache.cassandra" level="ERROR"/>
     <logger name="com.datastax.driver" level="ERROR"/>
 
     <logger name="com.datastax.driver.core.ControlConnection" level="WARN"/>
