@@ -8,7 +8,7 @@
   <parent>
     <groupId>com.rccl.middleware</groupId>
     <artifactId>guest-accounts-create-account</artifactId>
-    <version>1.1.2-SNAPSHOT</version>
+    <version>1.1.3-SNAPSHOT</version>
   </parent>
 
   <artifactId>guest-accounts-create-account-impl</artifactId>
