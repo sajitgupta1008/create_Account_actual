@@ -77,6 +77,10 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     
     private static final String APPKEY_HEADER = "AppKey";
     
+    private static final String ACCEPT_LANGUAGE_HEADER = "Accept-Language";
+    
+    private static final String DEFAULT_ACCEPT_LANGUAGE_HEADER = "en";
+    
     private static final String DEFAULT_APP_KEY = ConfigFactory.load().getString("default.apigee.appkey");
     
     private final AccountCreatedConfirmationEmail accountCreatedConfirmationEmail;
@@ -130,6 +134,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
             MiddlewareValidation.validateWithGroups(guest, CONSTRAINT_VIOLATION, Guest.CreateChecks.class);
             
             final SaviyntGuest saviyntGuest = Mapper.mapGuestToSaviyntGuest(guest, true).build();
+            
+            String languageCode = requestHeader.getHeader(ACCEPT_LANGUAGE_HEADER).orElse(DEFAULT_ACCEPT_LANGUAGE_HEADER);
             
             return saviyntService
                     .createGuestAccount()
@@ -185,7 +191,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                 objNode.put("vdsId", vdsId);
                                 
                                 // Send the account created confirmation email.
-                                accountCreatedConfirmationEmail.send(guest);
+                                accountCreatedConfirmationEmail.send(guest, languageCode);
                                 
                                 return CompletableFuture.completedFuture(
                                         Pair.create(ResponseHeader.OK.withStatus(201), ResponseBody
@@ -211,7 +217,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                         })
                                         .thenApply(authResponse -> {
                                             // Send the account created confirmation email.
-                                            accountCreatedConfirmationEmail.send(guest);
+                                            accountCreatedConfirmationEmail.send(guest, languageCode);
                                             
                                             return Pair.create(ResponseHeader.OK.withStatus(201), authResponse);
                                         });
@@ -289,6 +295,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                     CONSTRAINT_VIOLATION, PostalOptins.DefaultChecks.class);
             
             String appKey = requestHeader.getHeader(APPKEY_HEADER).orElse(DEFAULT_APP_KEY);
+            String languageCode = requestHeader.getHeader(ACCEPT_LANGUAGE_HEADER).orElse(DEFAULT_ACCEPT_LANGUAGE_HEADER);
             
             CompletionStage<NotUsed> updateAccountService = CompletableFuture.completedFuture(NotUsed.getInstance());
             Guest.GuestBuilder guestBuilder = Mapper.mapEnrichedGuestToGuest(enrichedGuest);
@@ -435,7 +442,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                         // Check if the email was updated. If so, send the notification.
                                         if (StringUtils.isNoneBlank(originalEmail, updatedEmail)
                                                 && !originalEmail.equalsIgnoreCase(updatedEmail)) {
-                                            emailUpdatedConfirmationEmail.send(enrichedGuest);
+                                            emailUpdatedConfirmationEmail.send(enrichedGuest, languageCode);
                                             emailUpdated = true;
                                         }
                                         
@@ -458,7 +465,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                             }
                                             
                                             passwordUpdatedConfirmationEmail.send(email, firstName,
-                                                    enrichedGuest.getHeader());
+                                                    enrichedGuest.getHeader(), languageCode);
                                         }
                                     });
                         }

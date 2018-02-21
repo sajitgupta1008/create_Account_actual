@@ -1,6 +1,7 @@
 package com.rccl.middleware.guest.impl.accounts.email;
 
 import ch.qos.logback.classic.Logger;
+import com.lightbend.lagom.javadsl.api.transport.RequestHeader;
 import com.lightbend.lagom.javadsl.api.transport.TransportErrorCode;
 import com.lightbend.lagom.javadsl.persistence.PersistentEntityRegistry;
 import com.rccl.middleware.aem.api.email.AemEmailService;
@@ -39,15 +40,15 @@ public class EmailUpdatedConfirmationEmail {
         this.saviyntService = saviyntService;
     }
     
-    public void send(EnrichedGuest eg) {
+    public void send(EnrichedGuest eg, String languageCode) {
         if (eg == null) {
             throw new IllegalArgumentException("The EnrichedGuest argument is required.");
         }
-    
+        
         LOGGER.info("#send - Attempting to send the email to: " + eg.getEmail());
         
         this.getGuestInformation(eg)
-                .thenAccept(accountInformation -> this.getEmailContent(eg, accountInformation.getGuest().getFirstName())
+                .thenAccept(accountInformation -> this.getEmailContent(eg, accountInformation.getGuest().getFirstName(), languageCode)
                         .thenAccept(htmlEmailTemplate -> {
                             String content = htmlEmailTemplate.getHtmlMessage();
                             String sender = htmlEmailTemplate.getSender();
@@ -83,7 +84,7 @@ public class EmailUpdatedConfirmationEmail {
                 });
     }
     
-    private CompletionStage<HtmlEmailTemplate> getEmailContent(EnrichedGuest eg, String firstName) {
+    private CompletionStage<HtmlEmailTemplate> getEmailContent(EnrichedGuest eg, String firstName, String languageCode) {
         if (eg.getHeader() == null) {
             throw new IllegalArgumentException("The header property in the EnrichedGuest must not be null.");
         }
@@ -99,12 +100,16 @@ public class EmailUpdatedConfirmationEmail {
             throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), throwable);
         };
         
+        Function<RequestHeader, RequestHeader> acceptLanguageHeader = rh -> rh.withHeader("Accept-Language", languageCode);
+        
         if ('C' == brand || 'c' == brand) {
             return aemEmailService.getCelebrityEmailUpdatedConfirmationEmailContent(firstName)
+                    .handleRequestHeader(acceptLanguageHeader)
                     .invoke()
                     .exceptionally(exceptionally);
         } else if ('R' == brand || 'r' == brand) {
             return aemEmailService.getRoyalEmailUpdatedConfirmationEmailContent(firstName)
+                    .handleRequestHeader(acceptLanguageHeader)
                     .invoke()
                     .exceptionally(exceptionally);
         }
