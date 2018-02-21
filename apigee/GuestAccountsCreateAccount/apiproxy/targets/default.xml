@@ -1,30 +1,30 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <TargetEndpoint name="default">
-    <Description/>
-    <FaultRules/>
-    <PreFlow name="PreFlow">
-        <Request>
-            <Step>
-                <Name>ExtractVariables.ExtractPathIntoVariable</Name>
-            </Step>
-        </Request>
-        <Response/>
-    </PreFlow>
-    <PostFlow name="PostFlow">
-        <Request/>
-        <Response/>
-    </PostFlow>
-    <Flows/>
-    <HTTPTargetConnection>
-        <SSLInfo>
-            <Enabled>true</Enabled>
-        </SSLInfo>
-        <LoadBalancer>
-            <Server name="mesos-secure"/>
-            <Server name="mesos">
-                <IsFallback>true</IsFallback>
-            </Server>
-        </LoadBalancer>
-        <Path>/guest-accounts-create-account/v1/{path}</Path>
-    </HTTPTargetConnection>
+  <Description/>
+  <FaultRules/>
+  <PreFlow name="PreFlow">
+    <Request>
+      <Step>
+        <Name>ExtractVariables.ExtractPathIntoVariable</Name>
+      </Step>
+    </Request>
+    <Response/>
+  </PreFlow>
+  <PostFlow name="PostFlow">
+    <Request/>
+    <Response/>
+  </PostFlow>
+  <Flows/>
+  <HTTPTargetConnection>
+    <SSLInfo>
+      <Enabled>true</Enabled>
+    </SSLInfo>
+    <LoadBalancer>
+      <Server name="mesos-secure"/>
+      <Server name="mesos">
+        <IsFallback>true</IsFallback>
+      </Server>
+    </LoadBalancer>
+    <Path>/guest-accounts-create-account/v1/{path}</Path>
+  </HTTPTargetConnection>
 </TargetEndpoint>
