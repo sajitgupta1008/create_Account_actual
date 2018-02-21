@@ -135,7 +135,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
             
             final SaviyntGuest saviyntGuest = Mapper.mapGuestToSaviyntGuest(guest, true).build();
             
-            String languageCode = requestHeader.getHeader(ACCEPT_LANGUAGE_HEADER).orElse(DEFAULT_ACCEPT_LANGUAGE_HEADER);
+            String languageCode = requestHeader.getHeader(ACCEPT_LANGUAGE_HEADER)
+                    .orElse(DEFAULT_ACCEPT_LANGUAGE_HEADER);
             
             return saviyntService
                     .createGuestAccount()
@@ -295,7 +296,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                     CONSTRAINT_VIOLATION, PostalOptins.DefaultChecks.class);
             
             String appKey = requestHeader.getHeader(APPKEY_HEADER).orElse(DEFAULT_APP_KEY);
-            String languageCode = requestHeader.getHeader(ACCEPT_LANGUAGE_HEADER).orElse(DEFAULT_ACCEPT_LANGUAGE_HEADER);
+            String languageCode = requestHeader.getHeader(ACCEPT_LANGUAGE_HEADER)
+                    .orElse(DEFAULT_ACCEPT_LANGUAGE_HEADER);
             
             CompletionStage<NotUsed> updateAccountService = CompletableFuture.completedFuture(NotUsed.getInstance());
             Guest.GuestBuilder guestBuilder = Mapper.mapEnrichedGuestToGuest(enrichedGuest);

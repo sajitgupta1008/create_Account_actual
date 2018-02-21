@@ -48,7 +48,8 @@ public class EmailUpdatedConfirmationEmail {
         LOGGER.info("#send - Attempting to send the email to: " + eg.getEmail());
         
         this.getGuestInformation(eg)
-                .thenAccept(accountInformation -> this.getEmailContent(eg, accountInformation.getGuest().getFirstName(), languageCode)
+                .thenAccept(accountInformation -> this.getEmailContent(eg, accountInformation.getGuest()
+                        .getFirstName(), languageCode)
                         .thenAccept(htmlEmailTemplate -> {
                             String content = htmlEmailTemplate.getHtmlMessage();
                             String sender = htmlEmailTemplate.getSender();
@@ -84,7 +85,8 @@ public class EmailUpdatedConfirmationEmail {
                 });
     }
     
-    private CompletionStage<HtmlEmailTemplate> getEmailContent(EnrichedGuest eg, String firstName, String languageCode) {
+    private CompletionStage<HtmlEmailTemplate> getEmailContent(EnrichedGuest eg, String firstName,
+                                                               String languageCode) {
         if (eg.getHeader() == null) {
             throw new IllegalArgumentException("The header property in the EnrichedGuest must not be null.");
         }
@@ -100,7 +102,8 @@ public class EmailUpdatedConfirmationEmail {
             throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), throwable);
         };
         
-        Function<RequestHeader, RequestHeader> acceptLanguageHeader = rh -> rh.withHeader("Accept-Language", languageCode);
+        Function<RequestHeader, RequestHeader> acceptLanguageHeader = rh ->
+                rh.withHeader("Accept-Language", languageCode);
         
         if ('C' == brand || 'c' == brand) {
             return aemEmailService.getCelebrityEmailUpdatedConfirmationEmailContent(firstName)

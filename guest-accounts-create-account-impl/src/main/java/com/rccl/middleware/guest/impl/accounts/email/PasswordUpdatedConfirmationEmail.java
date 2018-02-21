@@ -66,7 +66,8 @@ public class PasswordUpdatedConfirmationEmail {
             throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), throwable);
         };
         
-        Function<RequestHeader, RequestHeader> acceptLanguageHeader = rh -> rh.withHeader("Accept-Language", languageCode);
+        Function<RequestHeader, RequestHeader> acceptLanguageHeader = rh ->
+                rh.withHeader("Accept-Language", languageCode);
         
         if ('C' == brand || 'c' == brand) {
             return aemEmailService.getCelebrityPasswordUpdatedConfirmationEmailContent(firstName)
