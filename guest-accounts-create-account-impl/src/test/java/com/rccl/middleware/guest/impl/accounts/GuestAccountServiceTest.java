@@ -1,11 +1,14 @@
 package com.rccl.middleware.guest.impl.accounts;
 
+import akka.NotUsed;
+import akka.actor.ActorSystem;
 import akka.japi.Pair;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.lightbend.lagom.javadsl.api.transport.RequestHeader;
 import com.lightbend.lagom.javadsl.api.transport.ResponseHeader;
 import com.lightbend.lagom.javadsl.server.HeaderServiceCall;
 import com.lightbend.lagom.javadsl.testkit.ServiceTest.TestServer;
+import com.rccl.middleware.akka.clustermanager.models.ActorSystemInformation;
 import com.rccl.middleware.common.exceptions.MiddlewareError;
 import com.rccl.middleware.common.header.Header;
 import com.rccl.middleware.common.request.EnvironmentDetails;
@@ -36,6 +39,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 
 import static com.lightbend.lagom.javadsl.testkit.ServiceTest.defaultSetup;
 import static com.lightbend.lagom.javadsl.testkit.ServiceTest.startServer;
@@ -47,6 +51,8 @@ import static org.junit.Assert.assertTrue;
 import static play.inject.Bindings.bind;
 
 public class GuestAccountServiceTest {
+    
+    private static ActorSystem system;
     
     private static volatile TestServer testServer;
     
@@ -70,6 +76,7 @@ public class GuestAccountServiceTest {
         
         service = testServer.client(GuestAccountService.class);
         createAccount = (HeaderServiceCall<Guest, ResponseBody<JsonNode>>) service.createAccount();
+        system = ActorSystem.create();
     }
     
     @AfterClass
@@ -82,6 +89,9 @@ public class GuestAccountServiceTest {
         if (service != null) {
             service = null;
         }
+        
+        system.terminate();
+        system = null;
     }
     
     @Test
@@ -263,5 +273,21 @@ public class GuestAccountServiceTest {
         builder.securityQuestions(Arrays.asList(sq1, sq2));
         
         return builder;
+    }
+    
+    @Test
+    public void testAkkaHealthCheck() throws Exception {
+        HeaderServiceCall<NotUsed, ResponseBody<ActorSystemInformation>> healthCheckService =
+                (HeaderServiceCall<NotUsed, ResponseBody<ActorSystemInformation>>) service.akkaClusterHealthCheck();
+        
+        Pair<ResponseHeader, ResponseBody<ActorSystemInformation>> response = healthCheckService
+                .invokeWithHeaders(RequestHeader.DEFAULT, NotUsed.getInstance())
+                .toCompletableFuture().get(10, TimeUnit.SECONDS);
+        
+        ActorSystemInformation payload = response.second().getPayload();
+        
+        assertNotNull(payload.getActorSystemName());
+        assertNotNull(payload.getSelfAddress());
+        assertFalse(payload.getClusterMembers().isEmpty());
     }
 }
