@@ -40,7 +40,7 @@ public class EmailUpdatedConfirmationEmail {
         this.saviyntService = saviyntService;
     }
     
-    public void send(EnrichedGuest eg, String languageCode) {
+    public void send(EnrichedGuest eg, RequestHeader aemEmailRequestHeader) {
         if (eg == null) {
             throw new IllegalArgumentException("The EnrichedGuest argument is required.");
         }
@@ -49,7 +49,7 @@ public class EmailUpdatedConfirmationEmail {
         
         this.getGuestInformation(eg)
                 .thenAccept(accountInformation -> this.getEmailContent(eg, accountInformation.getGuest()
-                        .getFirstName(), languageCode)
+                        .getFirstName(), aemEmailRequestHeader)
                         .thenAccept(htmlEmailTemplate -> {
                             String content = htmlEmailTemplate.getHtmlMessage();
                             String sender = htmlEmailTemplate.getSender();
@@ -86,7 +86,7 @@ public class EmailUpdatedConfirmationEmail {
     }
     
     private CompletionStage<HtmlEmailTemplate> getEmailContent(EnrichedGuest eg, String firstName,
-                                                               String languageCode) {
+                                                               RequestHeader aemEmailRequestHeader) {
         if (eg.getHeader() == null) {
             throw new IllegalArgumentException("The header property in the EnrichedGuest must not be null.");
         }
@@ -102,17 +102,16 @@ public class EmailUpdatedConfirmationEmail {
             throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), throwable);
         };
         
-        Function<RequestHeader, RequestHeader> acceptLanguageHeader = rh ->
-                rh.withHeader("Accept-Language", languageCode);
+        Function<RequestHeader, RequestHeader> aemEmailServiceHeader = rh -> aemEmailRequestHeader;
         
         if ('C' == brand || 'c' == brand) {
             return aemEmailService.getCelebrityEmailUpdatedConfirmationEmailContent(firstName)
-                    .handleRequestHeader(acceptLanguageHeader)
+                    .handleRequestHeader(aemEmailServiceHeader)
                     .invoke()
                     .exceptionally(exceptionally);
         } else if ('R' == brand || 'r' == brand) {
             return aemEmailService.getRoyalEmailUpdatedConfirmationEmailContent(firstName)
-                    .handleRequestHeader(acceptLanguageHeader)
+                    .handleRequestHeader(aemEmailServiceHeader)
                     .invoke()
                     .exceptionally(exceptionally);
         }

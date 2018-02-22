@@ -24,7 +24,7 @@
       </Response>
       <Condition>request.verb == "OPTIONS"</Condition>
     </Flow>
-    <Flow name="CreateAccount-locale">
+    <Flow name="UpdateAccount-locale">
       <Description/>
       <Request/>
       <Response/>
