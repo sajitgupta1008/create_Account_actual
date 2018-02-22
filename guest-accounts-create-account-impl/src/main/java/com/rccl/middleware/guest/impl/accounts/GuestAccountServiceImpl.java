@@ -192,7 +192,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                 objNode.put("vdsId", vdsId);
                                 
                                 // Send the account created confirmation email.
-                                accountCreatedConfirmationEmail.send(guest);
+                                accountCreatedConfirmationEmail.send(guest, requestHeader);
                                 
                                 return CompletableFuture.completedFuture(
                                         Pair.create(ResponseHeader.OK.withStatus(201), ResponseBody
@@ -218,7 +218,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                         })
                                         .thenApply(authResponse -> {
                                             // Send the account created confirmation email.
-                                            accountCreatedConfirmationEmail.send(guest);
+                                            accountCreatedConfirmationEmail.send(guest, requestHeader);
                                             
                                             return Pair.create(ResponseHeader.OK.withStatus(201), authResponse);
                                         });
@@ -442,7 +442,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                         // Check if the email was updated. If so, send the notification.
                                         if (StringUtils.isNoneBlank(originalEmail, updatedEmail)
                                                 && !originalEmail.equalsIgnoreCase(updatedEmail)) {
-                                            emailUpdatedConfirmationEmail.send(enrichedGuest);
+                                            emailUpdatedConfirmationEmail.send(enrichedGuest, requestHeader);
                                             emailUpdated = true;
                                         }
                                         
@@ -465,7 +465,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                             }
                                             
                                             passwordUpdatedConfirmationEmail.send(email, firstName,
-                                                    enrichedGuest.getHeader());
+                                                    enrichedGuest.getHeader(), requestHeader);
                                         }
                                     });
                         }

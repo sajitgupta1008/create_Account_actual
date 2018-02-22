@@ -1,21 +1,28 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <APIProxy revision="1" name="GuestAccountsCreateAccount">
-    <Basepaths>/guestAccounts</Basepaths>
-    <ConfigurationVersion majorVersion="4" minorVersion="0"/>
-    <Description>The Guest Accounts Create Account service.</Description>
-    <DisplayName>GuestAccountsCreateAccount</DisplayName>
-    <Policies>
-        <Policy>ExtractVariables.ExtractPathIntoVariable</Policy>
-        <Policy>FlowCallout.AddCORSHeaders</Policy>
-    </Policies>
-    <ProxyEndpoints>
-        <ProxyEndpoint>CreateAccount</ProxyEndpoint>
-        <ProxyEndpoint>EmailValidation</ProxyEndpoint>
-        <ProxyEndpoint>GetAccount</ProxyEndpoint>
-        <ProxyEndpoint>UpdateAccount</ProxyEndpoint>
-    </ProxyEndpoints>
-    <TargetEndpoints>
-        <TargetEndpoint>default</TargetEndpoint>
-    </TargetEndpoints>
-    <validate>false</validate>
+  <Basepaths>/guestAccounts</Basepaths>
+  <ConfigurationVersion majorVersion="4" minorVersion="0"/>
+  <Description>The Guest Accounts Create Account service.</Description>
+  <DisplayName>GuestAccountsCreateAccount</DisplayName>
+  <Policies>
+    <Policy>ExtractVariables.ExtractPathIntoVariable</Policy>
+    <Policy>FlowCallout.AddCORSHeaders</Policy>
+    <Policy>FlowCallout.ForgeRockValidateAccessToken</Policy>
+    <Policy>FlowCallout.SetUriPathValuesIntoHeaders</Policy>
+  </Policies>
+  <ProxyEndpoints>
+    <ProxyEndpoint>CreateAccount-locale</ProxyEndpoint>
+    <ProxyEndpoint>CreateAccount</ProxyEndpoint>
+    <ProxyEndpoint>EmailValidation</ProxyEndpoint>
+    <ProxyEndpoint>GetAccount</ProxyEndpoint>
+    <ProxyEndpoint>UpdateAccount-locale</ProxyEndpoint>
+    <ProxyEndpoint>UpdateAccount</ProxyEndpoint>
+  </ProxyEndpoints>
+  <Resources/>
+  <Spec></Spec>
+  <TargetServers/>
+  <TargetEndpoints>
+    <TargetEndpoint>default</TargetEndpoint>
+  </TargetEndpoints>
+  <validate>false</validate>
 </APIProxy>

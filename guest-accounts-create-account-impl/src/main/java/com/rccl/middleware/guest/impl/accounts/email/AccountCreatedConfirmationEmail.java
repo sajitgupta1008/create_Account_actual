@@ -1,6 +1,7 @@
 package com.rccl.middleware.guest.impl.accounts.email;
 
 import ch.qos.logback.classic.Logger;
+import com.lightbend.lagom.javadsl.api.transport.RequestHeader;
 import com.lightbend.lagom.javadsl.api.transport.TransportErrorCode;
 import com.lightbend.lagom.javadsl.persistence.PersistentEntityRegistry;
 import com.rccl.middleware.aem.api.email.AemEmailService;
@@ -29,7 +30,7 @@ public class AccountCreatedConfirmationEmail {
         this.persistentEntityRegistry = persistentEntityRegistry;
     }
     
-    public void send(Guest guest) {
+    public void send(Guest guest, RequestHeader aemEmailRequestHeader) {
         if (guest == null) {
             throw new IllegalArgumentException("The Guest argument is required.");
         }
@@ -37,7 +38,7 @@ public class AccountCreatedConfirmationEmail {
         LOGGER.info("#send - Attempting to send the email to: " + guest.getEmail());
         
         try {
-            this.getEmailContent(guest)
+            this.getEmailContent(guest, aemEmailRequestHeader)
                     .thenAccept(htmlEmailTemplate -> {
                         if (htmlEmailTemplate != null) {
                             String content = htmlEmailTemplate.getHtmlMessage();
@@ -59,7 +60,7 @@ public class AccountCreatedConfirmationEmail {
         }
     }
     
-    private CompletionStage<HtmlEmailTemplate> getEmailContent(Guest guest) {
+    private CompletionStage<HtmlEmailTemplate> getEmailContent(Guest guest, RequestHeader aemEmailRequestHeader) {
         if (guest.getHeader() == null) {
             throw new IllegalArgumentException("The header property in the Guest must not be null.");
         }
@@ -76,12 +77,16 @@ public class AccountCreatedConfirmationEmail {
             throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), throwable);
         };
         
+        Function<RequestHeader, RequestHeader> aemEmailServiceHeader = rh -> aemEmailRequestHeader;
+        
         if ('C' == brand || 'c' == brand) {
             return aemEmailService.getCelebrityAccountCreatedConfirmationEmailContent(firstName)
+                    .handleRequestHeader(aemEmailServiceHeader)
                     .invoke()
                     .exceptionally(exceptionally);
         } else if ('R' == brand || 'r' == brand) {
             return aemEmailService.getRoyalAccountCreatedConfirmationEmailContent(firstName)
+                    .handleRequestHeader(aemEmailServiceHeader)
                     .invoke()
                     .exceptionally(exceptionally);
         }

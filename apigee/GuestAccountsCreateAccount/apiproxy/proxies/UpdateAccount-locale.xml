@@ -1,16 +1,19 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<ProxyEndpoint name="EmailValidation">
+<ProxyEndpoint name="UpdateAccount-locale">
   <Description/>
   <FaultRules/>
   <PreFlow name="PreFlow">
-    <Request/>
+    <Request>
+      <Step>
+        <Name>FlowCallout.SetUriPathValuesIntoHeaders</Name>
+      </Step>
+    </Request>
     <Response/>
   </PreFlow>
   <PostFlow name="PostFlow">
     <Request/>
     <Response/>
   </PostFlow>
-
   <Flows>
     <Flow name="OptionsPreFlight">
       <Request/>
@@ -21,20 +24,23 @@
       </Response>
       <Condition>request.verb == "OPTIONS"</Condition>
     </Flow>
+    <Flow name="UpdateAccount-locale">
+      <Description/>
+      <Request/>
+      <Response/>
+      <Condition>(proxy.pathsuffix MatchesPath "/*/*/*/v1") and (request.verb = "PUT")</Condition>
+    </Flow>
   </Flows>
-
   <HTTPProxyConnection>
-    <BasePath>/v1/guestAccounts/*/validation</BasePath>
+    <BasePath>/*/*/*/v1/guestAccounts/enriched</BasePath>
     <Properties/>
     <VirtualHost>default</VirtualHost>
   </HTTPProxyConnection>
-
   <!-- The OPTIONS request for CORS is routed to a null target so that it immediately
   returns with the requested information. -->
   <RouteRule name="NoRoute">
     <Condition>request.verb == "OPTIONS"</Condition>
   </RouteRule>
-
   <RouteRule name="default">
     <TargetEndpoint>default</TargetEndpoint>
   </RouteRule>
