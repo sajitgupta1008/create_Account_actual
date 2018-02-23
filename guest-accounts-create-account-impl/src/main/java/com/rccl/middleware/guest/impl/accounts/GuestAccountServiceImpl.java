@@ -1,6 +1,7 @@
 package com.rccl.middleware.guest.impl.accounts;
 
 import akka.NotUsed;
+import akka.cluster.MemberStatus;
 import akka.japi.Pair;
 import ch.qos.logback.classic.Logger;
 import com.fasterxml.jackson.annotation.JsonView;
@@ -15,6 +16,8 @@ import com.lightbend.lagom.javadsl.api.transport.TransportErrorCode;
 import com.lightbend.lagom.javadsl.broker.TopicProducer;
 import com.lightbend.lagom.javadsl.persistence.PersistentEntityRegistry;
 import com.lightbend.lagom.javadsl.server.HeaderServiceCall;
+import com.rccl.middleware.akka.clustermanager.AkkaClusterManager;
+import com.rccl.middleware.akka.clustermanager.models.ActorSystemInformation;
 import com.rccl.middleware.common.exceptions.MiddlewareError;
 import com.rccl.middleware.common.exceptions.MiddlewareExceptionMessage;
 import com.rccl.middleware.common.exceptions.MiddlewareTransportException;
@@ -79,6 +82,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     
     private static final String DEFAULT_APP_KEY = ConfigFactory.load().getString("default.apigee.appkey");
     
+    private final AkkaClusterManager akkaClusterManager;
+    
     private final AccountCreatedConfirmationEmail accountCreatedConfirmationEmail;
     
     private final EmailUpdatedConfirmationEmail emailUpdatedConfirmationEmail;
@@ -98,7 +103,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     private final GuestAccountsVDSHelper vdsHelper;
     
     @Inject
-    public GuestAccountServiceImpl(AccountCreatedConfirmationEmail accountCreatedConfirmationEmail,
+    public GuestAccountServiceImpl(AkkaClusterManager akkaClusterManager,
+                                   AccountCreatedConfirmationEmail accountCreatedConfirmationEmail,
                                    EmailUpdatedConfirmationEmail emailUpdatedConfirmationEmail,
                                    PasswordUpdatedConfirmationEmail passwordUpdatedConfirmationEmail,
                                    SaviyntService saviyntService,
@@ -107,6 +113,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                    GuestProfileOptinService guestProfileOptinService,
                                    GuestAuthenticationService guestAuthenticationService,
                                    GuestAccountsVDSHelper vdsHelper) {
+        this.akkaClusterManager = akkaClusterManager;
         
         this.saviyntService = saviyntService;
         this.vdsHelper = vdsHelper;
@@ -185,7 +192,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                 objNode.put("vdsId", vdsId);
                                 
                                 // Send the account created confirmation email.
-                                accountCreatedConfirmationEmail.send(guest);
+                                accountCreatedConfirmationEmail.send(guest, requestHeader);
                                 
                                 return CompletableFuture.completedFuture(
                                         Pair.create(ResponseHeader.OK.withStatus(201), ResponseBody
@@ -211,7 +218,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                         })
                                         .thenApply(authResponse -> {
                                             // Send the account created confirmation email.
-                                            accountCreatedConfirmationEmail.send(guest);
+                                            accountCreatedConfirmationEmail.send(guest, requestHeader);
                                             
                                             return Pair.create(ResponseHeader.OK.withStatus(201), authResponse);
                                         });
@@ -435,7 +442,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                         // Check if the email was updated. If so, send the notification.
                                         if (StringUtils.isNoneBlank(originalEmail, updatedEmail)
                                                 && !originalEmail.equalsIgnoreCase(updatedEmail)) {
-                                            emailUpdatedConfirmationEmail.send(originalEmail, enrichedGuest);
+                                            emailUpdatedConfirmationEmail
+                                                    .send(originalEmail, enrichedGuest, requestHeader);
                                             emailUpdated = true;
                                         }
                                         
@@ -458,7 +466,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                             }
                                             
                                             passwordUpdatedConfirmationEmail.send(email, firstName,
-                                                    enrichedGuest.getHeader());
+                                                    enrichedGuest.getHeader(), requestHeader);
                                         }
                                     });
                         }
@@ -650,6 +658,26 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                 .payload(response.put("status", status))
                                 .build());
                     });
+        };
+    }
+    
+    @Override
+    public HeaderServiceCall<NotUsed, ResponseBody<ActorSystemInformation>> akkaClusterHealthCheck() {
+        return (requestHeader, notUsed) -> {
+            ResponseHeader responseHeader;
+            if (akkaClusterManager.getSelfStatus() == MemberStatus.up()) {
+                LOGGER.info("Health Check - Akka self address {} with status: {}",
+                        akkaClusterManager.getSelfAddress(), akkaClusterManager.getSelfStatus());
+                responseHeader = ResponseHeader.OK;
+            } else {
+                LOGGER.info("Health Check - {} failed or is still trying to join the cluster.",
+                        akkaClusterManager.getSelfAddress());
+                responseHeader = ResponseHeader.OK.withStatus(503);
+            }
+            
+            return CompletableFuture.completedFuture(Pair.create(responseHeader,
+                    ResponseBody.<ActorSystemInformation>builder()
+                            .payload(akkaClusterManager.getActorSystemInformation()).build()));
         };
     }
     

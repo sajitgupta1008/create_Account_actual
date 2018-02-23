@@ -1,6 +1,7 @@
 package com.rccl.middleware.guest.impl.accounts.email;
 
 import ch.qos.logback.classic.Logger;
+import com.lightbend.lagom.javadsl.api.transport.RequestHeader;
 import com.lightbend.lagom.javadsl.api.transport.TransportErrorCode;
 import com.lightbend.lagom.javadsl.persistence.PersistentEntityRegistry;
 import com.rccl.middleware.aem.api.email.AemEmailService;
@@ -44,10 +45,11 @@ public class EmailUpdatedConfirmationEmail {
      * Retrieves Email template from AEM and then publishes the email content JSON as Kafka message, one for
      * old email and another for the new email, for email notification.
      *
-     * @param oldEmail - the original email prior to email update.
-     * @param eg       - the {@link EnrichedGuest} from service request invocation.
+     * @param oldEmail      - the original email prior to email update.
+     * @param eg            - the {@link EnrichedGuest} from service request invocation.
+     * @param requestHeader - the {@link RequestHeader} from service request invocation.
      */
-    public void send(String oldEmail, EnrichedGuest eg) {
+    public void send(String oldEmail, EnrichedGuest eg, RequestHeader requestHeader) {
         if (eg == null) {
             throw new IllegalArgumentException("The EnrichedGuest argument is required.");
         }
@@ -60,7 +62,7 @@ public class EmailUpdatedConfirmationEmail {
         
         this.getGuestInformation(eg)
                 .thenAccept(accountInformation -> this.getEmailContent(eg.getHeader().getBrand(),
-                        accountInformation.getGuest().getFirstName())
+                        accountInformation.getGuest().getFirstName(), requestHeader)
                         .thenAccept(htmlEmailTemplate -> {
                             String content = htmlEmailTemplate.getHtmlMessage();
                             String sender = htmlEmailTemplate.getSender() == null
@@ -101,7 +103,8 @@ public class EmailUpdatedConfirmationEmail {
                 });
     }
     
-    private CompletionStage<HtmlEmailTemplate> getEmailContent(Character brand, String firstName) {
+    private CompletionStage<HtmlEmailTemplate> getEmailContent(Character brand, String firstName,
+                                                               RequestHeader aemEmailRequestHeader) {
         if (brand == null) {
             throw new IllegalArgumentException("The brand header property in the EnrichedGuest must not be null.");
         }
@@ -113,10 +116,12 @@ public class EmailUpdatedConfirmationEmail {
         
         if ('C' == brand || 'c' == brand) {
             return aemEmailService.getCelebrityEmailUpdatedConfirmationEmailContent(firstName)
+                    .handleRequestHeader(rh -> aemEmailRequestHeader)
                     .invoke()
                     .exceptionally(exceptionally);
         } else if ('R' == brand || 'r' == brand) {
             return aemEmailService.getRoyalEmailUpdatedConfirmationEmailContent(firstName)
+                    .handleRequestHeader(rh -> aemEmailRequestHeader)
                     .invoke()
                     .exceptionally(exceptionally);
         }

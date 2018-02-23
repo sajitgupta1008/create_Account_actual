@@ -3,6 +3,8 @@
 target
 logs
 *.iml
+*.ipr
+*.iws
 
 ###########
 # ECLIPSE #

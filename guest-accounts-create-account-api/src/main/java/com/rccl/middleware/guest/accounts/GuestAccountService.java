@@ -7,6 +7,7 @@ import com.lightbend.lagom.javadsl.api.Descriptor;
 import com.lightbend.lagom.javadsl.api.Service;
 import com.lightbend.lagom.javadsl.api.ServiceCall;
 import com.lightbend.lagom.javadsl.api.broker.Topic;
+import com.rccl.middleware.akka.clustermanager.models.ActorSystemInformation;
 import com.rccl.middleware.common.response.ResponseBody;
 import com.rccl.middleware.guest.accounts.email.EmailNotification;
 import com.rccl.middleware.guest.accounts.enriched.EnrichedGuest;
@@ -37,6 +38,8 @@ public interface GuestAccountService extends Service {
     
     ServiceCall<NotUsed, ResponseBody<JsonNode>> validateEmail(String email, Optional<String> inputType);
     
+    ServiceCall<NotUsed, ResponseBody<ActorSystemInformation>> akkaClusterHealthCheck();
+    
     Topic<GuestEvent> linkLoyaltyTopic();
     
     Topic<EnrichedGuest> verifyLoyaltyTopic();
@@ -51,7 +54,8 @@ public interface GuestAccountService extends Service {
                         restCall(POST, "/guestAccounts/", this::createAccount),
                         restCall(GET, "/guestAccounts/enriched/:vdsId?extended", this::getAccountEnriched),
                         restCall(PUT, "/guestAccounts/enriched", this::updateAccountEnriched),
-                        restCall(GET, "/guestAccounts/:email/validation?inputType", this::validateEmail)
+                        restCall(GET, "/guestAccounts/:email/validation?inputType", this::validateEmail),
+                        restCall(GET, "/akkaCluster/health", this::akkaClusterHealthCheck)
                 )
                 .withTopics(
                         topic(LINK_LOYALTY_KAFKA_TOPIC, this::linkLoyaltyTopic),
