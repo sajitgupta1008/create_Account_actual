@@ -34,7 +34,9 @@ public class PasswordUpdatedConfirmationEmail {
         
         this.getEmailContent(firstName, header).thenAccept(htmlEmailTemplate -> {
             String content = htmlEmailTemplate.getHtmlMessage();
-            String sender = htmlEmailTemplate.getSender();
+            String sender = htmlEmailTemplate.getSender() == null 
+                    ? EmailBrandSenderEnum.getEmailAddressFromBrand(header.getBrand())
+                    : htmlEmailTemplate.getSender();
             String subject = htmlEmailTemplate.getSubject();
             
             EmailNotification en = EmailNotification.builder()

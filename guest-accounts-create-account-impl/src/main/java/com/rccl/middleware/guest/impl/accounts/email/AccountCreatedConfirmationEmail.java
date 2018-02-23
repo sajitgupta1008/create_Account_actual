@@ -41,7 +41,9 @@ public class AccountCreatedConfirmationEmail {
                     .thenAccept(htmlEmailTemplate -> {
                         if (htmlEmailTemplate != null) {
                             String content = htmlEmailTemplate.getHtmlMessage();
-                            String sender = htmlEmailTemplate.getSender();
+                            String sender = htmlEmailTemplate.getSender() == null
+                                    ? EmailBrandSenderEnum.getEmailAddressFromBrand(guest.getHeader().getBrand())
+                                    : htmlEmailTemplate.getSender();
                             String subject = htmlEmailTemplate.getSubject();
                             
                             EmailNotification en = EmailNotification.builder()
