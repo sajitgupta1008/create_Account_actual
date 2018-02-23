@@ -70,7 +70,6 @@ public class EmailUpdatedConfirmationEmail {
                             
                             // send email to both old and new emails
                             for (String email : Arrays.asList(oldEmail, eg.getEmail())) {
-                                // send email to both new and old email addresses
                                 EmailNotification en = EmailNotification.builder()
                                         .recipient(email)
                                         .sender(sender)
