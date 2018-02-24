@@ -102,7 +102,9 @@ public class EmailUpdatedConfirmationEmail {
             throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), throwable);
         };
         
-        Function<RequestHeader, RequestHeader> aemEmailServiceHeader = rh -> aemEmailRequestHeader;
+        String acceptLanguage = aemEmailRequestHeader.getHeader("Accept-Language").orElse("");
+        Function<RequestHeader, RequestHeader> aemEmailServiceHeader = rh -> RequestHeader.DEFAULT
+                .withHeader("Accept-Language", acceptLanguage);
         
         if ('C' == brand || 'c' == brand) {
             return aemEmailService.getCelebrityEmailUpdatedConfirmationEmailContent(firstName)
