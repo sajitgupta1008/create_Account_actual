@@ -78,7 +78,7 @@ public class AccountCreatedConfirmationEmail {
         };
         
         String acceptLanguage = aemEmailRequestHeader.getHeader("Accept-Language").orElse("");
-        Function<RequestHeader, RequestHeader> aemEmailServiceHeader = rh -> RequestHeader.DEFAULT
+        Function<RequestHeader, RequestHeader> aemEmailServiceHeader = rh -> rh
                 .withHeader("Accept-Language", acceptLanguage);
         
         if ('C' == brand || 'c' == brand) {
