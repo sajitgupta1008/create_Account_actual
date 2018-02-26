@@ -3,7 +3,7 @@ package com.rccl.middleware.guest.impl.accounts.email;
 public enum EmailBrandSenderEnum {
     
     ROYAL_EMAIL('R', "notifications@royalcaribbean.com"),
-    CELEBRITY_EMAIL('C', "notifications@email.celebritycruises.com"),
+    CELEBRITY_EMAIL('C', "notifications@celebritycruises.com"),
     AZAMARA_EMAIL('Z', "notifications@azamaraclubcruises.com");
     
     Character brand;
