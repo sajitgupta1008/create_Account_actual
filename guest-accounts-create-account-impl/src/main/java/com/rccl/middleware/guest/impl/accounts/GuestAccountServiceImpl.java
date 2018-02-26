@@ -442,7 +442,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                         // Check if the email was updated. If so, send the notification.
                                         if (StringUtils.isNoneBlank(originalEmail, updatedEmail)
                                                 && !originalEmail.equalsIgnoreCase(updatedEmail)) {
-                                            emailUpdatedConfirmationEmail.send(enrichedGuest, requestHeader);
+                                            emailUpdatedConfirmationEmail
+                                                    .send(originalEmail, enrichedGuest, requestHeader);
                                             emailUpdated = true;
                                         }
                                         

@@ -17,6 +17,7 @@ import com.rccl.middleware.saviynt.api.responses.AccountInformation;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.inject.Inject;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
@@ -40,29 +41,46 @@ public class EmailUpdatedConfirmationEmail {
         this.saviyntService = saviyntService;
     }
     
-    public void send(EnrichedGuest eg, RequestHeader aemEmailRequestHeader) {
+    /**
+     * Retrieves Email template from AEM and then publishes the email content JSON as Kafka message, one for
+     * old email and another for the new email, for email notification.
+     *
+     * @param oldEmail      - the original email prior to email update.
+     * @param eg            - the {@link EnrichedGuest} from service request invocation.
+     * @param requestHeader - the {@link RequestHeader} from service request invocation.
+     */
+    public void send(String oldEmail, EnrichedGuest eg, RequestHeader requestHeader) {
         if (eg == null) {
             throw new IllegalArgumentException("The EnrichedGuest argument is required.");
+        }
+        
+        if (eg.getHeader() == null) {
+            throw new IllegalArgumentException("The header property in the EnrichedGuest must not be null.");
         }
         
         LOGGER.info("#send - Attempting to send the email to: " + eg.getEmail());
         
         this.getGuestInformation(eg)
-                .thenAccept(accountInformation -> this.getEmailContent(eg, accountInformation.getGuest()
-                        .getFirstName(), aemEmailRequestHeader)
+                .thenAccept(accountInformation -> this.getEmailContent(eg.getHeader().getBrand(),
+                        accountInformation.getGuest().getFirstName(), requestHeader)
                         .thenAccept(htmlEmailTemplate -> {
                             String content = htmlEmailTemplate.getHtmlMessage();
-                            String sender = htmlEmailTemplate.getSender();
+                            String sender = htmlEmailTemplate.getSender() == null
+                                    ? EmailBrandSenderEnum.getEmailAddressFromBrand(eg.getHeader().getBrand())
+                                    : htmlEmailTemplate.getSender();
                             String subject = htmlEmailTemplate.getSubject();
                             
-                            EmailNotification en = EmailNotification.builder()
-                                    .recipient(eg.getEmail())
-                                    .sender(sender)
-                                    .subject(subject)
-                                    .content(content)
-                                    .build();
-                            
-                            this.sendToTopic(en);
+                            // send email to both old and new emails
+                            for (String email : Arrays.asList(oldEmail, eg.getEmail())) {
+                                EmailNotification en = EmailNotification.builder()
+                                        .recipient(email)
+                                        .sender(sender)
+                                        .subject(subject)
+                                        .content(content)
+                                        .build();
+                                
+                                this.sendToTopic(en);
+                            }
                         }));
     }
     
@@ -85,14 +103,8 @@ public class EmailUpdatedConfirmationEmail {
                 });
     }
     
-    private CompletionStage<HtmlEmailTemplate> getEmailContent(EnrichedGuest eg, String firstName,
+    private CompletionStage<HtmlEmailTemplate> getEmailContent(Character brand, String firstName,
                                                                RequestHeader aemEmailRequestHeader) {
-        if (eg.getHeader() == null) {
-            throw new IllegalArgumentException("The header property in the EnrichedGuest must not be null.");
-        }
-        
-        Character brand = eg.getHeader().getBrand();
-        
         if (brand == null) {
             throw new IllegalArgumentException("The brand header property in the EnrichedGuest must not be null.");
         }
