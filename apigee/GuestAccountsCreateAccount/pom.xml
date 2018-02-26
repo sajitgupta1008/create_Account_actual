@@ -6,8 +6,8 @@
 
   <artifactId>GuestAccountsCreateAccount</artifactId>
   <name>GuestAccountsCreateAccount</name>
-
-  <version>1.4.0-SNAPSHOT</version>
+  
+  <version>1.4.3-SNAPSHOT</version>
 
   <packaging>pom</packaging>
 
@@ -38,4 +38,3 @@
   </repositories>
 
 </project>
-

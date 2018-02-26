@@ -114,14 +114,18 @@ public class EmailUpdatedConfirmationEmail {
             throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), throwable);
         };
         
+        String acceptLanguage = aemEmailRequestHeader.getHeader("Accept-Language").orElse("");
+        Function<RequestHeader, RequestHeader> aemEmailServiceHeader = rh -> rh
+                .withHeader("Accept-Language", acceptLanguage);
+        
         if ('C' == brand || 'c' == brand) {
             return aemEmailService.getCelebrityEmailUpdatedConfirmationEmailContent(firstName)
-                    .handleRequestHeader(rh -> aemEmailRequestHeader)
+                    .handleRequestHeader(aemEmailServiceHeader)
                     .invoke()
                     .exceptionally(exceptionally);
         } else if ('R' == brand || 'r' == brand) {
             return aemEmailService.getRoyalEmailUpdatedConfirmationEmailContent(firstName)
-                    .handleRequestHeader(rh -> aemEmailRequestHeader)
+                    .handleRequestHeader(aemEmailServiceHeader)
                     .invoke()
                     .exceptionally(exceptionally);
         }
