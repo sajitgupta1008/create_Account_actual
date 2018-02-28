@@ -7,14 +7,14 @@
   <artifactId>GuestAccountsCreateAccount</artifactId>
   <name>GuestAccountsCreateAccount</name>
   
-  <version>1.4.4-SNAPSHOT</version>
+  <version>1.4.4</version>
 
   <packaging>pom</packaging>
 
   <parent>
     <groupId>com.rccl.middleware.apigee</groupId>
     <artifactId>proxy-parent-pom</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
   </parent>
 
   <repositories>
