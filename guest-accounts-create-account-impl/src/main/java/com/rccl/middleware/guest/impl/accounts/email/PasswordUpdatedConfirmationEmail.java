@@ -9,7 +9,8 @@ import com.rccl.middleware.aem.api.models.HtmlEmailTemplate;
 import com.rccl.middleware.common.exceptions.MiddlewareTransportException;
 import com.rccl.middleware.common.header.Header;
 import com.rccl.middleware.common.logging.RcclLoggerFactory;
-import com.rccl.middleware.guest.accounts.email.EmailNotification;
+import com.rccl.middleware.notification.email.EmailNotification;
+import com.rccl.middleware.notification.email.EmailNotificationService;
 
 import javax.inject.Inject;
 import java.util.concurrent.CompletionStage;
@@ -23,11 +24,15 @@ public class PasswordUpdatedConfirmationEmail {
     
     private PersistentEntityRegistry persistentEntityRegistry;
     
+    private EmailNotificationService emailNotificationService;
+    
     @Inject
     public PasswordUpdatedConfirmationEmail(AemEmailService aemEmailService,
-                                            PersistentEntityRegistry persistentEntityRegistry) {
+                                            PersistentEntityRegistry persistentEntityRegistry,
+                                            EmailNotificationService emailNotificationService) {
         this.aemEmailService = aemEmailService;
         this.persistentEntityRegistry = persistentEntityRegistry;
+        this.emailNotificationService = emailNotificationService;
     }
     
     public void send(String email, String firstName, Header header, RequestHeader aemEmailRequestHeader) {
@@ -35,7 +40,7 @@ public class PasswordUpdatedConfirmationEmail {
         
         this.getEmailContent(firstName, header, aemEmailRequestHeader).thenAccept(htmlEmailTemplate -> {
             String content = htmlEmailTemplate.getHtmlMessage();
-            String sender = htmlEmailTemplate.getSender() == null 
+            String sender = htmlEmailTemplate.getSender() == null
                     ? EmailBrandSenderEnum.getEmailAddressFromBrand(header.getBrand())
                     : htmlEmailTemplate.getSender();
             String subject = htmlEmailTemplate.getSubject();
@@ -47,7 +52,7 @@ public class PasswordUpdatedConfirmationEmail {
                     .subject(subject)
                     .build();
             
-            this.sendToTopic(en);
+            this.senEmailNotification(en);
         });
     }
     
@@ -88,9 +93,14 @@ public class PasswordUpdatedConfirmationEmail {
         throw new IllegalArgumentException("An invalid brand value was encountered: " + brand);
     }
     
-    private void sendToTopic(EmailNotification emailNotification) {
-        persistentEntityRegistry
-                .refFor(EmailNotificationEntity.class, emailNotification.getRecipient())
-                .ask(new EmailNotificationCommand.SendEmailNotification(emailNotification));
+    private void senEmailNotification(EmailNotification emailNotification) {
+        emailNotificationService
+                .notification()
+                .invoke(emailNotification)
+                .exceptionally(throwable -> {
+                    LOGGER.error(throwable.getMessage());
+                    throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), throwable);
+                    
+                });
     }
 }

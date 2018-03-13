@@ -9,7 +9,8 @@ import com.rccl.middleware.aem.api.models.HtmlEmailTemplate;
 import com.rccl.middleware.common.exceptions.MiddlewareTransportException;
 import com.rccl.middleware.common.logging.RcclLoggerFactory;
 import com.rccl.middleware.guest.accounts.Guest;
-import com.rccl.middleware.guest.accounts.email.EmailNotification;
+import com.rccl.middleware.notification.email.EmailNotification;
+import com.rccl.middleware.notification.email.EmailNotificationService;
 
 import javax.inject.Inject;
 import java.util.concurrent.CompletionStage;
@@ -23,11 +24,15 @@ public class AccountCreatedConfirmationEmail {
     
     private PersistentEntityRegistry persistentEntityRegistry;
     
+    private EmailNotificationService emailNotificationService;
+    
     @Inject
     public AccountCreatedConfirmationEmail(AemEmailService aemEmailService,
-                                           PersistentEntityRegistry persistentEntityRegistry) {
+                                           PersistentEntityRegistry persistentEntityRegistry,
+                                           EmailNotificationService emailNotificationService) {
         this.aemEmailService = aemEmailService;
         this.persistentEntityRegistry = persistentEntityRegistry;
+        this.emailNotificationService = emailNotificationService;
     }
     
     public void send(Guest guest, RequestHeader aemEmailRequestHeader) {
@@ -54,7 +59,7 @@ public class AccountCreatedConfirmationEmail {
                                     .content(content)
                                     .build();
                             
-                            this.sendToTopic(en);
+                            this.senEmailNotification(en);
                         }
                     });
         } catch (Exception e) {
@@ -98,9 +103,14 @@ public class AccountCreatedConfirmationEmail {
         throw new IllegalArgumentException("An invalid brand value was encountered: " + brand);
     }
     
-    private void sendToTopic(EmailNotification emailNotification) {
-        persistentEntityRegistry
-                .refFor(EmailNotificationEntity.class, emailNotification.getRecipient())
-                .ask(new EmailNotificationCommand.SendEmailNotification(emailNotification));
+    private void senEmailNotification(EmailNotification emailNotification) {
+        emailNotificationService
+                .notification()
+                .invoke(emailNotification)
+                .exceptionally(throwable -> {
+                    LOGGER.error(throwable.getMessage());
+                    throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), throwable);
+                    
+                });
     }
 }

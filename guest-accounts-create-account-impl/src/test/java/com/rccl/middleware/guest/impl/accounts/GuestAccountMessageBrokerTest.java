@@ -19,7 +19,6 @@ import com.rccl.middleware.guest.accounts.GuestEvent;
 import com.rccl.middleware.guest.accounts.PrivacyPolicyAgreement;
 import com.rccl.middleware.guest.accounts.SecurityQuestion;
 import com.rccl.middleware.guest.accounts.TermsAndConditionsAgreement;
-import com.rccl.middleware.guest.accounts.email.EmailNotification;
 import com.rccl.middleware.guest.accounts.enriched.ContactInformation;
 import com.rccl.middleware.guest.accounts.enriched.EnrichedGuest;
 import com.rccl.middleware.guest.accounts.enriched.LoyaltyInformation;
@@ -131,51 +130,6 @@ public class GuestAccountMessageBrokerTest {
         assertThat(outcome.state().getEvent(), is(equalTo(GuestEventStatus.UPDATE)));
         assertThat(outcome.getReplies().get(0), is(equalTo(Done.getInstance())));
         assertThat(outcome.issues().isEmpty(), is(true));
-    }
-    
-    @Test
-    public void testEmailNotificationOnCreateAccount() throws InterruptedException, ExecutionException, TimeoutException {
-        Source<EmailNotification, ?> source = guestAccountService.emailNotificationTopic()
-                .subscribe()
-                .atMostOnceSource();
-        
-        Sink<EmailNotification, TestSubscriber.Probe<EmailNotification>> ts = TestSink.probe(testServer.system());
-        TestSubscriber.Probe<EmailNotification> probe = source.runWith(ts, testServer.materializer());
-        
-        Guest guest = this.createSampleGuest();
-        
-        guestAccountService.createAccount()
-                .invoke(guest)
-                .toCompletableFuture()
-                .get(10, TimeUnit.SECONDS);
-        
-        EmailNotification en = probe.request(1).expectNext(TWENTY_SECONDS);
-        
-        assertNotNull(en);
-    }
-    
-    @Test
-    public void testEmailNotificationOnUpdateEmail() throws InterruptedException, ExecutionException, TimeoutException {
-        Source<EmailNotification, ?> source = guestAccountService.emailNotificationTopic()
-                .subscribe()
-                .atMostOnceSource();
-        
-        Sink<EmailNotification, TestSubscriber.Probe<EmailNotification>> ts = TestSink.probe(testServer.system());
-        TestSubscriber.Probe<EmailNotification> probe = source.runWith(ts, testServer.materializer());
-        
-        EnrichedGuest enrichedGuest = this.createSampleEnrichedGuest().email("poot@email.com").build();
-        
-        guestAccountService.updateAccountEnriched()
-                .handleRequestHeader(rh ->
-                        rh.withHeader(EnvironmentDetails.ENVIRONMENT_MARKER_HEADER_NAME, "shore")
-                                .withHeader(EnvironmentDetails.ENVIRONMENT_SHIP_CODE_HEADER_NAME, "none"))
-                .invoke(enrichedGuest)
-                .toCompletableFuture()
-                .get(10, TimeUnit.SECONDS);
-        
-        EmailNotification en = probe.request(1).expectNext(TWENTY_SECONDS);
-        
-        assertNotNull(en);
     }
     
     @Test

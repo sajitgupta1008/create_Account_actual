@@ -87,11 +87,6 @@ public class GuestAccountStub implements GuestAccountService {
     }
     
     @Override
-    public Topic<EmailNotification> emailNotificationTopic() {
-        return null;
-    }
-    
-    @Override
     public Topic<EnrichedGuest> verifyLoyaltyTopic() {
         return null;
     }

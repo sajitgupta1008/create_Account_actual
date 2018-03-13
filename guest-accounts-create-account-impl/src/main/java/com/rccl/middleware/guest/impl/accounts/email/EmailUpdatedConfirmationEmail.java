@@ -8,9 +8,10 @@ import com.rccl.middleware.aem.api.email.AemEmailService;
 import com.rccl.middleware.aem.api.models.HtmlEmailTemplate;
 import com.rccl.middleware.common.exceptions.MiddlewareTransportException;
 import com.rccl.middleware.common.logging.RcclLoggerFactory;
-import com.rccl.middleware.guest.accounts.email.EmailNotification;
+import com.rccl.middleware.notification.email.EmailNotification;
 import com.rccl.middleware.guest.accounts.enriched.EnrichedGuest;
 import com.rccl.middleware.guest.accounts.exceptions.GuestNotFoundException;
+import com.rccl.middleware.notification.email.EmailNotificationService;
 import com.rccl.middleware.saviynt.api.SaviyntService;
 import com.rccl.middleware.saviynt.api.exceptions.SaviyntExceptionFactory;
 import com.rccl.middleware.saviynt.api.responses.AccountInformation;
@@ -32,13 +33,17 @@ public class EmailUpdatedConfirmationEmail {
     
     private SaviyntService saviyntService;
     
+    private EmailNotificationService emailNotificationService;
+    
     @Inject
     public EmailUpdatedConfirmationEmail(AemEmailService aemEmailService,
                                          PersistentEntityRegistry persistentEntityRegistry,
-                                         SaviyntService saviyntService) {
+                                         SaviyntService saviyntService,
+                                         EmailNotificationService emailNotificationService) {
         this.aemEmailService = aemEmailService;
         this.persistentEntityRegistry = persistentEntityRegistry;
         this.saviyntService = saviyntService;
+        this.emailNotificationService = emailNotificationService;
     }
     
     /**
@@ -79,7 +84,7 @@ public class EmailUpdatedConfirmationEmail {
                                         .content(content)
                                         .build();
                                 
-                                this.sendToTopic(en);
+                                this.senEmailNotification(en);
                             }
                         }));
     }
@@ -133,9 +138,14 @@ public class EmailUpdatedConfirmationEmail {
         throw new IllegalArgumentException("An invalid brand value was encountered: " + brand);
     }
     
-    private void sendToTopic(EmailNotification emailNotification) {
-        persistentEntityRegistry
-                .refFor(EmailNotificationEntity.class, emailNotification.getRecipient())
-                .ask(new EmailNotificationCommand.SendEmailNotification(emailNotification));
+    private void senEmailNotification(EmailNotification emailNotification) {
+        emailNotificationService
+                .notification()
+                .invoke(emailNotification)
+                .exceptionally(throwable -> {
+                    LOGGER.error(throwable.getMessage());
+                    throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), throwable);
+                    
+                });
     }
 }

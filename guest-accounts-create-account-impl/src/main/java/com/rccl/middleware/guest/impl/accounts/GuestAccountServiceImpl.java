@@ -30,7 +30,6 @@ import com.rccl.middleware.guest.accounts.AccountStatusEnum;
 import com.rccl.middleware.guest.accounts.Guest;
 import com.rccl.middleware.guest.accounts.GuestAccountService;
 import com.rccl.middleware.guest.accounts.GuestEvent;
-import com.rccl.middleware.guest.accounts.email.EmailNotification;
 import com.rccl.middleware.guest.accounts.enriched.EnrichedGuest;
 import com.rccl.middleware.guest.accounts.exceptions.ExistingGuestException;
 import com.rccl.middleware.guest.accounts.exceptions.GuestNotFoundException;
@@ -39,8 +38,6 @@ import com.rccl.middleware.guest.accounts.exceptions.InvalidPasswordException;
 import com.rccl.middleware.guest.authentication.AccountCredentials;
 import com.rccl.middleware.guest.authentication.GuestAuthenticationService;
 import com.rccl.middleware.guest.impl.accounts.email.AccountCreatedConfirmationEmail;
-import com.rccl.middleware.guest.impl.accounts.email.EmailNotificationEntity;
-import com.rccl.middleware.guest.impl.accounts.email.EmailNotificationTag;
 import com.rccl.middleware.guest.impl.accounts.email.EmailUpdatedConfirmationEmail;
 import com.rccl.middleware.guest.impl.accounts.email.PasswordUpdatedConfirmationEmail;
 import com.rccl.middleware.guest.optin.EmailOptins;
@@ -124,7 +121,6 @@ public class GuestAccountServiceImpl implements GuestAccountService {
         
         this.persistentEntityRegistry = persistentEntityRegistry;
         persistentEntityRegistry.register(GuestAccountEntity.class);
-        persistentEntityRegistry.register(EmailNotificationEntity.class);
         
         this.accountCreatedConfirmationEmail = accountCreatedConfirmationEmail;
         this.emailUpdatedConfirmationEmail = emailUpdatedConfirmationEmail;
@@ -716,26 +712,6 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                             return CompletableFuture.completedFuture(
                                     new Pair<>(loyalty.getEnrichedGuest(), eventOffset.second()));
                         }));
-    }
-    
-    @Override
-    public Topic<EmailNotification> emailNotificationTopic() {
-        return TopicProducer.singleStreamWithOffset(offset ->
-                persistentEntityRegistry
-                        .eventStream(EmailNotificationTag.EMAIL_NOTIFICATION_TAG, offset)
-                        .map(pair -> {
-                            LOGGER.debug("Publishing email notification message...");
-                            EmailNotification eventNotification = pair.first().getEmailNotification();
-                            EmailNotification emailNotification = EmailNotification
-                                    .builder()
-                                    .sender(eventNotification.getSender())
-                                    .recipient(eventNotification.getRecipient())
-                                    .subject(eventNotification.getSubject())
-                                    .content(eventNotification.getContent())
-                                    .build();
-                            return new Pair<>(emailNotification, pair.second());
-                        })
-        );
     }
     
     /**

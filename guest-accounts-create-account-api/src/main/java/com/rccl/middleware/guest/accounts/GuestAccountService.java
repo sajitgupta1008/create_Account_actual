@@ -24,8 +24,6 @@ import static com.lightbend.lagom.javadsl.api.transport.Method.PUT;
 
 public interface GuestAccountService extends Service {
     
-    String NOTIFICATIONS_KAFKA_TOPIC = ConfigFactory.load().getString("kafka.notifications.topic.name");
-    
     String LINK_LOYALTY_KAFKA_TOPIC = ConfigFactory.load().getString("kafka.link-loyalty.topic.name");
     
     String VERIFY_LOYALTY_KAFKA_TOPIC = ConfigFactory.load().getString("kafka.verify-loyalty.topic.name");
@@ -44,8 +42,6 @@ public interface GuestAccountService extends Service {
     
     Topic<EnrichedGuest> verifyLoyaltyTopic();
     
-    Topic<EmailNotification> emailNotificationTopic();
-    
     @Override
     default Descriptor descriptor() {
         return named("guest_accounts_create_account")
@@ -59,8 +55,7 @@ public interface GuestAccountService extends Service {
                 )
                 .withTopics(
                         topic(LINK_LOYALTY_KAFKA_TOPIC, this::linkLoyaltyTopic),
-                        topic(VERIFY_LOYALTY_KAFKA_TOPIC, this::verifyLoyaltyTopic),
-                        topic(NOTIFICATIONS_KAFKA_TOPIC, this::emailNotificationTopic)
+                        topic(VERIFY_LOYALTY_KAFKA_TOPIC, this::verifyLoyaltyTopic)
                 )
                 .withCircuitBreaker(CircuitBreaker.identifiedBy("guest_accounts_create_account"))
                 .withAutoAcl(true);
