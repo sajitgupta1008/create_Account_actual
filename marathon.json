@@ -19,6 +19,7 @@
     "CASSANDRA_REPLICATION_STRATEGY": "SimpleStrategy",
     "GUEST_PROFILES": "https://dev1-int.api.rccl.com/v1",
     "GUEST_ACCOUNTS_AUTHENTICATION": "https://dev1-int.api.rccl.com/v1",
+    "GUEST_ACCOUNTS_NOTIFICATION": "https://dev1-int.api.rccl.com",
     "KAFKA_BOOTSTRAP_SERVERS": "10.16.5.94:9092, 10.16.5.91:9092",
     "SAVIYNT": "https://dev1-int.api.rccl.com",
     "VDS": "https://dev1-int.api.rccl.com",
