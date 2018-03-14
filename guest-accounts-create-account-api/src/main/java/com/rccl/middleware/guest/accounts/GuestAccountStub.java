@@ -8,7 +8,6 @@ import com.lightbend.lagom.javadsl.api.transport.ResponseHeader;
 import com.rccl.middleware.akka.clustermanager.models.ActorSystemInformation;
 import com.rccl.middleware.common.header.Header;
 import com.rccl.middleware.common.response.ResponseBody;
-import com.rccl.middleware.guest.accounts.email.EmailNotification;
 import com.rccl.middleware.guest.accounts.enriched.ContactInformation;
 import com.rccl.middleware.guest.accounts.enriched.EnrichedGuest;
 import com.rccl.middleware.guest.accounts.enriched.SignInInformation;

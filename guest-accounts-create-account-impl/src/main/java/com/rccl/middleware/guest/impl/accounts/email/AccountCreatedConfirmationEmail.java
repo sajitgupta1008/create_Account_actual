@@ -59,7 +59,7 @@ public class AccountCreatedConfirmationEmail {
                                     .content(content)
                                     .build();
                             
-                            this.senEmailNotification(en);
+                            this.sendEmailNotification(en);
                         }
                     });
         } catch (Exception e) {
@@ -103,14 +103,13 @@ public class AccountCreatedConfirmationEmail {
         throw new IllegalArgumentException("An invalid brand value was encountered: " + brand);
     }
     
-    private void senEmailNotification(EmailNotification emailNotification) {
+    private void sendEmailNotification(EmailNotification emailNotification) {
         emailNotificationService
                 .notification()
                 .invoke(emailNotification)
                 .exceptionally(throwable -> {
                     LOGGER.error(throwable.getMessage());
-                    throw new MiddlewareTransportException(TransportErrorCode.fromHttp(500), throwable);
-                    
+                    throw new MiddlewareTransportException(TransportErrorCode.InternalServerError, throwable);
                 });
     }
 }
