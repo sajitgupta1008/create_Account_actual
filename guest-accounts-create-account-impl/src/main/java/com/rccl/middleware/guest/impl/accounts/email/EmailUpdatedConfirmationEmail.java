@@ -3,7 +3,6 @@ package com.rccl.middleware.guest.impl.accounts.email;
 import ch.qos.logback.classic.Logger;
 import com.lightbend.lagom.javadsl.api.transport.RequestHeader;
 import com.lightbend.lagom.javadsl.api.transport.TransportErrorCode;
-import com.lightbend.lagom.javadsl.persistence.PersistentEntityRegistry;
 import com.rccl.middleware.aem.api.email.AemEmailService;
 import com.rccl.middleware.aem.api.models.HtmlEmailTemplate;
 import com.rccl.middleware.common.exceptions.MiddlewareTransportException;
@@ -29,19 +28,15 @@ public class EmailUpdatedConfirmationEmail {
     
     private AemEmailService aemEmailService;
     
-    private PersistentEntityRegistry persistentEntityRegistry;
-    
     private SaviyntService saviyntService;
     
     private EmailNotificationService emailNotificationService;
     
     @Inject
     public EmailUpdatedConfirmationEmail(AemEmailService aemEmailService,
-                                         PersistentEntityRegistry persistentEntityRegistry,
                                          SaviyntService saviyntService,
                                          EmailNotificationService emailNotificationService) {
         this.aemEmailService = aemEmailService;
-        this.persistentEntityRegistry = persistentEntityRegistry;
         this.saviyntService = saviyntService;
         this.emailNotificationService = emailNotificationService;
     }

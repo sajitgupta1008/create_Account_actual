@@ -515,7 +515,7 @@
         <artifactId>lagom-javadsl-testkit_2.11</artifactId>
         <version>${lagom.version}</version>
       </dependency>
-      
+
       <dependency>
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
@@ -559,7 +559,7 @@
         <artifactId>middleware-akka-cluster-manager</artifactId>
         <version>${middleware.cluster-manager.version}</version>
       </dependency>
-      
+
       <dependency>
         <groupId>com.rccl.middleware</groupId>
         <artifactId>guest-accounts-saviynt</artifactId>
