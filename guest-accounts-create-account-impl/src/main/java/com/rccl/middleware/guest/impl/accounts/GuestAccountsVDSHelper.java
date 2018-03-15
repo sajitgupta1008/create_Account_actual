@@ -11,6 +11,7 @@ import com.rccl.middleware.vds.requests.PatchVDSVirtualID;
 import com.rccl.middleware.vds.requests.PatchVDSVirtualIDMod;
 import com.rccl.middleware.vds.requests.PatchVDSVirtualIDParameters;
 import com.rccl.middleware.vds.responses.GenericVDSResponse;
+import com.rccl.middleware.vds.responses.WebShopperView;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.inject.Inject;
@@ -97,5 +98,61 @@ public class GuestAccountsVDSHelper {
         return PatchVDSVirtualID.builder()
                 .parameters(PatchVDSVirtualIDParameters.builder().vdsVirtualIDMods(mods).build())
                 .build();
+    }
+    
+    /**
+     * In order to mitigate the multiple matching WebShopper usernames, when
+     * the migration scenario is encountered, we will mark ALL matching
+     * WebShopper usernames as migrated through
+     * {@link #invokeVDSAddVirtualIDService(String, String)}.
+     * <p>
+     * The list of migrated WebShoppers is returned to permit additional
+     * analysis or consumption of any retrieved details.
+     *
+     * @param vdsId {@code String}
+     * @param email {@code String}
+     * @return {@code CompletionStage<List<WebShopperView>>}
+     */
+    protected CompletionStage<List<WebShopperView>> setAllMatchingWebShopperIdsAsMigrated(String vdsId, String email) {
+        return vdsService.getWebShopperAttributes("uid=" + email)
+                .invoke()
+                .exceptionally(throwable -> {
+                    LOGGER.error("An error occurred when trying to get WebShopper attributes.", throwable);
+                    
+                    Throwable cause = throwable.getCause();
+                    String throwableMessage = cause.getMessage();
+                    
+                    if (cause instanceof ConnectException || cause instanceof VDSExceptionFactory.GenericVDSException) {
+                        throw new MiddlewareTransportException(
+                                TransportErrorCode.ServiceUnavailable,
+                                throwableMessage,
+                                UNKNOWN_ERROR
+                        );
+                    }
+                    
+                    throw new MiddlewareTransportException(
+                            TransportErrorCode.UnexpectedCondition,
+                            throwableMessage,
+                            UNKNOWN_ERROR
+                    );
+                })
+                .thenApply(webShopperViewListWrapper -> {
+                    if (webShopperViewListWrapper == null) {
+                        return null;
+                    }
+                    
+                    List<WebShopperView> views = webShopperViewListWrapper.getWebshopperViews();
+                    
+                    if (views == null) {
+                        return Collections.emptyList();
+                    }
+                    
+                    for (WebShopperView view : views) {
+                        String webshopperUsername = view.getWebshopperUsername();
+                        this.invokeVDSAddVirtualIDService(vdsId, webshopperUsername);
+                    }
+                    
+                    return views;
+                });
     }
 }
