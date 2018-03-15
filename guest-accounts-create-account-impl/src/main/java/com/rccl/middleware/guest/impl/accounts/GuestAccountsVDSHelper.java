@@ -117,10 +117,10 @@ public class GuestAccountsVDSHelper {
         return vdsService.getWebShopperAttributes("uid=" + email)
                 .invoke()
                 .exceptionally(throwable -> {
-                    LOGGER.error("An error occurred when trying to get WebShopper attributes.", throwable);
-                    
                     Throwable cause = throwable.getCause();
                     String throwableMessage = cause.getMessage();
+                    
+                    LOGGER.error("There was an error migrating all matching WebShopper IDs: " + throwable.getMessage());
                     
                     if (cause instanceof ConnectException || cause instanceof VDSExceptionFactory.GenericVDSException) {
                         throw new MiddlewareTransportException(
