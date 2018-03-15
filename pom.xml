@@ -6,7 +6,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.rccl.middleware</groupId>
   <artifactId>guest-accounts-create-account</artifactId>
-  <version>1.4.5-SNAPSHOT</version>
+  <version>1.5.0-SNAPSHOT</version>
 
   <packaging>pom</packaging>
 
@@ -51,14 +51,14 @@
     <lightbend.cinnamon.version>2.4.0</lightbend.cinnamon.version>
     <lombok.version>1.16.18</lombok.version>
     <lagom.version>1.3.10</lagom.version>
-    <middleware.aem.version>1.0.0-SNAPSHOT</middleware.aem.version>
+    <middleware.aem.version>1.0.0</middleware.aem.version>
     <middleware.common.version>1.22.1</middleware.common.version>
     <middleware.cluster-manager.version>1.0.0</middleware.cluster-manager.version>
-    <middleware.saviynt.version>1.0.0-SNAPSHOT</middleware.saviynt.version>
-    <vds.version>1.0.0-SNAPSHOT</vds.version>
-    <middleware.guestprofiles.version>1.1.0-SNAPSHOT</middleware.guestprofiles.version>
-    <middleware.optins.version>1.1.0-SNAPSHOT</middleware.optins.version>
-    <middleware.authentication.version>1.1.0-SNAPSHOT</middleware.authentication.version>
+    <middleware.saviynt.version>1.1.0</middleware.saviynt.version>
+    <vds.version>1.1.1</vds.version>
+    <middleware.guestprofiles.version>1.1.3</middleware.guestprofiles.version>
+    <middleware.optins.version>1.2.4</middleware.optins.version>
+    <middleware.authentication.version>1.2.1</middleware.authentication.version>
     <middleware.notifications.version>1.1.4-SNAPSHOT</middleware.notifications.version>
     <org.json.version>20160810</org.json.version>
     <play.version>2.5.18</play.version>

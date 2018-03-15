@@ -53,16 +53,19 @@ import com.rccl.middleware.saviynt.api.responses.AccountInformation;
 import com.rccl.middleware.saviynt.api.responses.AccountStatus;
 import com.rccl.middleware.saviynt.api.responses.GenericSaviyntResponse;
 import com.rccl.middleware.vds.responses.GenericVDSResponse;
+import com.rccl.middleware.vds.responses.WebShopperView;
 import com.typesafe.config.ConfigFactory;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.inject.Inject;
 import java.net.ConnectException;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static com.rccl.middleware.guest.accounts.exceptions.CreateAccountErrorCodeContants.CONSTRAINT_VIOLATION;
 import static com.rccl.middleware.guest.accounts.exceptions.CreateAccountErrorCodeContants.MULTIPLE_BACKEND_ERROR;
@@ -178,6 +181,20 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                         CompletionStage<GenericVDSResponse> vdsService;
                         if (StringUtils.isNoneBlank(saviyntGuest.getWebshopperId())) {
                             vdsService = vdsHelper.invokeVDSAddVirtualIDService(saviyntGuest.getWebshopperId(), vdsId);
+                            
+                            LOGGER.info("Updating all matching WebShopper IDs as migrated.");
+                            vdsHelper.setAllMatchingWebShopperIdsAsMigrated(vdsId, guest.getEmail())
+                                    .thenAccept(webShopperViews -> {
+                                        List<String> names = webShopperViews
+                                                .stream()
+                                                .map(WebShopperView::getWebshopperUsername)
+                                                .collect(Collectors.toList());
+                                        
+                                        // TODO: Trigger a new Kafka event with
+                                        // TODO: the migrated account information.
+                                        LOGGER.info("All matching WebShopper IDs were migrated successfully: "
+                                                + names);
+                                    });
                         } else {
                             vdsService = CompletableFuture.completedFuture(null);
                         }
