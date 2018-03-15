@@ -8,8 +8,8 @@ import com.rccl.middleware.aem.api.models.HtmlEmailTemplate;
 import com.rccl.middleware.common.exceptions.MiddlewareTransportException;
 import com.rccl.middleware.common.header.Header;
 import com.rccl.middleware.common.logging.RcclLoggerFactory;
-import com.rccl.middleware.notification.email.EmailNotification;
-import com.rccl.middleware.notification.email.EmailNotificationService;
+import com.rccl.middleware.notifications.EmailNotification;
+import com.rccl.middleware.notifications.NotificationsService;
 
 import javax.inject.Inject;
 import java.util.concurrent.CompletionStage;
@@ -21,13 +21,13 @@ public class PasswordUpdatedConfirmationEmail {
     
     private AemEmailService aemEmailService;
     
-    private EmailNotificationService emailNotificationService;
+    private NotificationsService notificationsService;
     
     @Inject
     public PasswordUpdatedConfirmationEmail(AemEmailService aemEmailService,
-                                            EmailNotificationService emailNotificationService) {
+                                            NotificationsService emailNotificationService) {
         this.aemEmailService = aemEmailService;
-        this.emailNotificationService = emailNotificationService;
+        this.notificationsService = notificationsService;
     }
     
     public void send(String email, String firstName, Header header, RequestHeader aemEmailRequestHeader) {
@@ -89,8 +89,8 @@ public class PasswordUpdatedConfirmationEmail {
     }
     
     private void sendEmailNotification(EmailNotification emailNotification) {
-        emailNotificationService
-                .notification()
+        notificationsService
+                .sendEmail()
                 .invoke(emailNotification)
                 .exceptionally(throwable -> {
                     LOGGER.error(throwable.getMessage());
