@@ -1,11 +1,11 @@
 package com.rccl.middleware.guest.accounts.legacylinkbooking;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.rccl.middleware.guest.accounts.Guest;
-import lombok.Builder;
 import lombok.Getter;
 
 import java.util.List;
@@ -15,8 +15,7 @@ import java.util.List;
 public interface LegacyLinkBookingEvent {
     
     @Getter
-    @Builder
-    @JsonTypeName("legacyLink")
+    @JsonTypeName("legacyAccountLinked")
     final class LegacyAccountLinked implements LegacyLinkBookingEvent {
         
         private final Guest guest;
@@ -27,11 +26,12 @@ public interface LegacyLinkBookingEvent {
         
         private final String brand;
         
-        @JsonCreator
-        public LegacyAccountLinked(Guest guest,
-                                   List<String> webshopperIds,
-                                   List<String> reservationUserIds,
-                                   String brand) {
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        public LegacyAccountLinked(
+                @JsonProperty("guest") Guest guest,
+                @JsonProperty("webshopperIds") List<String> webshopperIds,
+                @JsonProperty("reservationUserIds") List<String> reservationUserIds,
+                @JsonProperty("brand") String brand) {
             this.guest = guest;
             this.webshopperIds = webshopperIds;
             this.reservationUserIds = reservationUserIds;
