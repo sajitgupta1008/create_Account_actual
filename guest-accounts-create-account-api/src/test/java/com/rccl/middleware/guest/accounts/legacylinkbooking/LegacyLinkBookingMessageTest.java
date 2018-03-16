@@ -23,6 +23,7 @@ public class LegacyLinkBookingMessageTest {
         LegacyLinkBookingMessage event = new LegacyLinkBookingMessage(null, null, null, null, null);
         
         assertNull(event.getBrand());
+        assertNull(event.getConsumerIds());
         assertNull(event.getGuest());
         assertNull(event.getReservationUserIds());
         assertNull(event.getWebshopperIds());
