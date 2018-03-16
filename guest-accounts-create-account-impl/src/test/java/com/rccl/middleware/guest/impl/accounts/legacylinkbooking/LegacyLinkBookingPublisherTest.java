@@ -149,17 +149,17 @@ public class LegacyLinkBookingPublisherTest {
                 .toCompletableFuture()
                 .join();
         
-        LegacyLinkBookingMessage event = probe
+        LegacyLinkBookingMessage message = probe
                 .request(1)
                 .requestNext(FiniteDuration.apply(20, TimeUnit.SECONDS));
         
-        assertNotNull(event);
+        assertNotNull(message);
         
-        assertEquals(request.getHeader().getBrand().toString(), event.getBrand());
-        assertEquals(Arrays.asList(CONSUMER_ID_ONE, CONSUMER_ID_TWO), event.getConsumerIds());
-        assertEquals(request, event.getGuest());
-        assertEquals(Arrays.asList(RESERVATION_ID_ONE, RESERVATION_ID_TWO), event.getReservationUserIds());
-        assertEquals(Arrays.asList(WEBSHOPPER_ID_ONE, WEBSHOPPER_ID_TWO), event.getWebshopperIds());
+        assertEquals(request.getHeader().getBrand().toString(), message.getBrand());
+        assertEquals(Arrays.asList(CONSUMER_ID_ONE, CONSUMER_ID_TWO), message.getConsumerIds());
+        assertEquals(request, message.getGuest());
+        assertEquals(Arrays.asList(RESERVATION_ID_ONE, RESERVATION_ID_TWO), message.getReservationUserIds());
+        assertEquals(Arrays.asList(WEBSHOPPER_ID_ONE, WEBSHOPPER_ID_TWO), message.getWebshopperIds());
     }
     
     static final class CustomVDSService extends VDSServiceStub {
