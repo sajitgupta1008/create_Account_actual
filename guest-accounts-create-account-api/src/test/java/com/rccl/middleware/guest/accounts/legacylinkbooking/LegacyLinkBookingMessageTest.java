@@ -40,7 +40,7 @@ public class LegacyLinkBookingMessageTest {
         
         JsonNode json = OBJECT_MAPPER.valueToTree(event);
         
-        int expectedNumberOfProperties = 6;
+        int expectedNumberOfProperties = 5;
         int actualNumberOfProperties = json.size();
         assertEquals(expectedNumberOfProperties, actualNumberOfProperties);
         
@@ -58,15 +58,11 @@ public class LegacyLinkBookingMessageTest {
         
         assertTrue(json.has("webshopperIds"));
         assertEquals(Collections.emptyList(), OBJECT_MAPPER.convertValue(json.get("webshopperIds"), List.class));
-        
-        assertTrue(json.has("type"));
-        assertEquals("legacyAccountLinked", json.get("type").textValue());
     }
     
     @Test
     public void testDeserialization() throws IOException {
         String jsonText = "{"
-                + "\"type\":\"legacyAccountLinked\","
                 + "\"guest\":null,"
                 + "\"consumerIds\":[],"
                 + "\"webshopperIds\":[],"
@@ -91,25 +87,14 @@ public class LegacyLinkBookingMessageTest {
     
     @Test
     public void testDeserializationWithMissingProperties() throws IOException {
-        String jsonText = "{\"type\":\"legacyAccountLinked\"}";
+        String jsonText = "{}";
         
         LegacyLinkBookingMessage event = OBJECT_MAPPER.readValue(jsonText, LegacyLinkBookingMessage.class);
         
         assertNull(event.getBrand());
-        
         assertNull(event.getConsumerIds());
-        
         assertNull(event.getGuest());
-        
         assertNull(event.getReservationUserIds());
-        
         assertNull(event.getWebshopperIds());
-    }
-    
-    @Test
-    public void testDeserializationWithMissingType() throws IOException {
-        String jsonText = "{}";
-        LegacyLinkBookingMessage event = OBJECT_MAPPER.readValue(jsonText, LegacyLinkBookingMessage.class);
-        assertNull(event);
     }
 }

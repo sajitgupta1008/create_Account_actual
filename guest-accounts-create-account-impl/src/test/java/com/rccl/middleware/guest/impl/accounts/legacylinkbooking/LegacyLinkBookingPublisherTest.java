@@ -1,5 +1,6 @@
 package com.rccl.middleware.guest.impl.accounts.legacylinkbooking;
 
+import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.javadsl.Source;
@@ -36,6 +37,7 @@ import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 
@@ -43,6 +45,7 @@ import static com.lightbend.lagom.javadsl.testkit.ServiceTest.defaultSetup;
 import static com.lightbend.lagom.javadsl.testkit.ServiceTest.startServer;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static play.inject.Bindings.bind;
 
 public class LegacyLinkBookingPublisherTest {
@@ -93,6 +96,36 @@ public class LegacyLinkBookingPublisherTest {
         if (actorSystem != null) {
             actorSystem.terminate();
         }
+    }
+    
+    @Test
+    public void testPersistentEntity() {
+        LegacyLinkBookingMessage expectedMessage = LegacyLinkBookingMessage
+                .builder()
+                .build();
+        
+        PersistentEntityTestDriver
+                .Outcome<LegacyLinkBookingEvent, LegacyLinkBookingState> outcome = driver.run(new LegacyLinkBookingCommand(expectedMessage));
+        assertNotNull(outcome);
+        
+        List<LegacyLinkBookingEvent> events = outcome.events();
+        assertNotNull(events);
+        
+        int expectedNumberOfEvents = 1;
+        int actualNumberOfEvents = events.size();
+        assertEquals(expectedNumberOfEvents, actualNumberOfEvents);
+        
+        LegacyLinkBookingEvent event = events.get(0);
+        assertTrue(LegacyLinkBookingEvent.class.isAssignableFrom(event.getClass()));
+        
+        LegacyLinkBookingState state = outcome.state();
+        assertNotNull(state);
+        
+        LegacyLinkBookingMessage message = state.getMessage();
+        assertNotNull(message);
+        
+        List<Object> replies = outcome.getReplies();
+        assertEquals(replies.get(0), Done.getInstance());
     }
     
     @Test

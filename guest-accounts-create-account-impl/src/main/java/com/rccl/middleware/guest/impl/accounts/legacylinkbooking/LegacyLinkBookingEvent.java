@@ -4,12 +4,12 @@ import com.lightbend.lagom.javadsl.persistence.AggregateEvent;
 import com.lightbend.lagom.javadsl.persistence.AggregateEventTagger;
 import com.lightbend.lagom.serialization.Jsonable;
 import com.rccl.middleware.guest.accounts.legacylinkbooking.LegacyLinkBookingMessage;
-import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.codehaus.jackson.annotate.JsonCreator;
 
 @Getter
-@Builder
+@EqualsAndHashCode
 public final class LegacyLinkBookingEvent implements Jsonable, AggregateEvent<LegacyLinkBookingEvent> {
     
     @Override
