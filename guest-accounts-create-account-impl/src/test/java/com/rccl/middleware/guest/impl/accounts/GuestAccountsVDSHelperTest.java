@@ -10,7 +10,7 @@ import com.rccl.middleware.vds.responses.WebShopperView;
 import com.rccl.middleware.vds.responses.WebShopperViewList;
 import org.junit.Test;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +23,7 @@ public class GuestAccountsVDSHelperTest {
     
     @Test
     public void testSetAllMatchingWebShopperIdsAsMigrated() {
+        String expectedWebshopperId = "1234567";
         String expectedEmail = "webshopper@email.com";
         String expectedVdsId = "G1234567";
         
@@ -34,7 +35,7 @@ public class GuestAccountsVDSHelperTest {
             @Override
             public ServiceCall<PatchVDSVirtualID, GenericVDSResponse> patchVDSVirtualId(String filter) {
                 return patchVDSVirtualID -> {
-                    assertEquals("vdsid=" + expectedVdsId + ",ou=shopper,dc=rccl,dc=com", filter);
+                    assertEquals("vdsid=" + expectedWebshopperId + ",ou=shopper,dc=rccl,dc=com", filter);
                     
                     count.put("count", count.get("count") + 1);
                     
@@ -47,19 +48,14 @@ public class GuestAccountsVDSHelperTest {
             public ServiceCall<NotUsed, WebShopperViewList> getWebShopperAttributes(String filter) {
                 return notUsed -> {
                     WebShopperView resultOne = WebShopperView.builder()
-                            .webshopperUsername("webshopper@email.com")
+                            .webshopperId(expectedWebshopperId)
+                            .webshopperUsername(expectedEmail)
                             .reservationUserId("webShopperUserId")
-                            .email("webshopper@email.com")
-                            .build();
-                    
-                    WebShopperView resultTwo = WebShopperView.builder()
-                            .webshopperUsername("webshopper@email.com")
-                            .reservationUserId("webShopperUserId2")
-                            .email("webshopper2@email.com")
+                            .email(expectedEmail)
                             .build();
                     
                     WebShopperViewList webShopperViewList = WebShopperViewList.builder()
-                            .webshopperViews(Arrays.asList(resultOne, resultTwo))
+                            .webshopperViews(Collections.singletonList(resultOne))
                             .build();
                     
                     return CompletableFuture.completedFuture(webShopperViewList);
@@ -75,7 +71,7 @@ public class GuestAccountsVDSHelperTest {
         
         assertNotNull(views);
         
-        int expectedNumberOfViews = 2;
+        int expectedNumberOfViews = 1;
         int actualNumberOfViews = views.size();
         assertEquals(expectedNumberOfViews, actualNumberOfViews);
         
@@ -83,7 +79,7 @@ public class GuestAccountsVDSHelperTest {
             assertEquals(expectedEmail, view.getWebshopperUsername());
         }
         
-        int expectedNumberOfMigrationCalls = 2;
+        int expectedNumberOfMigrationCalls = 1;
         int actualNumberOfMigrationCalls = count.get("count");
         assertEquals(expectedNumberOfMigrationCalls, actualNumberOfMigrationCalls);
     }
