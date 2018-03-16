@@ -14,6 +14,7 @@ import com.rccl.middleware.guest.accounts.enriched.EnrichedGuest;
 import com.rccl.middleware.guest.accounts.enriched.SignInInformation;
 import com.rccl.middleware.guest.accounts.enriched.TravelDocumentInformation;
 import com.rccl.middleware.guest.accounts.enriched.WebshopperInformation;
+import com.rccl.middleware.guest.accounts.legacylinkbooking.LegacyLinkBookingMessage;
 import com.rccl.middleware.guestprofiles.models.Address;
 import com.rccl.middleware.guestprofiles.models.EmergencyContact;
 
@@ -98,6 +99,11 @@ public class GuestAccountStub implements GuestAccountService {
     
     @Override
     public Topic<GuestEvent> linkLoyaltyTopic() {
+        return null;
+    }
+    
+    @Override
+    public Topic<LegacyLinkBookingMessage> legacyLinkBookingTopic() {
         return null;
     }
     

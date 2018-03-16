@@ -11,6 +11,7 @@ import com.rccl.middleware.akka.clustermanager.models.ActorSystemInformation;
 import com.rccl.middleware.common.response.ResponseBody;
 import com.rccl.middleware.guest.accounts.email.EmailNotification;
 import com.rccl.middleware.guest.accounts.enriched.EnrichedGuest;
+import com.rccl.middleware.guest.accounts.legacylinkbooking.LegacyLinkBookingMessage;
 import com.typesafe.config.ConfigFactory;
 
 import java.util.Optional;
@@ -22,9 +23,14 @@ import static com.lightbend.lagom.javadsl.api.transport.Method.GET;
 import static com.lightbend.lagom.javadsl.api.transport.Method.POST;
 import static com.lightbend.lagom.javadsl.api.transport.Method.PUT;
 
+// Because Lagom only supports optional requests parameters as Optionals
+// we can safely suppress this warning.
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public interface GuestAccountService extends Service {
     
     String NOTIFICATIONS_KAFKA_TOPIC = ConfigFactory.load().getString("kafka.notifications.topic.name");
+    
+    String LEGACY_LINK_BOOKING_TOPIC = ConfigFactory.load().getString("kafka.legacy-link-booking.topic.name");
     
     String LINK_LOYALTY_KAFKA_TOPIC = ConfigFactory.load().getString("kafka.link-loyalty.topic.name");
     
@@ -46,6 +52,8 @@ public interface GuestAccountService extends Service {
     
     Topic<EmailNotification> emailNotificationTopic();
     
+    Topic<LegacyLinkBookingMessage> legacyLinkBookingTopic();
+    
     @Override
     default Descriptor descriptor() {
         return named("guest_accounts_create_account")
@@ -58,9 +66,10 @@ public interface GuestAccountService extends Service {
                         restCall(GET, "/akkaCluster/health", this::akkaClusterHealthCheck)
                 )
                 .withTopics(
+                        topic(LEGACY_LINK_BOOKING_TOPIC, this::legacyLinkBookingTopic),
                         topic(LINK_LOYALTY_KAFKA_TOPIC, this::linkLoyaltyTopic),
-                        topic(VERIFY_LOYALTY_KAFKA_TOPIC, this::verifyLoyaltyTopic),
-                        topic(NOTIFICATIONS_KAFKA_TOPIC, this::emailNotificationTopic)
+                        topic(NOTIFICATIONS_KAFKA_TOPIC, this::emailNotificationTopic),
+                        topic(VERIFY_LOYALTY_KAFKA_TOPIC, this::verifyLoyaltyTopic)
                 )
                 .withCircuitBreaker(CircuitBreaker.identifiedBy("guest_accounts_create_account"))
                 .withAutoAcl(true);

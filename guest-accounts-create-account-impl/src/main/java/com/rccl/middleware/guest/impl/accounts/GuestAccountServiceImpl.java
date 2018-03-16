@@ -36,6 +36,7 @@ import com.rccl.middleware.guest.accounts.exceptions.ExistingGuestException;
 import com.rccl.middleware.guest.accounts.exceptions.GuestNotFoundException;
 import com.rccl.middleware.guest.accounts.exceptions.InvalidEmailFormatException;
 import com.rccl.middleware.guest.accounts.exceptions.InvalidPasswordException;
+import com.rccl.middleware.guest.accounts.legacylinkbooking.LegacyLinkBookingMessage;
 import com.rccl.middleware.guest.authentication.AccountCredentials;
 import com.rccl.middleware.guest.authentication.GuestAuthenticationService;
 import com.rccl.middleware.guest.impl.accounts.email.AccountCreatedConfirmationEmail;
@@ -43,6 +44,8 @@ import com.rccl.middleware.guest.impl.accounts.email.EmailNotificationEntity;
 import com.rccl.middleware.guest.impl.accounts.email.EmailNotificationTag;
 import com.rccl.middleware.guest.impl.accounts.email.EmailUpdatedConfirmationEmail;
 import com.rccl.middleware.guest.impl.accounts.email.PasswordUpdatedConfirmationEmail;
+import com.rccl.middleware.guest.impl.accounts.legacylinkbooking.LegacyLinkBookingTag;
+import com.rccl.middleware.guest.impl.accounts.legacylinkbooking.LegacyLinkBookingPublisher;
 import com.rccl.middleware.guest.optin.EmailOptins;
 import com.rccl.middleware.guest.optin.GuestProfileOptinService;
 import com.rccl.middleware.guest.optin.PostalOptins;
@@ -105,6 +108,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     
     private final GuestAccountsVDSHelper vdsHelper;
     
+    private final LegacyLinkBookingPublisher linkLegacyAccountPublisher;
+    
     @Inject
     public GuestAccountServiceImpl(AkkaClusterManager akkaClusterManager,
                                    AccountCreatedConfirmationEmail accountCreatedConfirmationEmail,
@@ -115,7 +120,8 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                    GuestProfilesService guestProfilesService,
                                    GuestProfileOptinService guestProfileOptinService,
                                    GuestAuthenticationService guestAuthenticationService,
-                                   GuestAccountsVDSHelper vdsHelper) {
+                                   GuestAccountsVDSHelper vdsHelper,
+                                   LegacyLinkBookingPublisher linkLegacyAccountPublisher) {
         this.akkaClusterManager = akkaClusterManager;
         
         this.saviyntService = saviyntService;
@@ -132,6 +138,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
         this.accountCreatedConfirmationEmail = accountCreatedConfirmationEmail;
         this.emailUpdatedConfirmationEmail = emailUpdatedConfirmationEmail;
         this.passwordUpdatedConfirmationEmail = passwordUpdatedConfirmationEmail;
+        this.linkLegacyAccountPublisher = linkLegacyAccountPublisher;
     }
     
     @Override
@@ -189,15 +196,29 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                             LOGGER.info("Updating all matching WebShopper IDs as migrated.");
                             vdsHelper.setAllMatchingWebShopperIdsAsMigrated(vdsId, guest.getEmail())
                                     .thenAccept(webShopperViews -> {
-                                        List<String> names = webShopperViews
+                                        List<String> consumerIds = webShopperViews
                                                 .stream()
-                                                .map(WebShopperView::getWebshopperUsername)
+                                                .map(WebShopperView::getConsumerId)
                                                 .collect(Collectors.toList());
                                         
-                                        // TODO: Trigger a new Kafka event with
-                                        // TODO: the migrated account information.
+                                        List<String> reservationUserIds = webShopperViews
+                                                .stream()
+                                                .map(WebShopperView::getReservationUserId)
+                                                .collect(Collectors.toList());
+                                        
+                                        List<String> webshopperIds = webShopperViews
+                                                .stream()
+                                                .map(WebShopperView::getWebshopperId)
+                                                .collect(Collectors.toList());
+                                        
                                         LOGGER.info("All matching WebShopper IDs were migrated successfully: "
-                                                + names);
+                                                + webshopperIds);
+                                        linkLegacyAccountPublisher.publishLinkLegacyAccountEvent(
+                                                guest.getHeader().getBrand().toString(),
+                                                consumerIds,
+                                                guest,
+                                                reservationUserIds,
+                                                webshopperIds);
                                     });
                         } else {
                             vdsService = CompletableFuture.completedFuture(null);
@@ -753,6 +774,35 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                             return new Pair<>(emailNotification, pair.second());
                         })
         );
+    }
+    
+    @Override
+    public Topic<LegacyLinkBookingMessage> legacyLinkBookingTopic() {
+        return TopicProducer.singleStreamWithOffset(offset ->
+                persistentEntityRegistry
+                        .eventStream(LegacyLinkBookingTag.INSTANCE, offset)
+                        .map(pair -> {
+                            LOGGER.info("Publishing a Legacy Link Booking event...");
+                            
+                            LegacyLinkBookingMessage event = pair.first().getLegacyLinkBookingEvent();
+                            
+                            String brand = event.getBrand();
+                            List<String> consumerIds = event.getConsumerIds();
+                            Guest guest = event.getGuest();
+                            List<String> reservationUserIds = event.getReservationUserIds();
+                            List<String> webshopperIds = event.getWebshopperIds();
+                            
+                            LegacyLinkBookingMessage message = LegacyLinkBookingMessage
+                                    .builder()
+                                    .brand(brand)
+                                    .consumerIds(consumerIds)
+                                    .guest(guest)
+                                    .reservationUserIds(reservationUserIds)
+                                    .webshopperIds(webshopperIds)
+                                    .build();
+                            
+                            return new Pair<>(message, pair.second());
+                        }));
     }
     
     /**
