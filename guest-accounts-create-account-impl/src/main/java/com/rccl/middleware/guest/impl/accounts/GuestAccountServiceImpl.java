@@ -44,7 +44,6 @@ import com.rccl.middleware.guest.impl.accounts.email.EmailNotificationEntity;
 import com.rccl.middleware.guest.impl.accounts.email.EmailNotificationTag;
 import com.rccl.middleware.guest.impl.accounts.email.EmailUpdatedConfirmationEmail;
 import com.rccl.middleware.guest.impl.accounts.email.PasswordUpdatedConfirmationEmail;
-import com.rccl.middleware.guest.impl.accounts.legacylinkbooking.LegacyLinkBookingTag;
 import com.rccl.middleware.guest.impl.accounts.legacylinkbooking.LegacyLinkBookingPublisher;
 import com.rccl.middleware.guest.optin.EmailOptins;
 import com.rccl.middleware.guest.optin.GuestProfileOptinService;
@@ -213,7 +212,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
                                         
                                         LOGGER.info("All matching WebShopper IDs were migrated successfully: "
                                                 + webshopperIds);
-                                        linkLegacyAccountPublisher.publishLinkLegacyAccountEvent(
+                                        linkLegacyAccountPublisher.publish(
                                                 guest.getHeader().getBrand().toString(),
                                                 consumerIds,
                                                 guest,
@@ -778,31 +777,7 @@ public class GuestAccountServiceImpl implements GuestAccountService {
     
     @Override
     public Topic<LegacyLinkBookingMessage> legacyLinkBookingTopic() {
-        return TopicProducer.singleStreamWithOffset(offset ->
-                persistentEntityRegistry
-                        .eventStream(LegacyLinkBookingTag.INSTANCE, offset)
-                        .map(pair -> {
-                            LOGGER.info("Publishing a Legacy Link Booking event...");
-                            
-                            LegacyLinkBookingMessage event = pair.first().getLegacyLinkBookingEvent();
-                            
-                            String brand = event.getBrand();
-                            List<String> consumerIds = event.getConsumerIds();
-                            Guest guest = event.getGuest();
-                            List<String> reservationUserIds = event.getReservationUserIds();
-                            List<String> webshopperIds = event.getWebshopperIds();
-                            
-                            LegacyLinkBookingMessage message = LegacyLinkBookingMessage
-                                    .builder()
-                                    .brand(brand)
-                                    .consumerIds(consumerIds)
-                                    .guest(guest)
-                                    .reservationUserIds(reservationUserIds)
-                                    .webshopperIds(webshopperIds)
-                                    .build();
-                            
-                            return new Pair<>(message, pair.second());
-                        }));
+        return linkLegacyAccountPublisher.topic();
     }
     
     /**
