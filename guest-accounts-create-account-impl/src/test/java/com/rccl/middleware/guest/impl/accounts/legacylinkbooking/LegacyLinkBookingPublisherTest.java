@@ -34,12 +34,14 @@ import com.rccl.middleware.vds.responses.WebShopperViewList;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import scala.concurrent.duration.FiniteDuration;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import static com.lightbend.lagom.javadsl.testkit.ServiceTest.defaultSetup;
 import static com.lightbend.lagom.javadsl.testkit.ServiceTest.startServer;
@@ -147,7 +149,9 @@ public class LegacyLinkBookingPublisherTest {
                 .toCompletableFuture()
                 .join();
         
-        LegacyLinkBookingMessage event = probe.requestNext();
+        LegacyLinkBookingMessage event = probe
+                .request(1)
+                .requestNext(FiniteDuration.apply(20, TimeUnit.SECONDS));
         
         assertNotNull(event);
         
