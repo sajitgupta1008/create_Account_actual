@@ -148,8 +148,8 @@ public class GuestAccountsVDSHelper {
                     }
                     
                     for (WebShopperView view : views) {
-                        String webshopperUsername = view.getWebshopperUsername();
-                        this.invokeVDSAddVirtualIDService(vdsId, webshopperUsername);
+                        String webshopperId = view.getWebshopperId();
+                        this.invokeVDSAddVirtualIDService(webshopperId, vdsId);
                     }
                     
                     return views;
