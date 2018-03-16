@@ -13,5 +13,5 @@ public final class LegacyLinkBookingCommand implements CompressedJsonable, Persi
     
     private static final long serialVersionUID = 1L;
     
-    final LegacyLinkBookingMessage legacyLinkBookingEvent;
+    private final LegacyLinkBookingMessage legacyLinkBookingMessage;
 }

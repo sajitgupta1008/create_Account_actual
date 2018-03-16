@@ -17,7 +17,7 @@ public class LegacyLinkBookingEntity extends
         BehaviorBuilder builder = newBehaviorBuilder(snapshotState.orElse(LegacyLinkBookingState.EMPTY_STATE));
         
         builder.setCommandHandler(LegacyLinkBookingCommand.class, (cmd, commandContext) -> {
-            LegacyLinkBookingMessage evt = cmd.getLegacyLinkBookingEvent();
+            LegacyLinkBookingMessage evt = cmd.getLegacyLinkBookingMessage();
             LegacyLinkBookingMessage message = LegacyLinkBookingMessage
                     .builder()
                     .brand(evt.getBrand())
