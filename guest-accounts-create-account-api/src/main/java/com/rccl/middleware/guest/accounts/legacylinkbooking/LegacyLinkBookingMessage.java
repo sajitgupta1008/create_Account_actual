@@ -2,6 +2,7 @@ package com.rccl.middleware.guest.accounts.legacylinkbooking;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.lightbend.lagom.serialization.Jsonable;
 import com.rccl.middleware.guest.accounts.Guest;
 import lombok.Builder;
 import lombok.Getter;
@@ -10,7 +11,9 @@ import java.util.List;
 
 @Getter
 @Builder
-public class LegacyLinkBookingMessage {
+public class LegacyLinkBookingMessage implements Jsonable {
+    
+    private static final long serialVersionUID = 1L;
     
     private final String brand;
     
