@@ -8,7 +8,6 @@ import com.rccl.middleware.notifications.EmailNotification;
 import com.rccl.middleware.notifications.NotificationsService;
 import ch.qos.logback.classic.Logger;
 
-
 import javax.inject.Inject;
 
 public class NotificationsHelper {
