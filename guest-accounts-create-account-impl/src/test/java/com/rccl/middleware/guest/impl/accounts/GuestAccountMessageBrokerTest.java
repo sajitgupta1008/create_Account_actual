@@ -6,6 +6,7 @@ import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.testkit.TestSubscriber;
 import akka.stream.testkit.javadsl.TestSink;
+import com.lightbend.lagom.javadsl.api.ServiceCall;
 import com.lightbend.lagom.javadsl.testkit.PersistentEntityTestDriver;
 import com.lightbend.lagom.javadsl.testkit.PersistentEntityTestDriver.Outcome;
 import com.lightbend.lagom.javadsl.testkit.ServiceTest;
@@ -13,6 +14,7 @@ import com.rccl.middleware.aem.api.email.AemEmailService;
 import com.rccl.middleware.aem.api.email.AemEmailServiceStub;
 import com.rccl.middleware.common.header.Header;
 import com.rccl.middleware.common.request.EnvironmentDetails;
+import com.rccl.middleware.common.response.ResponseBody;
 import com.rccl.middleware.guest.accounts.Guest;
 import com.rccl.middleware.guest.accounts.GuestAccountService;
 import com.rccl.middleware.guest.accounts.GuestEvent;
@@ -33,8 +35,12 @@ import com.rccl.middleware.guestprofiles.GuestProfileServiceStub;
 import com.rccl.middleware.guestprofiles.GuestProfilesService;
 import com.rccl.middleware.guestprofiles.models.Address;
 import com.rccl.middleware.guestprofiles.models.EmergencyContact;
+import com.rccl.middleware.notifications.EmailNotification;
+import com.rccl.middleware.notifications.NotificationsService;
 import com.rccl.middleware.saviynt.api.SaviyntService;
 import com.rccl.middleware.saviynt.api.SaviyntServiceImplStub;
+import com.rccl.middleware.vds.VDSService;
+import com.rccl.middleware.vds.VDSServiceStub;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -42,6 +48,7 @@ import scala.concurrent.duration.FiniteDuration;
 
 import java.util.Collections;
 import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -77,7 +84,9 @@ public class GuestAccountMessageBrokerTest {
                         bind(SaviyntService.class).to(SaviyntServiceImplStub.class),
                         bind(GuestAuthenticationService.class).to(GuestAuthenticationServiceStub.class),
                         bind(GuestProfileOptinService.class).to(GuestProfileOptinsStub.class),
-                        bind(GuestProfilesService.class).to(GuestProfileServiceStub.class)
+                        bind(GuestProfilesService.class).to(GuestProfileServiceStub.class),
+                        bind(NotificationsService.class).to(NotificationsServiceStub.class),
+                        bind(VDSService.class).to(VDSServiceStub.class)
                 ));
         
         testServer = startServer(setup.withCassandra(true));
@@ -146,7 +155,7 @@ public class GuestAccountMessageBrokerTest {
         guestAccountService.createAccount()
                 .invoke(guest)
                 .toCompletableFuture()
-                .get(10, TimeUnit.SECONDS);
+                .get(40, TimeUnit.SECONDS);
         
         GuestEvent event = probe.request(1).expectNext(TWENTY_SECONDS);
         
@@ -253,5 +262,15 @@ public class GuestAccountMessageBrokerTest {
                 .consumerId("1234567")
                 .email("successful@domain.com")
                 .vdsId("G1234567");
+    }
+    
+    private static class NotificationsServiceStub implements NotificationsService {
+        
+        @Override
+        public ServiceCall<EmailNotification, ResponseBody> sendEmail() {
+            return request -> CompletableFuture.completedFuture(ResponseBody.builder()
+                    .payload("Email has been sent successfully.")
+                    .build());
+        }
     }
 }

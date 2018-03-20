@@ -28,7 +28,6 @@ public class NotificationsHelper {
                 ? EmailBrandSenderEnum.getEmailAddressFromBrand(brand)
                 : htmlEmailTemplate.getSender();
         String subject = htmlEmailTemplate.getSubject();
-        
         return EmailNotification.builder()
                 .recipient(email)
                 .sender(sender)
