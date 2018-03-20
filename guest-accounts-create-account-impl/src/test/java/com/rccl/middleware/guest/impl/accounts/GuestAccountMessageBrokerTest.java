@@ -155,7 +155,7 @@ public class GuestAccountMessageBrokerTest {
         guestAccountService.createAccount()
                 .invoke(guest)
                 .toCompletableFuture()
-                .get(40, TimeUnit.SECONDS);
+                .get(25, TimeUnit.SECONDS);
         
         GuestEvent event = probe.request(1).expectNext(TWENTY_SECONDS);
         

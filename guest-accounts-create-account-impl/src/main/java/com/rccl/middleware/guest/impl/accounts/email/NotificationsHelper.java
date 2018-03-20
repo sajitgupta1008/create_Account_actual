@@ -1,12 +1,12 @@
 package com.rccl.middleware.guest.impl.accounts.email;
 
+import ch.qos.logback.classic.Logger;
 import com.lightbend.lagom.javadsl.api.transport.TransportErrorCode;
 import com.rccl.middleware.aem.api.models.HtmlEmailTemplate;
 import com.rccl.middleware.common.exceptions.MiddlewareTransportException;
 import com.rccl.middleware.common.logging.RcclLoggerFactory;
 import com.rccl.middleware.notifications.EmailNotification;
 import com.rccl.middleware.notifications.NotificationsService;
-import ch.qos.logback.classic.Logger;
 
 import javax.inject.Inject;
 
